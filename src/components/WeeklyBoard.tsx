@@ -1,4 +1,4 @@
-import { DndContext, DragEndEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState } from "react";
 import { DayColumn } from "./DayColumn";
@@ -52,8 +52,8 @@ export function WeeklyBoard() {
   const totalDuration = Object.values(workouts).flat().reduce((acc, workout) => acc + Number(workout.duration), 0);
   const totalCalories = Object.values(workouts).flat().reduce((acc, workout) => acc + Number(workout.calories || 0), 0);
 
-  const handleDragStart = (event: { active: { id: string } }) => {
-    setActiveId(event.active.id);
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id.toString());
     // Trigger haptic feedback on mobile
     if (window.navigator.vibrate) {
       window.navigator.vibrate(50);
@@ -67,19 +67,19 @@ export function WeeklyBoard() {
     if (!over) return;
 
     const activeDay = Object.entries(workouts).find(([day, items]) =>
-      items.find((item) => item.id === active.id)
+      items.find((item) => item.id === active.id.toString())
     )?.[0];
 
-    const overDay = over.id as string;
+    const overDay = over.id.toString();
 
     if (activeDay === overDay) return;
 
     if (activeDay) {
       setWorkouts(prev => {
-        const workout = prev[activeDay].find(item => item.id === active.id);
+        const workout = prev[activeDay].find(item => item.id === active.id.toString());
         const newWorkouts = {
           ...prev,
-          [activeDay]: prev[activeDay].filter(item => item.id !== active.id),
+          [activeDay]: prev[activeDay].filter(item => item.id !== active.id.toString()),
           [overDay]: [...prev[overDay], workout!]
         };
         // Play drop sound
