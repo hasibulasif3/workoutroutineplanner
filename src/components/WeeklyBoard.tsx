@@ -5,7 +5,20 @@ import { DayColumn } from "./DayColumn";
 import { CreateWorkoutDialog } from "./CreateWorkoutDialog";
 import { v4 as uuidv4 } from "uuid";
 
-const initialWorkouts = {
+type WorkoutType = {
+  id: string;
+  title: string;
+  duration: string;
+  type: "strength" | "cardio" | "flexibility";
+  difficulty?: "beginner" | "intermediate" | "advanced";
+  calories?: string;
+};
+
+type WeeklyWorkouts = {
+  [key: string]: WorkoutType[];
+};
+
+const initialWorkouts: WeeklyWorkouts = {
   Monday: [
     { id: "1", title: "Morning Run", duration: "30", type: "cardio", difficulty: "beginner", calories: "300" },
     { id: "2", title: "Push-ups", duration: "15", type: "strength", difficulty: "intermediate", calories: "150" },
@@ -27,7 +40,7 @@ const initialWorkouts = {
 };
 
 export function WeeklyBoard() {
-  const [workouts, setWorkouts] = useState(initialWorkouts);
+  const [workouts, setWorkouts] = useState<WeeklyWorkouts>(initialWorkouts);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -55,8 +68,8 @@ export function WeeklyBoard() {
     }
   };
 
-  const handleWorkoutCreate = (workoutData: any) => {
-    const newWorkout = {
+  const handleWorkoutCreate = (workoutData: WorkoutType) => {
+    const newWorkout: WorkoutType = {
       id: uuidv4(),
       ...workoutData,
     };
