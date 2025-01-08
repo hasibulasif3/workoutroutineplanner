@@ -3,20 +3,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Dumbbell, 
-  Heart, 
-  Activity, 
-  MoreVertical, 
-  Star, 
-  Clock, 
-  Flame,
-  Download,
-  Mail,
-  RefreshCw
-} from "lucide-react";
+import { Dumbbell, Heart, Activity, MoreVertical, Star, Clock, Flame } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 interface WorkoutCardProps {
   id: string;
@@ -64,46 +52,6 @@ export function WorkoutCard({ id, title, duration, type, difficulty, calories }:
 
   const Icon = typeIcons[type];
 
-  const handleDownload = () => {
-    const workoutData = {
-      id,
-      title,
-      duration,
-      type,
-      difficulty,
-      calories,
-    };
-    
-    const blob = new Blob([JSON.stringify(workoutData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `workout-${title.toLowerCase().replace(/\s+/g, '-')}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("Workout downloaded successfully!");
-  };
-
-  const handleSync = () => {
-    toast.success("Workout synced successfully!");
-  };
-
-  const handleEmail = () => {
-    const subject = encodeURIComponent(`Workout Plan: ${title}`);
-    const body = encodeURIComponent(`
-Workout Details:
-Title: ${title}
-Type: ${type}
-Duration: ${duration} minutes
-Difficulty: ${difficulty}
-Estimated Calories: ${calories}
-    `);
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
-    toast.success("Email client opened!");
-  };
-
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -122,44 +70,9 @@ Estimated Calories: ${calories}
             <Icon className={`w-5 h-5 text-${typeColors[type]}`} />
             <h3 className="font-semibold text-lg flex-grow">{title}</h3>
             {isHovered && (
-              <div className="quick-actions flex gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDownload();
-                  }}
-                  title="Download workout"
-                >
-                  <Download className="w-4 h-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSync();
-                  }}
-                  title="Sync workout"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEmail();
-                  }}
-                  title="Email workout"
-                >
-                  <Mail className="w-4 h-4" />
-                </Button>
-              </div>
+              <Button variant="ghost" size="icon" className="quick-action">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
             )}
           </div>
           
