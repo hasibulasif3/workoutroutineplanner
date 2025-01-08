@@ -2,7 +2,9 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Dumbbell, Heart, Activity } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dumbbell, Heart, Activity, MoreVertical, Star, Clock, Flame } from "lucide-react";
+import { useState } from "react";
 
 interface WorkoutCardProps {
   id: string;
@@ -14,9 +16,9 @@ interface WorkoutCardProps {
 }
 
 const typeColors = {
-  strength: "bg-purple-500",
-  cardio: "bg-blue-500",
-  flexibility: "bg-pink-500",
+  strength: "bg-primary text-primary-foreground",
+  cardio: "bg-secondary text-secondary-foreground",
+  flexibility: "bg-accent text-accent-foreground",
 };
 
 const typeIcons = {
@@ -25,18 +27,27 @@ const typeIcons = {
   flexibility: Heart,
 };
 
+const difficultyIcons = {
+  beginner: "★☆☆",
+  intermediate: "★★☆",
+  advanced: "★★★",
+};
+
 export function WorkoutCard({ id, title, duration, type, difficulty, calories }: WorkoutCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
+    isDragging,
   } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.5 : 1,
   };
 
   const Icon = typeIcons[type];
@@ -49,21 +60,46 @@ export function WorkoutCard({ id, title, duration, type, difficulty, calories }:
           style={style}
           {...attributes}
           {...listeners}
-          className={`workout-card group hover:border-${typeColors[type]} transition-all duration-300`}
+          className="workout-card group relative"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          role="button"
+          aria-label={`${title} workout card`}
         >
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-3">
             <Icon className={`w-5 h-5 text-${typeColors[type]}`} />
-            <h3 className="font-semibold text-lg">{title}</h3>
+            <h3 className="font-semibold text-lg flex-grow">{title}</h3>
+            {isHovered && (
+              <Button variant="ghost" size="icon" className="quick-action">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            )}
           </div>
-          <div className="flex justify-between text-sm text-gray-300">
-            <span>{duration} min</span>
-            <Badge variant="outline" className={`${typeColors[type]} text-white`}>
+          
+          <div className="flex items-center gap-2 mb-3">
+            <Clock className="w-4 h-4 text-gray-400" />
+            <span className="text-sm text-gray-300">{duration} min</span>
+            {calories && (
+              <>
+                <Flame className="w-4 h-4 text-gray-400 ml-2" />
+                <span className="text-sm text-gray-300">{calories} cal</span>
+              </>
+            )}
+          </div>
+
+          <div className="flex justify-between items-center">
+            <Badge variant="outline" className={`${typeColors[type]}`}>
               {type}
             </Badge>
+            {difficulty && (
+              <span className={`difficulty-badge ${difficulty}`} title={`Difficulty: ${difficulty}`}>
+                {difficultyIcons[difficulty]}
+              </span>
+            )}
           </div>
         </div>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Icon className={`w-6 h-6 text-${typeColors[type]}`} />
@@ -83,7 +119,7 @@ export function WorkoutCard({ id, title, duration, type, difficulty, calories }:
           </div>
           <div>
             <p className="text-sm text-gray-400">Type</p>
-            <Badge variant="outline" className={`${typeColors[type]} text-white mt-1`}>
+            <Badge variant="outline" className={`${typeColors[type]} mt-1`}>
               {type}
             </Badge>
           </div>

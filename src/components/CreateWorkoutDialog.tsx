@@ -1,13 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { toast } from "sonner";
+import { useState } from "react";
+import { WorkoutCard } from "./WorkoutCard";
 
 const workoutSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -23,7 +25,34 @@ interface CreateWorkoutDialogProps {
   onWorkoutCreate: (workout: WorkoutForm) => void;
 }
 
+const workoutTemplates = [
+  {
+    title: "Morning Run",
+    type: "cardio",
+    duration: "30",
+    difficulty: "beginner",
+    calories: "300",
+  },
+  {
+    title: "Full Body Workout",
+    type: "strength",
+    duration: "45",
+    difficulty: "intermediate",
+    calories: "400",
+  },
+  {
+    title: "Yoga Flow",
+    type: "flexibility",
+    duration: "60",
+    difficulty: "beginner",
+    calories: "200",
+  },
+] as const;
+
 export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+
   const form = useForm<WorkoutForm>({
     resolver: zodResolver(workoutSchema),
     defaultValues: {
@@ -35,38 +64,76 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
     },
   });
 
-  const onSubmit = (data: WorkoutForm) => {
-    onWorkoutCreate(data);
-    form.reset();
-    toast.success("Workout created successfully!");
+  const onSubmit = async (data: WorkoutForm) => {
+    setIsSubmitting(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      onWorkoutCreate(data);
+      form.reset();
+      toast.success("Workout created successfully!");
+    } catch (error) {
+      toast.error("Failed to create workout");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const applyTemplate = (template: typeof workoutTemplates[number]) => {
+    form.reset(template);
+    setPreviewData({ id: "preview", ...template });
+  };
+
+  const handleFormChange = () => {
+    const values = form.getValues();
+    if (values.title) {
+      setPreviewData({ id: "preview", ...values });
+    }
   };
 
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button className="gap-2 animate-fade-in hover:scale-105 transition-transform">
           <Plus size={16} />
           Add Workout
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Create New Workout</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Morning Run" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-sm font-medium mb-4">Quick Templates</h3>
+            <div className="space-y-2">
+              {workoutTemplates.map((template, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => applyTemplate(template)}
+                >
+                  {template.title}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <Form {...form}>
+            <form onChange={handleFormChange} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Morning Run" {...field} className="transition-all duration-200 focus:scale-105" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
             <FormField
               control={form.control}
               name="type"
@@ -133,9 +200,27 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full">Create Workout</Button>
-          </form>
-        </Form>
+
+              <Button 
+                type="submit" 
+                className="w-full relative overflow-hidden transition-all duration-300 hover:scale-105"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Create Workout"
+                )}
+              </Button>
+            </form>
+          </Form>
+        </div>
+        {previewData && (
+          <div className="mt-6">
+            <h3 className="text-sm font-medium mb-4">Preview</h3>
+            <WorkoutCard {...previewData} />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

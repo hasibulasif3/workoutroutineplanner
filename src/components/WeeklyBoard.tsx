@@ -1,9 +1,12 @@
-import { DndContext, DragEndEvent, closestCenter } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState } from "react";
 import { DayColumn } from "./DayColumn";
 import { CreateWorkoutDialog } from "./CreateWorkoutDialog";
+import { WorkoutCard } from "./WorkoutCard";
 import { v4 as uuidv4 } from "uuid";
+import { Activity, Calendar, Target, Trophy } from "lucide-react";
+import { toast } from "sonner";
 
 type WorkoutType = {
   id: string;
@@ -41,8 +44,24 @@ const initialWorkouts: WeeklyWorkouts = {
 
 export function WeeklyBoard() {
   const [workouts, setWorkouts] = useState<WeeklyWorkouts>(initialWorkouts);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
+
+  const totalWorkouts = Object.values(workouts).flat().length;
+  const activeDays = Object.entries(workouts).filter(([_, dayWorkouts]) => dayWorkouts.length > 0).length;
+  const totalDuration = Object.values(workouts).flat().reduce((acc, workout) => acc + Number(workout.duration), 0);
+  const totalCalories = Object.values(workouts).flat().reduce((acc, workout) => acc + Number(workout.calories || 0), 0);
+
+  const handleDragStart = (event: { active: { id: string } }) => {
+    setActiveId(event.active.id);
+    // Trigger haptic feedback on mobile
+    if (window.navigator.vibrate) {
+      window.navigator.vibrate(50);
+    }
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
     const { active, over } = event;
     
     if (!over) return;
@@ -63,13 +82,16 @@ export function WeeklyBoard() {
           [activeDay]: prev[activeDay].filter(item => item.id !== active.id),
           [overDay]: [...prev[overDay], workout!]
         };
+        // Play drop sound
+        dropSound.play().catch(() => {});
+        toast.success("Workout moved successfully!");
         return newWorkouts;
       });
     }
   };
 
-  const handleWorkoutCreate = (workoutData: WorkoutType) => {
-    const newWorkout: WorkoutType = {
+  const handleWorkoutCreate = (workoutData: any) => {
+    const newWorkout = {
       id: uuidv4(),
       ...workoutData,
     };
@@ -78,18 +100,53 @@ export function WeeklyBoard() {
       ...prev,
       Monday: [...prev.Monday, newWorkout],
     }));
+    toast.success("New workout created!", {
+      description: `${newWorkout.title} added to Monday`,
+    });
   };
 
+  const activeWorkout = activeId ? Object.values(workouts).flat().find(w => w.id === activeId) : null;
+
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+    <div className="p-8 animate-fade-in">
+      <div className="flex flex-col items-center mb-12">
+        <h1 className="text-5xl font-bold title-gradient mb-4">
           Unfit Weekly Planner
         </h1>
+        <p className="text-lg text-gray-400 mb-8">Plan your workouts, track your progress, achieve your goals</p>
+        
+        <div className="stats-bar w-full max-w-4xl">
+          <div className="stats-item">
+            <Activity className="w-6 h-6 text-primary mb-2" />
+            <span className="text-2xl font-bold">{totalWorkouts}</span>
+            <span className="text-sm text-gray-400">Total Workouts</span>
+          </div>
+          <div className="stats-item">
+            <Calendar className="w-6 h-6 text-secondary mb-2" />
+            <span className="text-2xl font-bold">{activeDays}</span>
+            <span className="text-sm text-gray-400">Active Days</span>
+          </div>
+          <div className="stats-item">
+            <Target className="w-6 h-6 text-accent mb-2" />
+            <span className="text-2xl font-bold">{totalDuration}</span>
+            <span className="text-sm text-gray-400">Total Minutes</span>
+          </div>
+          <div className="stats-item">
+            <Trophy className="w-6 h-6 text-yellow-500 mb-2" />
+            <span className="text-2xl font-bold">{totalCalories}</span>
+            <span className="text-sm text-gray-400">Total Calories</span>
+          </div>
+        </div>
+
         <CreateWorkoutDialog onWorkoutCreate={handleWorkoutCreate} />
       </div>
-      <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
-        <div className="grid grid-cols-7 gap-4">
+
+      <DndContext 
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd} 
+        collisionDetection={closestCenter}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
           {Object.entries(workouts).map(([day, dayWorkouts]) => (
             <SortableContext
               key={day}
@@ -100,6 +157,13 @@ export function WeeklyBoard() {
             </SortableContext>
           ))}
         </div>
+        <DragOverlay>
+          {activeId && activeWorkout ? (
+            <div className="opacity-80 rotate-3 scale-105">
+              <WorkoutCard {...activeWorkout} />
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
     </div>
   );
