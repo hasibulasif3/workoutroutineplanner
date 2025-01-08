@@ -7,7 +7,9 @@ interface DayColumnProps {
     id: string;
     title: string;
     duration: string;
-    type: string;
+    type: "strength" | "cardio" | "flexibility";
+    difficulty?: "beginner" | "intermediate" | "advanced";
+    calories?: string;
   }>;
 }
 

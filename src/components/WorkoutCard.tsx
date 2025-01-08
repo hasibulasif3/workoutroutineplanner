@@ -2,7 +2,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Dumbbell, Heart, Running } from "lucide-react";
+import { Dumbbell, Heart, Activity } from "lucide-react";
 
 interface WorkoutCardProps {
   id: string;
@@ -21,7 +21,7 @@ const typeColors = {
 
 const typeIcons = {
   strength: Dumbbell,
-  cardio: Running,
+  cardio: Activity,
   flexibility: Heart,
 };
 
