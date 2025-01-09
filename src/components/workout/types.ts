@@ -6,6 +6,20 @@ export const workoutSchema = z.object({
   duration: z.string().min(1, "Duration is required"),
   difficulty: z.enum(["beginner", "intermediate", "advanced"]),
   calories: z.string().min(1, "Estimated calories is required"),
+  targetMuscles: z.array(z.string()).optional(),
+  equipment: z.array(z.string()).optional(),
+  frequency: z.string().optional(),
+  notes: z.string().optional(),
+  spaceRequired: z.enum(["minimal", "moderate", "spacious"]).optional(),
+  intensity: z.enum(["low", "medium", "high"]).optional(),
 });
 
-export type WorkoutForm = z.infer<typeof workoutSchema>;
+export type WorkoutFormType = z.infer<typeof workoutSchema>;
+
+export interface WorkoutTemplate extends WorkoutFormType {
+  category: string;
+  description: string;
+  benefits: string[];
+  alternatives?: string[];
+  tips?: string[];
+}
