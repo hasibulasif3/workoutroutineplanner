@@ -5,7 +5,7 @@ import { DayColumn } from "./DayColumn";
 import { CreateWorkoutDialog } from "./CreateWorkoutDialog";
 import { WorkoutCard } from "./WorkoutCard";
 import { v4 as uuidv4 } from "uuid";
-import { Activity, Calendar, Download, Mail, Sync, Target, Trophy } from "lucide-react";
+import { Activity, Calendar, Download, Mail, RefreshCw, Target, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 
@@ -187,7 +187,7 @@ export function WeeklyBoard() {
               className="gap-2 hover:scale-105 transition-transform"
               onClick={handleSync}
             >
-              <Sync size={16} />
+              <RefreshCw size={16} />
               Sync
             </Button>
             <Button
