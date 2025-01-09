@@ -5,8 +5,9 @@ import { DayColumn } from "./DayColumn";
 import { CreateWorkoutDialog } from "./CreateWorkoutDialog";
 import { WorkoutCard } from "./WorkoutCard";
 import { v4 as uuidv4 } from "uuid";
-import { Activity, Calendar, Target, Trophy } from "lucide-react";
+import { Activity, Calendar, Download, Mail, Sync, Target, Trophy } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "./ui/button";
 
 type WorkoutType = {
   id: string;
@@ -47,10 +48,37 @@ export function WeeklyBoard() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
 
-  const totalWorkouts = Object.values(workouts).flat().length;
-  const activeDays = Object.entries(workouts).filter(([_, dayWorkouts]) => dayWorkouts.length > 0).length;
-  const totalDuration = Object.values(workouts).flat().reduce((acc, workout) => acc + Number(workout.duration), 0);
-  const totalCalories = Object.values(workouts).flat().reduce((acc, workout) => acc + Number(workout.calories || 0), 0);
+  const handleDownload = () => {
+    const dataStr = JSON.stringify(workouts, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'workout-routine.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('Workout routine downloaded successfully!');
+  };
+
+  const handleSync = () => {
+    // This is a placeholder for actual sync functionality
+    toast.success('Sync feature coming soon!');
+  };
+
+  const handleEmail = () => {
+    const subject = encodeURIComponent('My Weekly Workout Routine');
+    const body = encodeURIComponent(
+      Object.entries(workouts)
+        .map(([day, exercises]) => 
+          `${day}:\n${exercises.map(ex => `- ${ex.title} (${ex.duration} mins)`).join('\n')}`
+        )
+        .join('\n\n')
+    );
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    toast.success('Opening email client...');
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id.toString());
@@ -118,27 +146,61 @@ export function WeeklyBoard() {
         <div className="stats-bar w-full max-w-4xl">
           <div className="stats-item">
             <Activity className="w-6 h-6 text-primary mb-2" />
-            <span className="text-2xl font-bold">{totalWorkouts}</span>
+            <span className="text-2xl font-bold">{Object.values(workouts).flat().length}</span>
             <span className="text-sm text-gray-400">Total Workouts</span>
           </div>
           <div className="stats-item">
             <Calendar className="w-6 h-6 text-secondary mb-2" />
-            <span className="text-2xl font-bold">{activeDays}</span>
+            <span className="text-2xl font-bold">
+              {Object.entries(workouts).filter(([_, dayWorkouts]) => dayWorkouts.length > 0).length}
+            </span>
             <span className="text-sm text-gray-400">Active Days</span>
           </div>
           <div className="stats-item">
             <Target className="w-6 h-6 text-accent mb-2" />
-            <span className="text-2xl font-bold">{totalDuration}</span>
+            <span className="text-2xl font-bold">
+              {Object.values(workouts).flat().reduce((acc, workout) => acc + Number(workout.duration), 0)}
+            </span>
             <span className="text-sm text-gray-400">Total Minutes</span>
           </div>
           <div className="stats-item">
             <Trophy className="w-6 h-6 text-yellow-500 mb-2" />
-            <span className="text-2xl font-bold">{totalCalories}</span>
+            <span className="text-2xl font-bold">
+              {Object.values(workouts).flat().reduce((acc, workout) => acc + Number(workout.calories || 0), 0)}
+            </span>
             <span className="text-sm text-gray-400">Total Calories</span>
           </div>
         </div>
 
-        <CreateWorkoutDialog onWorkoutCreate={handleWorkoutCreate} />
+        <div className="w-full max-w-4xl flex justify-between items-center mt-6">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="gap-2 hover:scale-105 transition-transform"
+              onClick={handleDownload}
+            >
+              <Download size={16} />
+              Download
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2 hover:scale-105 transition-transform"
+              onClick={handleSync}
+            >
+              <Sync size={16} />
+              Sync
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2 hover:scale-105 transition-transform"
+              onClick={handleEmail}
+            >
+              <Mail size={16} />
+              Email
+            </Button>
+          </div>
+          <CreateWorkoutDialog onWorkoutCreate={handleWorkoutCreate} />
+        </div>
       </div>
 
       <DndContext 
