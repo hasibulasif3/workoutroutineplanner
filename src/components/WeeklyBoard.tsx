@@ -11,6 +11,7 @@ import { storageService } from "@/services/storageService";
 import { StatsBar } from "./StatsBar";
 import { ActionBar } from "./ActionBar";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { DragProvider } from "./weekly-board/DragContext";
 
 const initialWorkouts: WeeklyWorkouts = {
   Monday: [
@@ -175,55 +176,57 @@ export function WeeklyBoard() {
 
   return (
     <ErrorBoundary>
-      <div className="p-8 animate-fade-in">
-        <div className="flex flex-col items-center mb-12">
-          <motion.h1 
-            className="text-5xl font-bold title-gradient mb-4"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            Unfit Weekly Planner
-          </motion.h1>
-          
-          <motion.p 
-            className="text-lg text-gray-400 mb-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-          >
-            Plan your workouts, track your progress, achieve your goals
-          </motion.p>
-          
-          <StatsBar workouts={workouts} />
-          <ActionBar workouts={workouts} onWorkoutCreate={handleWorkoutCreate} />
-        </div>
-
-        <DndContext 
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd} 
-          collisionDetection={closestCenter}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-            {Object.entries(workouts).map(([day, dayWorkouts]) => (
-              <SortableContext
-                key={day}
-                items={dayWorkouts.map((w) => w.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <DayColumn day={day} workouts={dayWorkouts} />
-              </SortableContext>
-            ))}
+      <DragProvider>
+        <div className="p-8 animate-fade-in">
+          <div className="flex flex-col items-center mb-12">
+            <motion.h1 
+              className="text-5xl font-bold title-gradient mb-4"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              Unfit Weekly Planner
+            </motion.h1>
+            
+            <motion.p 
+              className="text-lg text-gray-400 mb-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              Plan your workouts, track your progress, achieve your goals
+            </motion.p>
+            
+            <StatsBar workouts={workouts} />
+            <ActionBar workouts={workouts} onWorkoutCreate={handleWorkoutCreate} />
           </div>
-          <DragOverlay>
-            {activeId && activeWorkout ? (
-              <div className="opacity-80 rotate-3 scale-105">
-                <WorkoutCard {...activeWorkout} />
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-      </div>
+
+          <DndContext 
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd} 
+            collisionDetection={closestCenter}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+              {Object.entries(workouts).map(([day, dayWorkouts]) => (
+                <SortableContext
+                  key={day}
+                  items={dayWorkouts.map((w) => w.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <DayColumn day={day} workouts={dayWorkouts} />
+                </SortableContext>
+              ))}
+            </div>
+            <DragOverlay>
+              {activeId && activeWorkout ? (
+                <div className="opacity-80 rotate-3 scale-105">
+                  <WorkoutCard {...activeWorkout} />
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </div>
+      </DragProvider>
     </ErrorBoundary>
   );
 }
