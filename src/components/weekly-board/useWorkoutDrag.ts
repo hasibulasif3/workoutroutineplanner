@@ -34,35 +34,32 @@ export function useWorkoutDrag(
     if (activeDay === overDay) return;
 
     if (activeDay) {
-      setWorkouts(prev => {
-        const workout = prev[activeDay].find(item => item.id === active.id.toString());
-        if (!workout) return prev;
+      const newWorkouts: WeeklyWorkouts = { ...workouts };
+      const workout = workouts[activeDay].find(item => item.id === active.id.toString());
+      
+      if (!workout) return;
 
-        const updatedWorkout: Workout = {
-          ...workout,
-          lastModified: new Date()
-        };
+      const updatedWorkout: Workout = {
+        ...workout,
+        lastModified: new Date()
+      };
 
-        const newWorkouts = {
-          ...prev,
-          [activeDay]: prev[activeDay].filter(item => item.id !== active.id.toString()),
-          [overDay]: [...prev[overDay], updatedWorkout]
-        };
-
-        // Add to undo stack
-        setUndoStack(prev => [...prev, {
-          sourceDay: activeDay,
-          targetDay: overDay,
-          workout: updatedWorkout,
-          timestamp: new Date()
-        }]);
-        
-        dropSound.play().catch(() => {});
-        toast.success("Workout moved successfully!", {
-          description: `Moved from ${activeDay} to ${overDay}`,
-        });
-        
-        return newWorkouts;
+      newWorkouts[activeDay] = workouts[activeDay].filter(item => item.id !== active.id.toString());
+      newWorkouts[overDay] = [...workouts[overDay], updatedWorkout];
+      
+      setWorkouts(newWorkouts);
+      
+      // Add to undo stack
+      setUndoStack(prev => [...prev, {
+        sourceDay: activeDay,
+        targetDay: overDay,
+        workout: updatedWorkout,
+        timestamp: new Date()
+      }]);
+      
+      dropSound.play().catch(() => {});
+      toast.success("Workout moved successfully!", {
+        description: `Moved from ${activeDay} to ${overDay}`,
       });
     }
   };
@@ -71,12 +68,11 @@ export function useWorkoutDrag(
     const lastMove = undoStack[undoStack.length - 1];
     if (!lastMove) return;
 
-    setWorkouts(prev => ({
-      ...prev,
-      [lastMove.sourceDay]: [...prev[lastMove.sourceDay], lastMove.workout],
-      [lastMove.targetDay]: prev[lastMove.targetDay].filter(w => w.id !== lastMove.workout.id)
-    }));
-
+    const newWorkouts: WeeklyWorkouts = { ...workouts };
+    newWorkouts[lastMove.sourceDay] = [...workouts[lastMove.sourceDay], lastMove.workout];
+    newWorkouts[lastMove.targetDay] = workouts[lastMove.targetDay].filter(w => w.id !== lastMove.workout.id);
+    
+    setWorkouts(newWorkouts);
     setUndoStack(prev => prev.slice(0, -1));
     toast.success("Move undone successfully!");
   };
