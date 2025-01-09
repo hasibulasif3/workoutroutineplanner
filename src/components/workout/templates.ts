@@ -1,0 +1,148 @@
+export const workoutTemplates = [
+  // Cardio Templates
+  {
+    title: "HIIT Interval Training",
+    type: "cardio",
+    duration: "30",
+    difficulty: "advanced",
+    calories: "400",
+  },
+  {
+    title: "Cycling Session",
+    type: "cardio",
+    duration: "45",
+    difficulty: "intermediate",
+    calories: "350",
+  },
+  {
+    title: "Swimming Workout",
+    type: "cardio",
+    duration: "40",
+    difficulty: "intermediate",
+    calories: "300",
+  },
+  {
+    title: "Jump Rope Circuit",
+    type: "cardio",
+    duration: "20",
+    difficulty: "beginner",
+    calories: "250",
+  },
+  {
+    title: "Stair Climbing",
+    type: "cardio",
+    duration: "25",
+    difficulty: "intermediate",
+    calories: "280",
+  },
+  // Strength Templates
+  {
+    title: "Upper Body Focus",
+    type: "strength",
+    duration: "50",
+    difficulty: "intermediate",
+    calories: "320",
+  },
+  {
+    title: "Lower Body Power",
+    type: "strength",
+    duration: "45",
+    difficulty: "advanced",
+    calories: "400",
+  },
+  {
+    title: "Core Strengthening",
+    type: "strength",
+    duration: "30",
+    difficulty: "beginner",
+    calories: "200",
+  },
+  {
+    title: "Bodyweight Circuit",
+    type: "strength",
+    duration: "40",
+    difficulty: "beginner",
+    calories: "280",
+  },
+  {
+    title: "Resistance Band Workout",
+    type: "strength",
+    duration: "35",
+    difficulty: "intermediate",
+    calories: "250",
+  },
+  // Flexibility Templates
+  {
+    title: "Dynamic Stretching",
+    type: "flexibility",
+    duration: "25",
+    difficulty: "beginner",
+    calories: "150",
+  },
+  {
+    title: "Pilates Flow",
+    type: "flexibility",
+    duration: "45",
+    difficulty: "intermediate",
+    calories: "200",
+  },
+  {
+    title: "Mobility Work",
+    type: "flexibility",
+    duration: "30",
+    difficulty: "beginner",
+    calories: "180",
+  },
+  {
+    title: "Recovery Session",
+    type: "flexibility",
+    duration: "40",
+    difficulty: "beginner",
+    calories: "160",
+  },
+  {
+    title: "Balance Training",
+    type: "flexibility",
+    duration: "35",
+    difficulty: "intermediate",
+    calories: "190",
+  },
+  // Specialized Templates
+  {
+    title: "High-Intensity Cardio",
+    type: "cardio",
+    duration: "35",
+    difficulty: "advanced",
+    calories: "450",
+  },
+  {
+    title: "Endurance Building",
+    type: "cardio",
+    duration: "60",
+    difficulty: "advanced",
+    calories: "500",
+  },
+  {
+    title: "Weight Loss Focus",
+    type: "strength",
+    duration: "45",
+    difficulty: "intermediate",
+    calories: "400",
+  },
+  {
+    title: "Muscle Gain",
+    type: "strength",
+    duration: "50",
+    difficulty: "advanced",
+    calories: "350",
+  },
+  {
+    title: "Active Recovery",
+    type: "flexibility",
+    duration: "30",
+    difficulty: "beginner",
+    calories: "150",
+  },
+] as const;
+
+export type WorkoutTemplate = typeof workoutTemplates[number];
