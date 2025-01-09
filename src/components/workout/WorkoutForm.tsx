@@ -4,11 +4,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
-import { WorkoutForm } from "./types";
+import type { WorkoutForm as WorkoutFormType } from "./types";
 
 interface WorkoutFormProps {
-  form: UseFormReturn<WorkoutForm>;
-  onSubmit: (data: WorkoutForm) => void;
+  form: UseFormReturn<WorkoutFormType>;
+  onSubmit: (data: WorkoutFormType) => void;
   isSubmitting: boolean;
 }
 
