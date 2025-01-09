@@ -3,6 +3,13 @@ import { Input } from "@/components/ui/input";
 import { WorkoutTemplate } from "./types";
 import { TemplateCategory } from "./TemplateCategory";
 import { useState } from "react";
+import { Dumbbell, Activity, Heart } from "lucide-react";
+
+export const typeIcons = {
+  strength: Dumbbell,
+  cardio: Activity,
+  flexibility: Heart,
+} as const;
 
 interface TemplateListProps {
   templates: WorkoutTemplate[];
@@ -19,12 +26,13 @@ export function TemplateList({ templates, onTemplateSelect }: TemplateListProps)
   );
 
   const templatesByType = filteredTemplates.reduce((acc, template) => {
-    if (!acc[template.type]) {
-      acc[template.type] = [];
+    const type = template.type as keyof typeof typeIcons;
+    if (!acc[type]) {
+      acc[type] = [];
     }
-    acc[template.type].push(template);
+    acc[type].push(template);
     return acc;
-  }, {} as Record<string, WorkoutTemplate[]>);
+  }, {} as Record<keyof typeof typeIcons, WorkoutTemplate[]>);
 
   return (
     <div className="space-y-4">

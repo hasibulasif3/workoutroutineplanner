@@ -6,20 +6,20 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useState } from "react";
 import { WorkoutCard } from "./WorkoutCard";
-import { workoutSchema, WorkoutForm } from "./workout/types";
-import { WorkoutForm as WorkoutFormComponent } from "./workout/WorkoutForm";
+import { workoutSchema, WorkoutFormType } from "./workout/types";
+import { WorkoutForm } from "./workout/WorkoutForm";
 import { TemplateList } from "./workout/TemplateList";
 import { workoutTemplates } from "./workout/templates";
 
 interface CreateWorkoutDialogProps {
-  onWorkoutCreate: (workout: WorkoutForm) => void;
+  onWorkoutCreate: (workout: WorkoutFormType) => void;
 }
 
 export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
 
-  const form = useForm<WorkoutForm>({
+  const form = useForm<WorkoutFormType>({
     resolver: zodResolver(workoutSchema),
     defaultValues: {
       title: "",
@@ -30,7 +30,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
     },
   });
 
-  const onSubmit = async (data: WorkoutForm) => {
+  const onSubmit = async (data: WorkoutFormType) => {
     setIsSubmitting(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
@@ -74,7 +74,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
             <TemplateList templates={workoutTemplates} onTemplateSelect={applyTemplate} />
           </div>
           <div>
-            <WorkoutFormComponent
+            <WorkoutForm
               form={form}
               onSubmit={onSubmit}
               isSubmitting={isSubmitting}

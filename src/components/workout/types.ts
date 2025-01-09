@@ -15,6 +15,7 @@ export const workoutSchema = z.object({
 });
 
 export type WorkoutFormType = z.infer<typeof workoutSchema>;
+export type WorkoutForm = WorkoutFormType; // Add this line to maintain compatibility
 
 export interface WorkoutTemplate extends WorkoutFormType {
   category: string;
