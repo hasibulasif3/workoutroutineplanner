@@ -9,6 +9,11 @@ import {
   Clock, 
   Flame,
   MoreVertical,
+  Edit,
+  Copy,
+  Trash,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
@@ -21,6 +26,7 @@ import {
 } from "../ui/dropdown-menu";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { Progress } from "../ui/progress";
 
 interface WorkoutCardProps {
   id: string;
@@ -45,6 +51,12 @@ const typeIcons = {
   flexibility: Heart,
 };
 
+const difficultyProgress = {
+  beginner: 33,
+  intermediate: 66,
+  advanced: 100,
+};
+
 export function WorkoutCard({ 
   id, 
   title, 
@@ -56,6 +68,7 @@ export function WorkoutCard({
   isLast 
 }: WorkoutCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   
   const {
@@ -92,6 +105,11 @@ export function WorkoutCard({
     setIsExpanded(!isExpanded);
   };
 
+  const handleEdit = () => {
+    setIsEditing(true);
+    toast.success("Editing mode enabled");
+  };
+
   return (
     <motion.div
       ref={setNodeRef}
@@ -99,8 +117,11 @@ export function WorkoutCard({
       {...attributes}
       className={cn(
         "workout-card group relative",
-        isDragging && "dragging",
-        isExpanded && "expanded"
+        isDragging && "dragging shadow-2xl",
+        isExpanded && "expanded",
+        type === "strength" && "border-l-4 border-primary",
+        type === "cardio" && "border-l-4 border-secondary",
+        type === "flexibility" && "border-l-4 border-accent"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -110,9 +131,12 @@ export function WorkoutCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.2 }}
+      role="button"
+      tabIndex={0}
+      aria-expanded={isExpanded}
     >
       <div className="flex items-center gap-2 mb-3">
-        <DragHandle {...listeners} />
+        <DragHandle listeners={listeners} />
         <Icon className={`w-5 h-5 text-${typeColors[type]}`} />
         <h3 className="font-semibold text-lg flex-grow">{title}</h3>
         
@@ -131,12 +155,26 @@ export function WorkoutCard({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => setIsExpanded(!isExpanded)}>
+              {isExpanded ? (
+                <ChevronUp className="w-4 h-4 mr-2" />
+              ) : (
+                <ChevronDown className="w-4 h-4 mr-2" />
+              )}
               {isExpanded ? "Collapse" : "Expand"}
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleEdit}>
+              <Edit className="w-4 h-4 mr-2" />
+              Edit
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => toast.success("Workout duplicated")}>
+              <Copy className="w-4 h-4 mr-2" />
               Duplicate
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => toast.success("Workout deleted")} className="text-destructive">
+            <DropdownMenuItem 
+              onClick={() => toast.success("Workout deleted")} 
+              className="text-destructive"
+            >
+              <Trash className="w-4 h-4 mr-2" />
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -151,11 +189,23 @@ export function WorkoutCard({
             exit={{ height: 0, opacity: 0 }}
             className="space-y-4 mt-4"
           >
-            {/* Additional workout details */}
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Additional details and progress indicators will be shown here
-              </p>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Difficulty</span>
+                <span className="text-sm font-medium capitalize">{difficulty}</span>
+              </div>
+              <Progress value={difficultyProgress[difficulty || 'beginner']} />
+              
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="space-y-1">
+                  <span className="text-sm text-muted-foreground">Duration</span>
+                  <p className="font-medium">{duration} min</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-sm text-muted-foreground">Calories</span>
+                  <p className="font-medium">{calories || 'N/A'}</p>
+                </div>
+              </div>
             </div>
           </motion.div>
         ) : (

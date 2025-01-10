@@ -33,14 +33,6 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
   const isValidDropZone = !dragState.sourceDay || dragState.sourceDay !== day;
   const isCollapsed = isColumnCollapsed(day);
 
-  // Calculate total duration and intensity
-  const totalDuration = workouts.reduce((sum, w) => sum + parseInt(w.duration), 0);
-  const averageIntensity = workouts.length ? 
-    workouts.reduce((sum, w) => {
-      const intensityMap = { beginner: 1, intermediate: 2, advanced: 3 };
-      return sum + (intensityMap[w.difficulty || 'beginner'] || 1);
-    }, 0) / workouts.length : 0;
-
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-4 px-2">
@@ -60,7 +52,7 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
             <>
               <span>{workouts.length} workouts</span>
               <span>•</span>
-              <span>{totalDuration} min</span>
+              <span>{workouts.reduce((sum, w) => sum + parseInt(w.duration), 0)} min</span>
             </>
           )}
         </div>
@@ -71,7 +63,7 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
           <motion.div 
             ref={setNodeRef} 
             className={cn(
-              "day-column space-y-4",
+              "day-column space-y-4 relative",
               isEmpty && "empty",
               isOver && isValidDropZone && "dragging-over"
             )}
@@ -79,13 +71,17 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            style={{
-              touchAction: dragState.isDragging ? "none" : "auto",
-            }}
-            role="region"
-            aria-label={`${day} workout column`}
-            tabIndex={0}
           >
+            {isOver && isValidDropZone && (
+              <motion.div
+                className="absolute inset-0 border-2 border-dashed border-primary rounded-lg pointer-events-none"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+              />
+            )}
+
             {isEmpty ? (
               <motion.div 
                 className="flex flex-col items-center justify-center h-full text-gray-400"
@@ -110,15 +106,6 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
                   />
                 ))}
               </motion.div>
-            )}
-
-            {!isEmpty && (
-              <div className="mt-4 pt-4 border-t border-border">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Total Duration: {totalDuration}min</span>
-                  <span>Intensity: {averageIntensity.toFixed(1)}/3</span>
-                </div>
-              </div>
             )}
           </motion.div>
         )}
