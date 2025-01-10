@@ -1,9 +1,9 @@
-import { ColumnStats } from './types';
+import type { ColumnStats as ColumnStatsType } from './types';
 import { Progress } from '@/components/ui/progress';
 import { Clock, Activity, CheckCircle2, Users } from 'lucide-react';
 
 interface ColumnStatsProps {
-  stats: ColumnStats;
+  stats: ColumnStatsType;
 }
 
 export function ColumnStats({ stats }: ColumnStatsProps) {
