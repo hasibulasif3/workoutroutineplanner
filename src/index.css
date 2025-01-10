@@ -69,6 +69,16 @@
   transform: scale(1.02);
 }
 
+.workout-card.dragging {
+  @apply scale-105 rotate-2 shadow-2xl opacity-90;
+  animation: card-pulse 1s infinite;
+}
+
+.workout-card.touch-feedback {
+  @apply scale-95 opacity-90;
+  transition: all 0.2s ease;
+}
+
 .day-column {
   @apply glass-card p-4 rounded-lg min-h-[500px] transition-all duration-300;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -84,8 +94,22 @@
 }
 
 .day-column.dragging-over {
-  @apply bg-white/20 border-primary;
-  transform: scale(1.02);
+  @apply bg-white/20 border-primary scale-[1.02] shadow-2xl;
+  animation: column-pulse 1s infinite;
+}
+
+.day-column.collapsed {
+  @apply min-h-0 h-auto;
+}
+
+@keyframes card-pulse {
+  0%, 100% { transform: scale(1.05) rotate(2deg); }
+  50% { transform: scale(1.07) rotate(2deg); }
+}
+
+@keyframes column-pulse {
+  0%, 100% { border-color: rgba(255, 255, 255, 0.3); }
+  50% { border-color: var(--primary); }
 }
 
 .gradient-bg {
