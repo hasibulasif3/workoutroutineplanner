@@ -27,6 +27,11 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       duration: "",
       difficulty: "beginner",
       calories: "",
+      warmupDuration: "",
+      cooldownDuration: "",
+      restBetweenExercises: "",
+      exercises: [],
+      notes: "",
     },
   });
 
@@ -64,7 +69,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
           Add Workout
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[800px]">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Workout</DialogTitle>
         </DialogHeader>
