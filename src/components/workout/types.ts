@@ -37,6 +37,9 @@ export interface WorkoutTemplate extends WorkoutFormType {
   benefits: string[];
   alternatives?: string[];
   tips?: string[];
+  frequency: string;
+  intensity: string;
+  spaceRequired?: string;
 }
 
 export const muscleGroups = [
