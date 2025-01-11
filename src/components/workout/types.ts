@@ -10,6 +10,9 @@ export const exerciseSchema = z.object({
   notes: z.string().optional(),
   weight: z.string().optional(),
   rpe: z.string().optional(),
+  tempo: z.string().optional(),
+  superset: z.boolean().optional(),
+  dropset: z.boolean().optional(),
 });
 
 export const workoutSchema = z.object({
@@ -26,6 +29,8 @@ export const workoutSchema = z.object({
   equipment: z.array(z.string()).optional(),
   notes: z.string().optional(),
   tags: z.array(z.string()).optional(),
+  intensity: z.string().optional(),
+  progressionNotes: z.string().optional(),
 });
 
 export type Exercise = z.infer<typeof exerciseSchema>;

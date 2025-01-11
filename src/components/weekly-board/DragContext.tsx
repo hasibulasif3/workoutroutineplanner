@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
 import { DragState, ColumnPreferences } from "./types";
 import { toast } from "sonner";
+import { debounce } from "lodash";
 
 interface DragContextType {
   dragState: DragState;
@@ -21,8 +22,9 @@ interface DragContextType {
 
 const DragContext = createContext<DragContextType | undefined>(undefined);
 
-const DRAG_THRESHOLD = 5;
-const TOUCH_TIMEOUT = 300;
+const DRAG_THRESHOLD = 10; // Increased threshold for better touch detection
+const TOUCH_TIMEOUT = 200; // Reduced timeout for more responsive touch
+const ANIMATION_DURATION = 150; // Optimized animation duration
 
 export function DragProvider({ children }: { children: React.ReactNode }) {
   const [dragState, setDragState] = useState<DragState>({
@@ -35,34 +37,58 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     touchPoint: null,
   });
 
-  const [columnPreferences, setColumnPreferences] = useState<ColumnPreferences>({
-    collapsed: {},
-    width: {},
-    order: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-    zoom: 1,
+  const [columnPreferences, setColumnPreferences] = useState<ColumnPreferences>(() => {
+    const saved = localStorage.getItem('columnPreferences');
+    return saved ? JSON.parse(saved) : {
+      collapsed: {},
+      width: {},
+      order: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      zoom: 1,
+    };
   });
 
   const touchTimeoutRef = useRef<number>();
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
+  const dragStartPositionRef = useRef<{ x: number; y: number } | null>(null);
+
+  // Optimized state persistence
+  const persistColumnPreferences = useCallback(
+    debounce((prefs: ColumnPreferences) => {
+      try {
+        localStorage.setItem('columnPreferences', JSON.stringify(prefs));
+      } catch (error) {
+        console.error('Error saving preferences:', error);
+      }
+    }, 500),
+    []
+  );
+
+  useEffect(() => {
+    persistColumnPreferences(columnPreferences);
+  }, [columnPreferences, persistColumnPreferences]);
 
   const touchStartHandler = useCallback((e: TouchEvent) => {
     const touch = e.touches[0];
     lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+    dragStartPositionRef.current = { x: touch.clientX, y: touch.clientY };
     
+    window.clearTimeout(touchTimeoutRef.current);
     touchTimeoutRef.current = window.setTimeout(() => {
-      setDragState(prev => ({ ...prev, isDragging: true }));
-      if (window.navigator.vibrate) {
-        window.navigator.vibrate(50);
+      if (dragStartPositionRef.current) {
+        setDragState(prev => ({ ...prev, isDragging: true }));
+        if (window.navigator.vibrate) {
+          window.navigator.vibrate([50]);
+        }
       }
     }, TOUCH_TIMEOUT);
   }, []);
 
   const touchMoveHandler = useCallback((e: TouchEvent) => {
-    if (!lastTouchRef.current) return;
+    if (!lastTouchRef.current || !dragStartPositionRef.current) return;
 
     const touch = e.touches[0];
-    const deltaX = touch.clientX - lastTouchRef.current.x;
-    const deltaY = touch.clientY - lastTouchRef.current.y;
+    const deltaX = touch.clientX - dragStartPositionRef.current.x;
+    const deltaY = touch.clientY - dragStartPositionRef.current.y;
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
     if (distance > DRAG_THRESHOLD) {
@@ -72,12 +98,18 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
         dragDistance: distance,
         touchPoint: { x: touch.clientX, y: touch.clientY },
       }));
+
+      // Prevent scrolling while dragging
+      if (prev.isDragging) {
+        e.preventDefault();
+      }
     }
   }, []);
 
   const touchEndHandler = useCallback(() => {
     window.clearTimeout(touchTimeoutRef.current);
     lastTouchRef.current = null;
+    dragStartPositionRef.current = null;
     setDragState(prev => ({
       ...prev,
       isDragging: false,
@@ -85,35 +117,24 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  useEffect(() => {
-    const savedPrefs = localStorage.getItem('columnPreferences');
-    if (savedPrefs) {
-      try {
-        setColumnPreferences(JSON.parse(savedPrefs));
-      } catch (error) {
-        console.error('Error loading column preferences:', error);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('columnPreferences', JSON.stringify(columnPreferences));
-  }, [columnPreferences]);
-
   const isColumnCollapsed = useCallback(
     (day: string) => !!columnPreferences.collapsed[day],
     [columnPreferences.collapsed]
   );
 
   const toggleColumnCollapse = useCallback((day: string) => {
-    setColumnPreferences(prev => ({
-      ...prev,
-      collapsed: {
-        ...prev.collapsed,
-        [day]: !prev.collapsed[day],
-      }
-    }));
-  }, []);
+    setColumnPreferences(prev => {
+      const newPrefs = {
+        ...prev,
+        collapsed: {
+          ...prev.collapsed,
+          [day]: !prev.collapsed[day],
+        }
+      };
+      persistColumnPreferences(newPrefs);
+      return newPrefs;
+    });
+  }, [persistColumnPreferences]);
 
   const collapseAllColumns = useCallback(() => {
     setColumnPreferences(prev => ({
