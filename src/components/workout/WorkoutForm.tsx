@@ -2,8 +2,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, Clock, Dumbbell, X } from "lucide-react";
-import { UseFormReturn } from "react-hook-form";
+import { Loader2, Plus, X } from "lucide-react";
+import { UseFormReturn, useForm } from "react-hook-form";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
@@ -23,11 +23,26 @@ interface WorkoutFormProps {
 export function WorkoutForm({ form, onSubmit, isSubmitting }: WorkoutFormProps) {
   const [activeTab, setActiveTab] = useState("basic");
   const [isAddingExercise, setIsAddingExercise] = useState(false);
+  
+  const exerciseForm = useForm<Exercise>({
+    defaultValues: {
+      name: "",
+      sets: "",
+      reps: "",
+      restPeriod: "",
+      equipment: [],
+      targetMuscles: [],
+      notes: "",
+      weight: "",
+      rpe: "",
+    }
+  });
 
   const handleExerciseSubmit = (exercise: Exercise) => {
     const currentExercises = form.getValues("exercises") || [];
     form.setValue("exercises", [...currentExercises, exercise]);
     setIsAddingExercise(false);
+    exerciseForm.reset();
   };
 
   const removeExercise = (index: number) => {
@@ -124,6 +139,7 @@ export function WorkoutForm({ form, onSubmit, isSubmitting }: WorkoutFormProps) 
                     <DialogTitle>Add Exercise</DialogTitle>
                   </DialogHeader>
                   <ExerciseForm
+                    form={exerciseForm}
                     onSubmit={handleExerciseSubmit}
                     onCancel={() => setIsAddingExercise(false)}
                   />

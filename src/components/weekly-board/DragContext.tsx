@@ -93,18 +93,18 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
 
     if (distance > DRAG_THRESHOLD) {
       window.clearTimeout(touchTimeoutRef.current);
-      setDragState(prev => ({
-        ...prev,
+      setDragState(prevState => ({
+        ...prevState,
         dragDistance: distance,
         touchPoint: { x: touch.clientX, y: touch.clientY },
       }));
 
       // Prevent scrolling while dragging
-      if (prev.isDragging) {
+      if (dragState.isDragging) {
         e.preventDefault();
       }
     }
-  }, []);
+  }, [dragState.isDragging]);
 
   const touchEndHandler = useCallback(() => {
     window.clearTimeout(touchTimeoutRef.current);
