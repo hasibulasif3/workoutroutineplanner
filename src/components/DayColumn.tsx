@@ -47,15 +47,6 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
           </Button>
           <h2 className="text-lg md:text-xl font-bold">{day}</h2>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {!isEmpty && (
-            <>
-              <span>{workouts.length} workouts</span>
-              <span>•</span>
-              <span>{workouts.reduce((sum, w) => sum + parseInt(w.duration), 0)} min</span>
-            </>
-          )}
-        </div>
       </div>
 
       <AnimatePresence>
