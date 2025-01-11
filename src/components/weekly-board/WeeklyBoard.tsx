@@ -11,6 +11,7 @@ import { WeeklyBoardHeader } from "./WeeklyBoardHeader";
 import { DragProvider } from "./DragContext";
 import { useWorkoutDrag } from "./useWorkoutDrag";
 import { initialWorkouts } from "./initialData";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 export function WeeklyBoard() {
   const [workouts, setWorkouts] = useState<WeeklyWorkouts>(initialWorkouts);
@@ -72,41 +73,46 @@ export function WeeklyBoard() {
             onWorkoutCreate={handleWorkoutCreate} 
           />
 
-          <div className="overflow-x-auto pb-4">
-            <DndContext 
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd} 
-              collisionDetection={closestCenter}
-            >
-              <div className="grid grid-cols-1 md:grid-cols-7 gap-4 min-w-[768px]">
-                {Object.entries(workouts).map(([day, dayWorkouts]) => (
-                  <SortableContext
-                    key={day}
-                    items={dayWorkouts.map((w) => w.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <DayColumn day={day} workouts={dayWorkouts} />
-                  </SortableContext>
-                ))}
-              </div>
-              <DragOverlay>
-                {activeId && activeWorkout ? (
-                  <div className="opacity-80 rotate-3 scale-105 pointer-events-none">
-                    <WorkoutCard {...activeWorkout} />
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          </div>
+          <ScrollArea className="w-full rounded-lg border">
+            <div className="p-4">
+              <DndContext 
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd} 
+                collisionDetection={closestCenter}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+                  {Object.entries(workouts).map(([day, dayWorkouts]) => (
+                    <SortableContext
+                      key={day}
+                      items={dayWorkouts.map((w) => w.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <DayColumn day={day} workouts={dayWorkouts} />
+                    </SortableContext>
+                  ))}
+                </div>
+                <DragOverlay>
+                  {activeId && activeWorkout ? (
+                    <div className="opacity-90 rotate-2 scale-105 pointer-events-none">
+                      <WorkoutCard {...activeWorkout} />
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
 
           {hasUndo && (
-            <button
+            <motion.button
               onClick={undoLastMove}
-              className="fixed bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-lg hover:opacity-90 transition-opacity"
-              aria-label="Undo last move"
+              className="fixed bottom-4 right-4 bg-accent text-accent-foreground px-4 py-2 rounded-lg shadow-lg hover:opacity-90 transition-all focus:ring-2 focus:ring-accent focus:ring-offset-2"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
             >
               Undo
-            </button>
+            </motion.button>
           )}
         </div>
       </DragProvider>

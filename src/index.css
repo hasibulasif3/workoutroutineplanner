@@ -37,12 +37,6 @@
   }
 }
 
-@keyframes gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
 @keyframes float {
   0% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
@@ -50,43 +44,40 @@
 }
 
 .glass-card {
-  @apply backdrop-blur-md bg-white/10 border border-white/20 shadow-xl;
+  @apply backdrop-blur-md bg-white/10 border border-white/20;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .workout-card {
-  @apply glass-card p-4 rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer;
+  @apply glass-card p-6 rounded-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer;
   transform-style: preserve-3d;
   perspective: 1000px;
-  touch-action: none;
 }
 
 .workout-card:hover {
-  transform: translateY(-5px) rotateX(2deg) rotateY(2deg);
+  @apply shadow-xl ring-1 ring-accent/20;
 }
 
-.workout-card:active {
-  transform: scale(1.02);
+.workout-card:focus-visible {
+  @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-background;
 }
 
 .workout-card.dragging {
-  @apply scale-105 rotate-2 shadow-2xl opacity-90;
-  animation: card-pulse 1s infinite;
+  @apply scale-105 rotate-2 shadow-2xl opacity-90 z-50;
 }
 
-.workout-card.touch-feedback {
-  @apply scale-95 opacity-90;
-  transition: all 0.2s ease;
+.workout-card .drag-handle {
+  @apply opacity-0 group-hover:opacity-100 transition-opacity duration-200;
 }
 
 .day-column {
-  @apply glass-card p-4 rounded-lg min-h-[500px] transition-all duration-300;
+  @apply glass-card rounded-lg transition-all duration-300;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .day-column:hover {
-  @apply shadow-2xl;
-  border-color: rgba(255, 255, 255, 0.3);
+  @apply shadow-lg;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .day-column.empty {
@@ -94,64 +85,39 @@
 }
 
 .day-column.dragging-over {
-  @apply bg-white/20 border-primary scale-[1.02] shadow-2xl;
-  animation: column-pulse 1s infinite;
-}
-
-.day-column.collapsed {
-  @apply min-h-0 h-auto;
-}
-
-@keyframes card-pulse {
-  0%, 100% { transform: scale(1.05) rotate(2deg); }
-  50% { transform: scale(1.07) rotate(2deg); }
-}
-
-@keyframes column-pulse {
-  0%, 100% { border-color: rgba(255, 255, 255, 0.3); }
-  50% { border-color: var(--primary); }
-}
-
-.gradient-bg {
-  background: linear-gradient(-45deg, rgba(155,135,245,0.2), rgba(14,165,233,0.2), rgba(236,72,153,0.2));
-  background-size: 400% 400%;
-  animation: gradient 15s ease infinite;
-}
-
-.title-gradient {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-accent;
-  animation: gradient 3s ease infinite;
-}
-
-.stats-bar {
-  @apply flex justify-around items-center p-4 mb-8 glass-card rounded-lg;
-}
-
-.stats-item {
-  @apply flex flex-col items-center;
-}
-
-.quick-action {
-  @apply opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute right-2 top-2;
+  @apply bg-accent/20 border-accent/40 scale-[1.02] shadow-xl;
 }
 
 .difficulty-badge {
-  @apply text-xs px-2 py-1 rounded-full;
+  @apply text-xs px-3 py-1.5 rounded-full font-medium;
 }
 
-.difficulty-badge.beginner { @apply bg-green-500/20 text-green-300; }
-.difficulty-badge.intermediate { @apply bg-yellow-500/20 text-yellow-300; }
-.difficulty-badge.advanced { @apply bg-red-500/20 text-red-300; }
-
-@media (prefers-reduced-motion: reduce) {
-  .gradient-bg, .title-gradient {
-    animation: none;
-  }
+.difficulty-badge.beginner { 
+  @apply bg-green-500/20 text-green-300 ring-1 ring-green-500/30; 
+}
+.difficulty-badge.intermediate { 
+  @apply bg-yellow-500/20 text-yellow-300 ring-1 ring-yellow-500/30; 
+}
+.difficulty-badge.advanced { 
+  @apply bg-red-500/20 text-red-300 ring-1 ring-red-500/30; 
 }
 
-/* Touch device optimizations */
+.type-badge {
+  @apply text-xs px-3 py-1.5 rounded-full font-medium transition-colors;
+}
+
+.type-badge.strength { 
+  @apply bg-primary/20 text-primary ring-1 ring-primary/30; 
+}
+.type-badge.cardio { 
+  @apply bg-secondary/20 text-secondary ring-1 ring-secondary/30; 
+}
+.type-badge.flexibility { 
+  @apply bg-accent/20 text-accent ring-1 ring-accent/30; 
+}
+
 @media (hover: none) {
-  .quick-action {
+  .workout-card .drag-handle {
     @apply opacity-100;
   }
   
@@ -160,31 +126,9 @@
   }
 }
 
-/* Drag feedback */
-.dragging {
-  @apply scale-105 rotate-2 shadow-2xl;
-  z-index: 50;
-}
-
-/* Column collapse transition */
-.column-collapse-enter {
-  max-height: 0;
-  opacity: 0;
-}
-
-.column-collapse-enter-active {
-  max-height: 1000px;
-  opacity: 1;
-  transition: all 300ms ease-in-out;
-}
-
-.column-collapse-exit {
-  max-height: 1000px;
-  opacity: 1;
-}
-
-.column-collapse-exit-active {
-  max-height: 0;
-  opacity: 0;
-  transition: all 300ms ease-in-out;
+@media (prefers-reduced-motion: reduce) {
+  .workout-card,
+  .day-column {
+    @apply transition-none transform-none;
+  }
 }
