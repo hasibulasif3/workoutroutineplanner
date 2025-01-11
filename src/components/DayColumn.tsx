@@ -34,36 +34,27 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
   const isCollapsed = isColumnCollapsed(day);
 
   return (
-    <div className="w-full min-w-[280px] md:min-w-0">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-3 border-b border-border">
-        <div className="flex items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleColumnCollapse(day)}
-              className="p-1 h-auto hover:bg-accent/20 focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              {isCollapsed ? 
-                <ChevronRight className="w-5 h-5 text-muted-foreground" /> : 
-                <ChevronDown className="w-5 h-5 text-muted-foreground" />
-              }
-            </Button>
-            <h2 className="text-lg font-semibold tracking-tight">{day}</h2>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {!isEmpty && (
-              <>
-                <span className="font-medium">{workouts.length}</span>
-                <span className="text-xs">workouts</span>
-                <span>•</span>
-                <span className="font-medium">
-                  {workouts.reduce((sum, w) => sum + parseInt(w.duration), 0)}
-                </span>
-                <span className="text-xs">min</span>
-              </>
-            )}
-          </div>
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-4 px-2">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => toggleColumnCollapse(day)}
+            className="p-1 h-auto"
+          >
+            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </Button>
+          <h2 className="text-lg md:text-xl font-bold">{day}</h2>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {!isEmpty && (
+            <>
+              <span>{workouts.length} workouts</span>
+              <span>•</span>
+              <span>{workouts.reduce((sum, w) => sum + parseInt(w.duration), 0)} min</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -72,31 +63,34 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
           <motion.div 
             ref={setNodeRef} 
             className={cn(
-              "p-4 space-y-4 min-h-[calc(100vh-12rem)] relative transition-all duration-200",
-              isEmpty && "empty bg-accent/5 border-2 border-dashed border-accent/20 rounded-lg",
-              isOver && isValidDropZone && "bg-accent/10 border-accent/40"
+              "day-column space-y-4 relative",
+              isEmpty && "empty",
+              isOver && isValidDropZone && "dragging-over"
             )}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            {isEmpty ? (
-              <motion.div 
-                className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground"
+            {isOver && isValidDropZone && (
+              <motion.div
+                className="absolute inset-0 border-2 border-dashed border-primary rounded-lg pointer-events-none"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+              />
+            )}
+
+            {isEmpty ? (
+              <motion.div 
+                className="flex flex-col items-center justify-center h-full text-gray-400"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
               >
-                <Calendar className="w-10 h-10 opacity-50" />
-                <p className="text-sm font-medium">Drop workouts here</p>
-                <motion.div 
-                  className="absolute inset-0 pointer-events-none"
-                  animate={{ 
-                    boxShadow: isOver ? "inset 0 0 0 2px hsl(var(--accent))" : "inset 0 0 0 0 transparent" 
-                  }}
-                  transition={{ duration: 0.2 }}
-                />
+                <Calendar className="w-8 md:w-12 h-8 md:h-12 mb-2 opacity-50" />
+                <p className="text-sm">Drop workouts here</p>
               </motion.div>
             ) : (
               <motion.div 
