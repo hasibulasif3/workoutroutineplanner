@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
 import { DragState, ColumnPreferences } from "./types";
 import { toast } from "sonner";
 
@@ -14,12 +14,15 @@ interface DragContextType {
   adjustColumnWidth: (day: string, width: number) => void;
   setColumnOrder: (order: string[]) => void;
   setZoomLevel: (level: number) => void;
+  touchStartHandler: (e: TouchEvent) => void;
+  touchMoveHandler: (e: TouchEvent) => void;
+  touchEndHandler: () => void;
 }
 
 const DragContext = createContext<DragContextType | undefined>(undefined);
 
-const ZOOM_MIN = 0.5;
-const ZOOM_MAX = 1.5;
+const DRAG_THRESHOLD = 5;
+const TOUCH_TIMEOUT = 300;
 
 export function DragProvider({ children }: { children: React.ReactNode }) {
   const [dragState, setDragState] = useState<DragState>({
@@ -28,7 +31,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     targetDay: null,
     dragDistance: 0,
     isDragging: false,
-    dragThreshold: 5,
+    dragThreshold: DRAG_THRESHOLD,
     touchPoint: null,
   });
 
@@ -38,6 +41,64 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     order: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
     zoom: 1,
   });
+
+  const touchTimeoutRef = useRef<number>();
+  const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
+
+  const touchStartHandler = useCallback((e: TouchEvent) => {
+    const touch = e.touches[0];
+    lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+    
+    touchTimeoutRef.current = window.setTimeout(() => {
+      setDragState(prev => ({ ...prev, isDragging: true }));
+      if (window.navigator.vibrate) {
+        window.navigator.vibrate(50);
+      }
+    }, TOUCH_TIMEOUT);
+  }, []);
+
+  const touchMoveHandler = useCallback((e: TouchEvent) => {
+    if (!lastTouchRef.current) return;
+
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - lastTouchRef.current.x;
+    const deltaY = touch.clientY - lastTouchRef.current.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    if (distance > DRAG_THRESHOLD) {
+      window.clearTimeout(touchTimeoutRef.current);
+      setDragState(prev => ({
+        ...prev,
+        dragDistance: distance,
+        touchPoint: { x: touch.clientX, y: touch.clientY },
+      }));
+    }
+  }, []);
+
+  const touchEndHandler = useCallback(() => {
+    window.clearTimeout(touchTimeoutRef.current);
+    lastTouchRef.current = null;
+    setDragState(prev => ({
+      ...prev,
+      isDragging: false,
+      touchPoint: null,
+    }));
+  }, []);
+
+  useEffect(() => {
+    const savedPrefs = localStorage.getItem('columnPreferences');
+    if (savedPrefs) {
+      try {
+        setColumnPreferences(JSON.parse(savedPrefs));
+      } catch (error) {
+        console.error('Error loading column preferences:', error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('columnPreferences', JSON.stringify(columnPreferences));
+  }, [columnPreferences]);
 
   const isColumnCollapsed = useCallback(
     (day: string) => !!columnPreferences.collapsed[day],
@@ -87,19 +148,18 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setZoomLevel = useCallback((level: number) => {
-    const clampedLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, level));
     setColumnPreferences(prev => ({
       ...prev,
-      zoom: clampedLevel,
+      zoom: Math.max(0.5, Math.min(1.5, level)),
     }));
   }, []);
 
   return (
-    <DragContext.Provider 
-      value={{ 
-        dragState, 
-        setDragState, 
-        columnPreferences, 
+    <DragContext.Provider
+      value={{
+        dragState,
+        setDragState,
+        columnPreferences,
         setColumnPreferences,
         isColumnCollapsed,
         toggleColumnCollapse,
@@ -108,6 +168,9 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
         adjustColumnWidth,
         setColumnOrder,
         setZoomLevel,
+        touchStartHandler,
+        touchMoveHandler,
+        touchEndHandler,
       }}
     >
       {children}
