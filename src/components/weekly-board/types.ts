@@ -8,13 +8,17 @@ export interface DragState {
   isDragging: boolean;
   dragThreshold: number;
   touchPoint: { x: number; y: number } | null;
+  lastDragTime?: number;
+  dragSpeed?: number;
 }
 
 export interface ColumnPreferences {
   collapsed: { [key: string]: boolean };
   width: { [key: string]: number };
+  height: { [key: string]: number };
   order: string[];
   zoom: number;
+  version: number;
 }
 
 export interface WorkoutMoveEvent {
@@ -22,6 +26,7 @@ export interface WorkoutMoveEvent {
   targetDay: string;
   workout: Workout;
   timestamp: Date;
+  index?: number;
 }
 
 export interface WorkoutRelation {
@@ -43,6 +48,7 @@ export interface DragFeedback {
   isDropAnimating: boolean;
   isValidDropZone: boolean;
   touchFeedback: boolean;
+  dragSpeed?: number;
 }
 
 export interface ColumnStats {
@@ -50,4 +56,5 @@ export interface ColumnStats {
   averageIntensity: number;
   workoutCount: number;
   completionRate: number;
+  height?: number;
 }

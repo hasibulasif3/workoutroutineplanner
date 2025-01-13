@@ -19,45 +19,82 @@ export function useDragEvents({
 }: DragEventOptions) {
   const isDraggingRef = useRef(false);
   const startPosRef = useRef({ x: 0, y: 0 });
+  const eventCleanupRef = useRef<(() => void)[]>([]);
   
   const debouncedMove = useCallback(
     debounce((e: MouseEvent | TouchEvent) => {
+      if (!isDraggingRef.current) return;
       onDragMove?.(e);
-    }, debounceMs),
+    }, debounceMs, { maxWait: 32 }), // Ensure smoother updates
     [onDragMove]
   );
 
   const cleanup = useCallback(() => {
     isDraggingRef.current = false;
     onDragEnd?.();
-    document.removeEventListener('mousemove', handleMove as any);
-    document.removeEventListener('mouseup', handleEnd);
-    document.removeEventListener('touchmove', handleMove as any);
-    document.removeEventListener('touchend', handleEnd);
-  }, [onDragEnd]);
+    eventCleanupRef.current.forEach(cleanup => cleanup());
+    eventCleanupRef.current = [];
+    debouncedMove.cancel();
+  }, [onDragEnd, debouncedMove]);
 
   const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isDraggingRef.current) return;
-    e.preventDefault();
-    debouncedMove(e);
-  }, [debouncedMove]);
-
-  const handleEnd = useCallback(() => {
-    cleanup();
-  }, [cleanup]);
+    
+    const pos = 'touches' in e ? e.touches[0] : e;
+    const deltaX = Math.abs(pos.clientX - startPosRef.current.x);
+    const deltaY = Math.abs(pos.clientY - startPosRef.current.y);
+    
+    // Only prevent default if we've moved past threshold
+    if (deltaX > threshold || deltaY > threshold) {
+      e.preventDefault();
+      debouncedMove(e);
+    }
+  }, [debouncedMove, threshold]);
 
   const handleStart = useCallback((e: MouseEvent | TouchEvent) => {
     const pos = 'touches' in e ? e.touches[0] : e;
     startPosRef.current = { x: pos.clientX, y: pos.clientY };
     isDraggingRef.current = true;
+    
+    const addEventListenerWithCleanup = (
+      target: EventTarget,
+      type: string,
+      handler: any,
+      options?: AddEventListenerOptions
+    ) => {
+      target.addEventListener(type, handler, options);
+      eventCleanupRef.current.push(() => 
+        target.removeEventListener(type, handler)
+      );
+    };
+
+    // Handle both mouse and touch events
+    if ('touches' in e) {
+      addEventListenerWithCleanup(document, 'touchmove', handleMove, { 
+        passive: false,
+        capture: true 
+      });
+      addEventListenerWithCleanup(document, 'touchend', cleanup);
+      addEventListenerWithCleanup(document, 'touchcancel', cleanup);
+    } else {
+      addEventListenerWithCleanup(document, 'mousemove', handleMove);
+      addEventListenerWithCleanup(document, 'mouseup', cleanup);
+    }
+
+    // Prevent zoom gestures during drag
+    const preventZoom = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+    addEventListenerWithCleanup(document, 'touchstart', preventZoom, { 
+      passive: false 
+    });
+
     onDragStart?.(e);
+  }, [handleMove, cleanup, onDragStart]);
 
-    document.addEventListener('mousemove', handleMove as any);
-    document.addEventListener('mouseup', handleEnd);
-    document.addEventListener('touchmove', handleMove as any, { passive: false });
-    document.addEventListener('touchend', handleEnd);
-  }, [handleMove, handleEnd, onDragStart]);
-
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       cleanup();

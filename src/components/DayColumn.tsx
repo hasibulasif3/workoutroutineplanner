@@ -6,7 +6,7 @@ import { useDragContext } from "./weekly-board/DragContext";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { useDragEvents } from "@/hooks/useDragEvents";
-import { MouseEvent, TouchEvent } from "react";
+import { MouseEvent, TouchEvent, useRef, useEffect } from "react";
 
 interface DayColumnProps {
   day: string;
@@ -25,11 +25,15 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
     id: day,
   });
   
+  const columnRef = useRef<HTMLDivElement>(null);
+  const resizeRef = useRef<HTMLDivElement>(null);
+  
   const { 
     dragState, 
     isColumnCollapsed, 
     toggleColumnCollapse,
-    adjustColumnWidth
+    adjustColumnWidth,
+    setColumnHeight
   } = useDragContext();
 
   const { handleStart: handleResizeStart } = useDragEvents({
@@ -37,13 +41,31 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
       const pos = 'touches' in e ? e.touches[0] : e;
       adjustColumnWidth(day, pos.clientX);
     },
+    threshold: 2, // Lower threshold for smoother resizing
+    debounceMs: 8 // Faster updates for resize
   });
 
+  // Update column height when content changes
+  useEffect(() => {
+    if (columnRef.current) {
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          setColumnHeight(day, entry.contentRect.height);
+        }
+      });
+      
+      observer.observe(columnRef.current);
+      return () => observer.disconnect();
+    }
+  }, [day, setColumnHeight]);
+
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
     handleResizeStart(e);
   };
 
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
     handleResizeStart(e);
   };
 
@@ -53,9 +75,15 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
 
   return (
     <motion.div 
+      ref={columnRef}
       className="w-full min-h-[100px]"
-      layout
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      layout="position"
+      transition={{ 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 30,
+        mass: 0.8 
+      }}
     >
       <LayoutGroup>
         <motion.div 
@@ -72,7 +100,7 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
               <motion.div
                 initial={false}
                 animate={{ rotate: isCollapsed ? 0 : 90 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
               >
                 {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
               </motion.div>
@@ -81,6 +109,7 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
           </div>
           
           <div 
+            ref={resizeRef}
             className="w-2 h-full cursor-col-resize hover:bg-accent/50 transition-colors"
             onMouseDown={handleMouseDown}
             onTouchStart={handleTouchStart}
@@ -104,9 +133,10 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
                 type: "spring",
                 stiffness: 500,
                 damping: 30,
-                mass: 1
+                mass: 0.8,
+                opacity: { duration: 0.2 }
               }}
-              layout
+              layout="position"
             >
               {isOver && isValidDropZone && (
                 <motion.div
@@ -131,7 +161,7 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
               ) : (
                 <motion.div 
                   className="space-y-4"
-                  layout
+                  layout="position"
                 >
                   {workouts.map((workout, index) => (
                     <WorkoutCard 
