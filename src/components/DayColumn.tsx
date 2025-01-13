@@ -34,16 +34,16 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
   const isCollapsed = isColumnCollapsed(day);
 
   return (
-    <div className="w-full">
+    <div className="w-full min-h-[100px]">
       <div className="flex items-center justify-between mb-4 px-2">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => toggleColumnCollapse(day)}
-            className="p-1 h-auto"
+            className="p-2 h-auto hover:bg-accent/50 transition-colors"
           >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
           </Button>
           <h2 className="text-lg md:text-xl font-bold">{day}</h2>
         </div>
@@ -54,14 +54,15 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
           <motion.div 
             ref={setNodeRef} 
             className={cn(
-              "day-column space-y-4 relative",
-              isEmpty && "empty",
-              isOver && isValidDropZone && "dragging-over"
+              "day-column space-y-4 relative min-h-[150px] p-4 rounded-lg transition-colors",
+              isEmpty && "empty bg-accent/5",
+              isOver && isValidDropZone && "dragging-over bg-accent/10",
+              "touch-none" // Prevent touch events from interfering
             )}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
           >
             {isOver && isValidDropZone && (
               <motion.div
@@ -75,10 +76,10 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
 
             {isEmpty ? (
               <motion.div 
-                className="flex flex-col items-center justify-center h-full text-gray-400"
+                className="flex flex-col items-center justify-center h-[150px] text-gray-400"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
+                transition={{ delay: 0.1 }}
               >
                 <Calendar className="w-8 md:w-12 h-8 md:h-12 mb-2 opacity-50" />
                 <p className="text-sm">Drop workouts here</p>
