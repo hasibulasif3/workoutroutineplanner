@@ -1,3 +1,5 @@
+import { Workout } from "@/types/workout";
+
 export interface DragState {
   isDropAnimating: boolean;
   sourceDay: string | null;
