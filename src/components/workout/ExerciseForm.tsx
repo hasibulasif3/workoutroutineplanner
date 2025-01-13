@@ -4,12 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
-import { muscleGroups, equipmentList, rpeScale } from "./types";
+import { muscleGroups, equipmentList } from "./types";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ExerciseFormProps {
   form: UseFormReturn<Exercise>;
@@ -64,7 +65,7 @@ export function ExerciseForm({ form, onSubmit, onCancel, existingExercises = [] 
   };
 
   return (
-    <>
+    <ScrollArea className="h-[500px] pr-4">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <FormField
@@ -185,6 +186,6 @@ export function ExerciseForm({ form, onSubmit, onCancel, existingExercises = [] 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </ScrollArea>
   );
 }

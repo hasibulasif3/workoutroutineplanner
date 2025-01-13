@@ -1,16 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { WorkoutCard } from "./WorkoutCard";
 import { workoutSchema, WorkoutFormType } from "./workout/types";
 import { WorkoutForm } from "./workout/WorkoutForm";
 import { TemplateList } from "./workout/TemplateList";
 import { workoutTemplates } from "./workout/templates";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface CreateWorkoutDialogProps {
   onWorkoutCreate: (workout: WorkoutFormType) => void;
@@ -21,6 +22,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
   const [previewData, setPreviewData] = useState<any>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+  const [totalDuration, setTotalDuration] = useState(0);
 
   const form = useForm<WorkoutFormType>({
     resolver: zodResolver(workoutSchema),
@@ -38,6 +40,14 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
     },
   });
 
+  const calculateTotalDuration = useCallback((exercises) => {
+    return exercises.reduce((total, exercise) => {
+      const setTime = (Number(exercise.sets) * Number(exercise.reps) * 3); // 3s per rep
+      const restTime = Number(exercise.restPeriod) * (Number(exercise.sets) - 1);
+      return total + setTime + restTime;
+    }, 0);
+  }, []);
+
   // Load saved form state
   useEffect(() => {
     const savedState = localStorage.getItem('workout-form-state');
@@ -45,6 +55,11 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       const parsed = JSON.parse(savedState);
       form.reset(parsed);
       setPreviewData({ id: "preview", ...parsed });
+      if (parsed.exercises) {
+        const duration = calculateTotalDuration(parsed.exercises);
+        setTotalDuration(duration);
+        form.setValue('duration', String(Math.ceil(duration / 60))); // Convert to minutes
+      }
     }
   }, []);
 
@@ -52,6 +67,11 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
   useEffect(() => {
     const subscription = form.watch((value) => {
       localStorage.setItem('workout-form-state', JSON.stringify(value));
+      if (value.exercises) {
+        const duration = calculateTotalDuration(value.exercises);
+        setTotalDuration(duration);
+        form.setValue('duration', String(Math.ceil(duration / 60))); // Convert to minutes
+      }
       if (value.title) {
         setPreviewData({ id: "preview", ...value });
       }
@@ -86,6 +106,11 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       form.reset(template);
       setPreviewData({ id: "preview", ...template });
       localStorage.setItem('workout-form-state', JSON.stringify(template));
+      if (template.exercises) {
+        const duration = calculateTotalDuration(template.exercises);
+        setTotalDuration(duration);
+        form.setValue('duration', String(Math.ceil(duration / 60))); // Convert to minutes
+      }
     }
   };
 
@@ -113,34 +138,41 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
           </Button>
         </DialogTrigger>
         <DialogContent 
-          className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto"
+          className="sm:max-w-[800px] h-[90vh] p-0"
           onInteractOutside={(e) => {
             e.preventDefault();
             handleClose();
           }}
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+            handleClose();
+          }}
         >
-          <DialogHeader>
+          <DialogHeader className="p-6 pb-0">
             <DialogTitle>Create New Workout</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="max-h-[600px] overflow-y-auto pr-4">
-              <h3 className="text-sm font-medium mb-4">Quick Templates</h3>
-              <TemplateList templates={workoutTemplates} onTemplateSelect={applyTemplate} />
+          <ScrollArea className="h-full px-6 pb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-sm font-medium mb-4">Quick Templates</h3>
+                <TemplateList templates={workoutTemplates} onTemplateSelect={applyTemplate} />
+              </div>
+              <div className="space-y-6">
+                <WorkoutForm
+                  form={form}
+                  onSubmit={onSubmit}
+                  isSubmitting={isSubmitting}
+                  totalDuration={totalDuration}
+                />
+                {previewData && (
+                  <div>
+                    <h3 className="text-sm font-medium mb-4">Preview</h3>
+                    <WorkoutCard {...previewData} />
+                  </div>
+                )}
+              </div>
             </div>
-            <div>
-              <WorkoutForm
-                form={form}
-                onSubmit={onSubmit}
-                isSubmitting={isSubmitting}
-              />
-              {previewData && (
-                <div className="mt-6">
-                  <h3 className="text-sm font-medium mb-4">Preview</h3>
-                  <WorkoutCard {...previewData} />
-                </div>
-              )}
-            </div>
-          </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
