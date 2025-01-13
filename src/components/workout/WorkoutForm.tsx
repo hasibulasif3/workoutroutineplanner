@@ -18,6 +18,7 @@ interface WorkoutFormProps {
   form: UseFormReturn<WorkoutFormType>;
   onSubmit: (data: WorkoutFormType) => void;
   isSubmitting: boolean;
+  totalDuration: number;
 }
 
 export function WorkoutForm({ form, onSubmit, isSubmitting }: WorkoutFormProps) {

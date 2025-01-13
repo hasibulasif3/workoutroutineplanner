@@ -55,6 +55,8 @@ export interface WorkoutTemplate extends WorkoutFormType {
   frequency: string;
   intensity: string;
   spaceRequired?: string;
+  equipment?: string[];
+  targetMuscles?: string[];
 }
 
 export const muscleGroups = [
