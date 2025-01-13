@@ -1,29 +1,12 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
-import { DragState, ColumnPreferences } from "./types";
+import { DragState, ColumnPreferences, DragContextType } from "./types";
 import { toast } from "sonner";
 import { debounce } from "lodash";
 
-const DRAG_THRESHOLD = 8; // Reduced threshold for more responsive dragging
-const TOUCH_TIMEOUT = 150; // Optimized touch timeout
+const DRAG_THRESHOLD = 8;
+const TOUCH_TIMEOUT = 150;
 const ANIMATION_DURATION = 200;
 const LONG_PRESS_DURATION = 500;
-
-interface DragContextType {
-  dragState: DragState;
-  setDragState: (state: DragState) => void;
-  columnPreferences: ColumnPreferences;
-  setColumnPreferences: (prefs: ColumnPreferences) => void;
-  isColumnCollapsed: (day: string) => boolean;
-  toggleColumnCollapse: (day: string) => void;
-  collapseAllColumns: () => void;
-  expandAllColumns: () => void;
-  adjustColumnWidth: (day: string, width: number) => void;
-  setColumnOrder: (order: string[]) => void;
-  setZoomLevel: (level: number) => void;
-  touchStartHandler: (e: TouchEvent) => void;
-  touchMoveHandler: (e: TouchEvent) => void;
-  touchEndHandler: () => void;
-}
 
 const DragContext = createContext<DragContextType | undefined>(undefined);
 
@@ -207,6 +190,16 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const setColumnHeight = useCallback((day: string, height: number) => {
+    setColumnPreferences(prev => ({
+      ...prev,
+      height: {
+        ...prev.height,
+        [day]: height,
+      }
+    }));
+  }, []);
+
   return (
     <DragContext.Provider
       value={{
@@ -219,6 +212,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
         collapseAllColumns,
         expandAllColumns,
         adjustColumnWidth,
+        setColumnHeight,
         setColumnOrder,
         setZoomLevel,
         touchStartHandler,

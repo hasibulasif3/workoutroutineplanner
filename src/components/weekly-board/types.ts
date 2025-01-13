@@ -1,5 +1,3 @@
-import { Workout } from "@/types/workout";
-
 export interface DragState {
   isDropAnimating: boolean;
   sourceDay: string | null;
@@ -57,4 +55,22 @@ export interface ColumnStats {
   workoutCount: number;
   completionRate: number;
   height?: number;
+}
+
+export interface DragContextType {
+  dragState: DragState;
+  setDragState: (state: DragState) => void;
+  columnPreferences: ColumnPreferences;
+  setColumnPreferences: (prefs: ColumnPreferences) => void;
+  isColumnCollapsed: (day: string) => boolean;
+  toggleColumnCollapse: (day: string) => void;
+  collapseAllColumns: () => void;
+  expandAllColumns: () => void;
+  adjustColumnWidth: (day: string, width: number) => void;
+  setColumnHeight: (day: string, height: number) => void;
+  setColumnOrder: (order: string[]) => void;
+  setZoomLevel: (level: number) => void;
+  touchStartHandler: (e: TouchEvent) => void;
+  touchMoveHandler: (e: TouchEvent) => void;
+  touchEndHandler: () => void;
 }
