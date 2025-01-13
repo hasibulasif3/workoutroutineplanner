@@ -2,13 +2,31 @@ import { z } from "zod";
 
 export const exerciseSchema = z.object({
   name: z.string().min(1, "Exercise name is required"),
-  sets: z.string().min(1, "Sets are required"),
-  reps: z.string().min(1, "Reps are required"),
-  restPeriod: z.string().min(1, "Rest period is required"),
+  sets: z.string()
+    .min(1, "Sets are required")
+    .refine(val => {
+      const num = parseInt(val);
+      return num >= 1 && num <= 10;
+    }, "Sets must be between 1 and 10"),
+  reps: z.string()
+    .min(1, "Reps are required")
+    .refine(val => {
+      const num = parseInt(val);
+      return num >= 1 && num <= 100;
+    }, "Reps must be between 1 and 100"),
+  restPeriod: z.string()
+    .min(1, "Rest period is required")
+    .refine(val => {
+      const num = parseInt(val);
+      return num >= 5 && num <= 300;
+    }, "Rest period must be between 5 and 300 seconds"),
   equipment: z.array(z.string()).optional(),
   targetMuscles: z.array(z.string()).optional(),
   notes: z.string().optional(),
-  weight: z.string().optional(),
+  weight: z.string()
+    .optional()
+    .refine(val => !val || (parseInt(val) >= 0 && parseInt(val) <= 1000), 
+      "Weight must be between 0 and 1000"),
   rpe: z.string().optional(),
   tempo: z.string().optional(),
   superset: z.boolean().optional(),
@@ -24,7 +42,7 @@ export const workoutSchema = z.object({
   warmupDuration: z.string().optional(),
   cooldownDuration: z.string().optional(),
   restBetweenExercises: z.string().optional(),
-  exercises: z.array(exerciseSchema).optional(),
+  exercises: z.array(exerciseSchema).min(1, "At least one exercise is required"),
   targetMuscles: z.array(z.string()).optional(),
   equipment: z.array(z.string()).optional(),
   notes: z.string().optional(),
