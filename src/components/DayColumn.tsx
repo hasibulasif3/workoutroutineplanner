@@ -6,6 +6,7 @@ import { useDragContext } from "./weekly-board/DragContext";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { useDragEvents } from "@/hooks/useDragEvents";
+import { MouseEvent, TouchEvent } from "react";
 
 interface DayColumnProps {
   day: string;
@@ -37,6 +38,14 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
       adjustColumnWidth(day, pos.clientX);
     },
   });
+
+  const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    handleResizeStart(e);
+  };
+
+  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    handleResizeStart(e);
+  };
 
   const isEmpty = workouts.length === 0;
   const isValidDropZone = !dragState.sourceDay || dragState.sourceDay !== day;
@@ -73,8 +82,8 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
           
           <div 
             className="w-2 h-full cursor-col-resize hover:bg-accent/50 transition-colors"
-            onMouseDown={handleResizeStart}
-            onTouchStart={handleResizeStart}
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
           />
         </motion.div>
 

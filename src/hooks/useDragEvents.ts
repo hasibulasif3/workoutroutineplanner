@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { debounce } from 'lodash';
+import { MouseEvent, TouchEvent } from 'react';
 
 interface DragEventOptions {
-  onDragStart?: (e: TouchEvent | MouseEvent) => void;
-  onDragMove?: (e: TouchEvent | MouseEvent) => void;
+  onDragStart?: (e: MouseEvent | TouchEvent) => void;
+  onDragMove?: (e: MouseEvent | TouchEvent) => void;
   onDragEnd?: () => void;
   threshold?: number;
   debounceMs?: number;
@@ -20,7 +21,7 @@ export function useDragEvents({
   const startPosRef = useRef({ x: 0, y: 0 });
   
   const debouncedMove = useCallback(
-    debounce((e: TouchEvent | MouseEvent) => {
+    debounce((e: MouseEvent | TouchEvent) => {
       onDragMove?.(e);
     }, debounceMs),
     [onDragMove]
@@ -29,13 +30,13 @@ export function useDragEvents({
   const cleanup = useCallback(() => {
     isDraggingRef.current = false;
     onDragEnd?.();
-    document.removeEventListener('mousemove', handleMove);
+    document.removeEventListener('mousemove', handleMove as any);
     document.removeEventListener('mouseup', handleEnd);
-    document.removeEventListener('touchmove', handleMove);
+    document.removeEventListener('touchmove', handleMove as any);
     document.removeEventListener('touchend', handleEnd);
   }, [onDragEnd]);
 
-  const handleMove = useCallback((e: TouchEvent | MouseEvent) => {
+  const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isDraggingRef.current) return;
     e.preventDefault();
     debouncedMove(e);
@@ -45,15 +46,15 @@ export function useDragEvents({
     cleanup();
   }, [cleanup]);
 
-  const handleStart = useCallback((e: TouchEvent | MouseEvent) => {
+  const handleStart = useCallback((e: MouseEvent | TouchEvent) => {
     const pos = 'touches' in e ? e.touches[0] : e;
     startPosRef.current = { x: pos.clientX, y: pos.clientY };
     isDraggingRef.current = true;
     onDragStart?.(e);
 
-    document.addEventListener('mousemove', handleMove, { passive: false });
+    document.addEventListener('mousemove', handleMove as any);
     document.addEventListener('mouseup', handleEnd);
-    document.addEventListener('touchmove', handleMove, { passive: false });
+    document.addEventListener('touchmove', handleMove as any, { passive: false });
     document.addEventListener('touchend', handleEnd);
   }, [handleMove, handleEnd, onDragStart]);
 
