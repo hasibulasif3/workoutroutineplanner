@@ -39,18 +39,22 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
   const { handleStart: handleResizeStart } = useDragEvents({
     onDragMove: (e) => {
       const pos = 'touches' in e ? e.touches[0] : e;
-      adjustColumnWidth(day, pos.clientX);
+      requestAnimationFrame(() => {
+        adjustColumnWidth(day, pos.clientX);
+      });
     },
-    threshold: 2, // Lower threshold for smoother resizing
-    debounceMs: 8 // Faster updates for resize
+    threshold: 2,
+    debounceMs: 8
   });
 
-  // Update column height when content changes
+  // Update column height with ResizeObserver
   useEffect(() => {
     if (columnRef.current) {
       const observer = new ResizeObserver((entries) => {
         for (const entry of entries) {
-          setColumnHeight(day, entry.contentRect.height);
+          requestAnimationFrame(() => {
+            setColumnHeight(day, entry.contentRect.height);
+          });
         }
       });
       
@@ -84,6 +88,8 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
         damping: 30,
         mass: 0.8 
       }}
+      role="region"
+      aria-label={`${day} workout column`}
     >
       <LayoutGroup>
         <motion.div 
@@ -116,28 +122,30 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
           />
         </motion.div>
 
-        <AnimatePresence mode="wait">
-          {!isCollapsed && (
-            <motion.div 
-              ref={setNodeRef} 
-              className={cn(
-                "day-column space-y-4 relative min-h-[200px] p-4 rounded-lg transition-colors",
-                isEmpty && "empty bg-accent/5",
-                isOver && isValidDropZone && "dragging-over bg-accent/10",
-                "touch-none"
-              )}
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ 
-                type: "spring",
-                stiffness: 500,
-                damping: 30,
-                mass: 0.8,
-                opacity: { duration: 0.2 }
-              }}
-              layout="position"
-            >
+      <AnimatePresence mode="wait">
+        {!isCollapsed && (
+          <motion.div 
+            ref={setNodeRef} 
+            className={cn(
+              "day-column space-y-4 relative min-h-[200px] p-4 rounded-lg transition-colors",
+              isEmpty && "empty bg-accent/5",
+              isOver && isValidDropZone && "dragging-over bg-accent/10",
+              "touch-none"
+            )}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ 
+              type: "spring",
+              stiffness: 500,
+              damping: 30,
+              mass: 0.8,
+              opacity: { duration: 0.2 }
+            }}
+            layout="position"
+            role="list"
+            aria-label={`${day} workouts`}
+          >
               {isOver && isValidDropZone && (
                 <motion.div
                   className="absolute inset-0 border-2 border-dashed border-primary rounded-lg pointer-events-none"
@@ -173,10 +181,9 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
                   ))}
                 </motion.div>
               )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </LayoutGroup>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
