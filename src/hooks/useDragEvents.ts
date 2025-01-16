@@ -20,10 +20,18 @@ export function useDragEvents({
   const isDraggingRef = useRef(false);
   const startPosRef = useRef({ x: 0, y: 0 });
   const eventCleanupRef = useRef<(() => void)[]>([]);
+  const lastMoveTime = useRef(0);
   
   const debouncedMove = useCallback(
     debounce((e: MouseEvent | TouchEvent) => {
       if (!isDraggingRef.current) return;
+      
+      const now = performance.now();
+      if (now - lastMoveTime.current < 16) { // Skip if less than 16ms (60fps)
+        return;
+      }
+      lastMoveTime.current = now;
+      
       onDragMove?.(e);
     }, debounceMs, { maxWait: 32 }), // Ensure smoother updates
     [onDragMove]
@@ -35,6 +43,7 @@ export function useDragEvents({
     eventCleanupRef.current.forEach(cleanup => cleanup());
     eventCleanupRef.current = [];
     debouncedMove.cancel();
+    document.body.style.overflow = '';
   }, [onDragEnd, debouncedMove]);
 
   const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
@@ -47,7 +56,9 @@ export function useDragEvents({
     // Only prevent default if we've moved past threshold
     if (deltaX > threshold || deltaY > threshold) {
       e.preventDefault();
-      debouncedMove(e);
+      requestAnimationFrame(() => {
+        debouncedMove(e);
+      });
     }
   }, [debouncedMove, threshold]);
 
@@ -76,23 +87,27 @@ export function useDragEvents({
       });
       addEventListenerWithCleanup(document, 'touchend', cleanup);
       addEventListenerWithCleanup(document, 'touchcancel', cleanup);
+      
+      // Prevent zoom gestures during drag
+      const preventZoom = (e: TouchEvent) => {
+        if (isDraggingRef.current && e.touches.length > 1) {
+          e.preventDefault();
+        }
+      };
+      
+      addEventListenerWithCleanup(document, 'touchstart', preventZoom, { 
+        passive: false 
+      });
+      
+      // Lock body scroll during touch drag
+      document.body.style.overflow = 'hidden';
     } else {
       addEventListenerWithCleanup(document, 'mousemove', handleMove);
       addEventListenerWithCleanup(document, 'mouseup', cleanup);
     }
 
-    // Prevent zoom gestures during drag
-    const preventZoom = (e: TouchEvent) => {
-      if (e.touches.length > 1) {
-        e.preventDefault();
-      }
-    };
-    addEventListenerWithCleanup(document, 'touchstart', preventZoom, { 
-      passive: false 
-    });
-
     onDragStart?.(e);
-  }, [handleMove, cleanup, onDragStart]);
+  }, [handleMove, cleanup, onDragStart, threshold]);
 
   // Cleanup on unmount
   useEffect(() => {

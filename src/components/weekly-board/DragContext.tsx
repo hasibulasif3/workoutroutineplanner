@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
 import { DragState, ColumnPreferences, DragContextType } from "./types";
-import { toast } from "sonner";
 import { debounce } from "lodash";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 
@@ -32,6 +31,8 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     isDragging: false,
     dragThreshold: DRAG_THRESHOLD,
     touchPoint: null,
+    lastDragTime: Date.now(),
+    dragSpeed: 0
   });
 
   const touchTimeoutRef = useRef<number>();
@@ -39,6 +40,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
   const dragStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const longPressTimeoutRef = useRef<number>();
   const eventCleanupRef = useRef<(() => void)[]>([]);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   const cleanup = useCallback(() => {
     window.clearTimeout(touchTimeoutRef.current);
@@ -53,6 +55,10 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
       isDragging: false,
       touchPoint: null,
     }));
+
+    if (resizeObserverRef.current) {
+      resizeObserverRef.current.disconnect();
+    }
   }, []);
 
   const isColumnCollapsed = useCallback(
@@ -72,17 +78,20 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     });
   }, [setColumnPreferences]);
 
-  const adjustColumnWidth = useCallback((day: string, width: number) => {
-    requestAnimationFrame(() => {
-      setColumnPreferences(prev => ({
-        ...prev,
-        width: {
-          ...prev.width,
-          [day]: width,
-        }
-      }));
-    });
-  }, [setColumnPreferences]);
+  const adjustColumnWidth = useCallback(
+    debounce((day: string, width: number) => {
+      requestAnimationFrame(() => {
+        setColumnPreferences(prev => ({
+          ...prev,
+          width: {
+            ...prev.width,
+            [day]: Math.max(200, Math.min(800, width)), // Constrain width
+          }
+        }));
+      });
+    }, 16),
+    [setColumnPreferences]
+  );
 
   const setColumnHeight = useCallback((day: string, height: number) => {
     requestAnimationFrame(() => {
@@ -96,6 +105,20 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     });
   }, [setColumnPreferences]);
 
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && dragState.isDragging) {
+        cleanup();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      cleanup();
+    };
+  }, [dragState.isDragging, cleanup]);
+
   const touchStartHandler = useCallback((e: TouchEvent) => {
     if (e.touches.length !== 1) return;
     
@@ -108,26 +131,40 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     longPressTimeoutRef.current = window.setTimeout(() => {
       if (dragStartPositionRef.current) {
         document.body.style.overflow = 'hidden';
-        setDragState(prev => ({ ...prev, isDragging: true }));
+        setDragState(prev => ({ 
+          ...prev, 
+          isDragging: true,
+          lastDragTime: Date.now()
+        }));
         
         if (window.navigator.vibrate) {
           window.navigator.vibrate([50]);
         }
       }
     }, LONG_PRESS_DURATION);
-  }, [cleanup]);
+
+    const preventScroll = (e: TouchEvent) => {
+      if (dragState.isDragging) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('touchmove', preventScroll, { passive: false });
+    eventCleanupRef.current.push(() => {
+      document.removeEventListener('touchmove', preventScroll);
+    });
+  }, [cleanup, dragState.isDragging]);
 
   const touchMoveHandler = useCallback((e: TouchEvent) => {
     if (!lastTouchRef.current || !dragStartPositionRef.current) return;
 
     const touch = e.touches[0];
+    const now = Date.now();
+    const deltaTime = now - (dragState.lastDragTime || now);
     const deltaX = touch.clientX - dragStartPositionRef.current.x;
     const deltaY = touch.clientY - dragStartPositionRef.current.y;
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-    if (distance > DRAG_THRESHOLD) {
-      window.clearTimeout(longPressTimeoutRef.current);
-    }
+    const speed = distance / deltaTime;
 
     if (dragState.isDragging) {
       e.preventDefault();
@@ -136,16 +173,12 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
           ...prevState,
           dragDistance: distance,
           touchPoint: { x: touch.clientX, y: touch.clientY },
+          lastDragTime: now,
+          dragSpeed: speed
         }));
       });
     }
-  }, [dragState.isDragging]);
-
-  useEffect(() => {
-    return () => {
-      cleanup();
-    };
-  }, [cleanup]);
+  }, [dragState.isDragging, dragState.lastDragTime]);
 
   return (
     <DragContext.Provider

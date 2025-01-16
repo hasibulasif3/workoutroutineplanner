@@ -61,9 +61,9 @@ export interface ColumnStats {
 
 export interface DragContextType {
   dragState: DragState;
-  setDragState: (state: DragState) => void;
+  setDragState: (state: DragState | ((prev: DragState) => DragState)) => void;
   columnPreferences: ColumnPreferences;
-  setColumnPreferences: (prefs: ColumnPreferences) => void;
+  setColumnPreferences: (prefs: ColumnPreferences | ((prev: ColumnPreferences) => ColumnPreferences)) => void;
   isColumnCollapsed: (day: string) => boolean;
   toggleColumnCollapse: (day: string) => void;
   adjustColumnWidth: (day: string, width: number) => void;
