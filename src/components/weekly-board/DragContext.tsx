@@ -12,12 +12,12 @@ const LONG_PRESS_DURATION = 500;
 const DragContext = createContext<DragContextType | undefined>(undefined);
 
 export function DragProvider({ children }: { children: React.ReactNode }) {
-  // Use local storage for persistent preferences
   const [columnPreferences, setColumnPreferences] = useLocalStorage<ColumnPreferences>(
     'columnPreferences',
     {
       collapsed: {},
       width: {},
+      height: {},
       order: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
       zoom: 1,
       version: 1,
@@ -34,21 +34,18 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     touchPoint: null,
   });
 
-  // Refs for cleanup and event tracking
   const touchTimeoutRef = useRef<number>();
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
   const dragStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const longPressTimeoutRef = useRef<number>();
   const eventCleanupRef = useRef<(() => void)[]>([]);
 
-  // Enhanced cleanup function
   const cleanup = useCallback(() => {
     window.clearTimeout(touchTimeoutRef.current);
     window.clearTimeout(longPressTimeoutRef.current);
     eventCleanupRef.current.forEach(cleanup => cleanup());
     eventCleanupRef.current = [];
     
-    // Reset scroll lock
     document.body.style.overflow = '';
     
     setDragState(prev => ({
@@ -58,63 +55,6 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  // Improved touch handling with better sensitivity
-  const touchStartHandler = useCallback((e: TouchEvent) => {
-    if (e.touches.length !== 1) return;
-    
-    const touch = e.touches[0];
-    lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
-    dragStartPositionRef.current = { x: touch.clientX, y: touch.clientY };
-    
-    // Clear existing timeouts
-    cleanup();
-    
-    // Set up long press detection with proper cleanup
-    longPressTimeoutRef.current = window.setTimeout(() => {
-      if (dragStartPositionRef.current) {
-        document.body.style.overflow = 'hidden'; // Prevent scroll during drag
-        setDragState(prev => ({ ...prev, isDragging: true }));
-        
-        if (window.navigator.vibrate) {
-          window.navigator.vibrate([50]);
-        }
-      }
-    }, LONG_PRESS_DURATION);
-  }, [cleanup]);
-
-  // Enhanced touch move handling
-  const touchMoveHandler = useCallback((e: TouchEvent) => {
-    if (!lastTouchRef.current || !dragStartPositionRef.current) return;
-
-    const touch = e.touches[0];
-    const deltaX = touch.clientX - dragStartPositionRef.current.x;
-    const deltaY = touch.clientY - dragStartPositionRef.current.y;
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-    if (distance > DRAG_THRESHOLD) {
-      window.clearTimeout(longPressTimeoutRef.current);
-    }
-
-    if (dragState.isDragging) {
-      e.preventDefault();
-      requestAnimationFrame(() => {
-        setDragState(prevState => ({
-          ...prevState,
-          dragDistance: distance,
-          touchPoint: { x: touch.clientX, y: touch.clientY },
-        }));
-      });
-    }
-  }, [dragState.isDragging]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      cleanup();
-    };
-  }, [cleanup]);
-
-  // Column management with optimized performance
   const isColumnCollapsed = useCallback(
     (day: string) => !!columnPreferences.collapsed[day],
     [columnPreferences.collapsed]
@@ -144,6 +84,69 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     });
   }, [setColumnPreferences]);
 
+  const setColumnHeight = useCallback((day: string, height: number) => {
+    requestAnimationFrame(() => {
+      setColumnPreferences(prev => ({
+        ...prev,
+        height: {
+          ...prev.height,
+          [day]: height,
+        }
+      }));
+    });
+  }, [setColumnPreferences]);
+
+  const touchStartHandler = useCallback((e: TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    
+    const touch = e.touches[0];
+    lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+    dragStartPositionRef.current = { x: touch.clientX, y: touch.clientY };
+    
+    cleanup();
+    
+    longPressTimeoutRef.current = window.setTimeout(() => {
+      if (dragStartPositionRef.current) {
+        document.body.style.overflow = 'hidden';
+        setDragState(prev => ({ ...prev, isDragging: true }));
+        
+        if (window.navigator.vibrate) {
+          window.navigator.vibrate([50]);
+        }
+      }
+    }, LONG_PRESS_DURATION);
+  }, [cleanup]);
+
+  const touchMoveHandler = useCallback((e: TouchEvent) => {
+    if (!lastTouchRef.current || !dragStartPositionRef.current) return;
+
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - dragStartPositionRef.current.x;
+    const deltaY = touch.clientY - dragStartPositionRef.current.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    if (distance > DRAG_THRESHOLD) {
+      window.clearTimeout(longPressTimeoutRef.current);
+    }
+
+    if (dragState.isDragging) {
+      e.preventDefault();
+      requestAnimationFrame(() => {
+        setDragState(prevState => ({
+          ...prevState,
+          dragDistance: distance,
+          touchPoint: { x: touch.clientX, y: touch.clientY },
+        }));
+      });
+    }
+  }, [dragState.isDragging]);
+
+  useEffect(() => {
+    return () => {
+      cleanup();
+    };
+  }, [cleanup]);
+
   return (
     <DragContext.Provider
       value={{
@@ -154,6 +157,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
         isColumnCollapsed,
         toggleColumnCollapse,
         adjustColumnWidth,
+        setColumnHeight,
         touchStartHandler,
         touchMoveHandler,
         cleanup,

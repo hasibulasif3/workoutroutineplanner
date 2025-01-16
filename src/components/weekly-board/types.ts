@@ -66,13 +66,9 @@ export interface DragContextType {
   setColumnPreferences: (prefs: ColumnPreferences) => void;
   isColumnCollapsed: (day: string) => boolean;
   toggleColumnCollapse: (day: string) => void;
-  collapseAllColumns: () => void;
-  expandAllColumns: () => void;
   adjustColumnWidth: (day: string, width: number) => void;
   setColumnHeight: (day: string, height: number) => void;
-  setColumnOrder: (order: string[]) => void;
-  setZoomLevel: (level: number) => void;
   touchStartHandler: (e: TouchEvent) => void;
   touchMoveHandler: (e: TouchEvent) => void;
-  touchEndHandler: () => void;
+  cleanup: () => void;
 }
