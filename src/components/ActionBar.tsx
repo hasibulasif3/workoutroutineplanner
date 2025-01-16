@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Download, RefreshCw, Mail, FileJson, FileText } from "lucide-react";
 import { CreateWorkoutDialog } from "./CreateWorkoutDialog";
 import { toast } from "sonner";
-import { WeeklyWorkouts } from "@/types/workout";
+import { WeeklyWorkouts, Workout } from "@/types/workout";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,7 @@ import { format } from "date-fns";
 
 interface ActionBarProps {
   workouts: WeeklyWorkouts;
-  onWorkoutCreate: (workout: any) => void;
+  onWorkoutCreate: (workout: Workout) => void;
 }
 
 interface ExportMetadata {
@@ -32,6 +32,12 @@ interface ExportMetadata {
   version: string;
   totalWorkouts: number;
   fileSize: number;
+}
+
+interface EmailRecipients {
+  to: string;
+  cc: string;
+  bcc: string;
 }
 
 const EMAIL_SIZE_LIMIT = 10 * 1024 * 1024; // 10MB limit
@@ -42,7 +48,11 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);
   const [exportFormat, setExportFormat] = useState<"json" | "pdf">("json");
-  const [emailRecipients, setEmailRecipients] = useState({ to: "", cc: "", bcc: "" });
+  const [emailRecipients, setEmailRecipients] = useState<EmailRecipients>({ 
+    to: "", 
+    cc: "", 
+    bcc: "" 
+  });
 
   const getMetadata = (): ExportMetadata => ({
     createdAt: new Date().toISOString(),
@@ -102,11 +112,11 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
       <html>
         <body>
           <h2>Weekly Workout Routine (${dateRange})</h2>
-          ${Object.entries(selectedWorkouts)
+          ${Object.entries(selectedWorkouts as WeeklyWorkouts)
             .map(([day, exercises]) => `
               <h3>${day}</h3>
               <ul>
-                ${exercises.map(ex => `
+                ${(exercises as Workout[]).map(ex => `
                   <li>
                     <strong>${ex.title}</strong><br>
                     Duration: ${ex.duration} mins<br>
@@ -121,9 +131,9 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
       </html>
     `;
 
-    const plainText = Object.entries(selectedWorkouts)
+    const plainText = Object.entries(selectedWorkouts as WeeklyWorkouts)
       .map(([day, exercises]) => 
-        `${day}:\n${exercises.map(ex => `- ${ex.title} (${ex.duration} mins)`).join('\n')}`
+        `${day}:\n${(exercises as Workout[]).map(ex => `- ${ex.title} (${ex.duration} mins)`).join('\n')}`
       )
       .join('\n\n');
 
