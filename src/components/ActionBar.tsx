@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw, Mail, FileJson, FilePdf } from "lucide-react";
+import { Download, RefreshCw, Mail, FileJson, FileText } from "lucide-react";
 import { CreateWorkoutDialog } from "./CreateWorkoutDialog";
 import { toast } from "sonner";
 import { WeeklyWorkouts } from "@/types/workout";
@@ -188,7 +188,7 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
                     </SelectItem>
                     <SelectItem value="pdf">
                       <div className="flex items-center gap-2">
-                        <FilePdf className="w-4 h-4" />
+                        <FileText className="w-4 h-4" />
                         PDF
                       </div>
                     </SelectItem>
