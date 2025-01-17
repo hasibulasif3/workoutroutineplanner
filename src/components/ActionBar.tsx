@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Download, RefreshCw, Mail, FileJson, FileText } from "lucide-react";
 import { CreateWorkoutDialog } from "./CreateWorkoutDialog";
 import { toast } from "sonner";
-import { WeeklyWorkouts, Workout } from "@/types/workout";
+import { WeeklyWorkouts } from "@/types/workout";
 import {
   Dialog,
   DialogContent,
@@ -21,27 +21,18 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
 import { format } from "date-fns";
+import {
+  EMAIL_SIZE_LIMIT,
+  FILE_SIZE_WARNING,
+  EmailRecipients,
+  generateEmailContent,
+  formatWorkoutForExport
+} from "@/utils/exportUtils";
 
 interface ActionBarProps {
   workouts: WeeklyWorkouts;
   onWorkoutCreate: (workout: Workout) => void;
 }
-
-interface ExportMetadata {
-  createdAt: string;
-  version: string;
-  totalWorkouts: number;
-  fileSize: number;
-}
-
-interface EmailRecipients {
-  to: string;
-  cc: string;
-  bcc: string;
-}
-
-const EMAIL_SIZE_LIMIT = 10 * 1024 * 1024; // 10MB limit
-const FILE_SIZE_WARNING = 5 * 1024 * 1024; // 5MB warning threshold
 
 export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
@@ -54,33 +45,15 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
     bcc: "" 
   });
 
-  const getMetadata = (): ExportMetadata => ({
-    createdAt: new Date().toISOString(),
-    version: "1.0",
-    totalWorkouts: Object.values(workouts).flat().length,
-    fileSize: new Blob([JSON.stringify(workouts)]).size,
-  });
-
-  const getSelectedWorkouts = () => {
-    if (selectedDays.length === 0) return workouts;
-    return Object.entries(workouts)
-      .filter(([day]) => selectedDays.includes(day))
-      .reduce((acc, [day, dayWorkouts]) => ({ ...acc, [day]: dayWorkouts }), {});
-  };
-
   const handleDownload = async () => {
-    const selectedWorkouts = getSelectedWorkouts();
-    const metadata = getMetadata();
+    const exportData = formatWorkoutForExport(workouts, selectedDays);
     
-    if (metadata.fileSize > FILE_SIZE_WARNING) {
-      const proceed = window.confirm("The workout plan is quite large. Continue with download?");
+    if (exportData.metadata.fileSize > FILE_SIZE_WARNING) {
+      const proceed = window.confirm(
+        "The workout plan is quite large (over 5MB). This might affect performance when importing later. Continue with download?"
+      );
       if (!proceed) return;
     }
-
-    const exportData = {
-      metadata,
-      workouts: selectedWorkouts,
-    };
 
     if (exportFormat === "pdf") {
       toast.error("PDF export coming soon!");
@@ -104,51 +77,16 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
     setShowDownloadDialog(false);
   };
 
-  const generateEmailContent = () => {
-    const selectedWorkouts = getSelectedWorkouts();
-    const dateRange = `${format(new Date(), 'MMM d')} - ${format(new Date(new Date().setDate(new Date().getDate() + 7)), 'MMM d, yyyy')}`;
-    
-    const htmlContent = `
-      <html>
-        <body>
-          <h2>Weekly Workout Routine (${dateRange})</h2>
-          ${Object.entries(selectedWorkouts as WeeklyWorkouts)
-            .map(([day, exercises]) => `
-              <h3>${day}</h3>
-              <ul>
-                ${(exercises as Workout[]).map(ex => `
-                  <li>
-                    <strong>${ex.title}</strong><br>
-                    Duration: ${ex.duration} mins<br>
-                    ${ex.calories ? `Calories: ${ex.calories}<br>` : ''}
-                    Type: ${ex.type}<br>
-                    ${ex.difficulty ? `Difficulty: ${ex.difficulty}` : ''}
-                  </li>
-                `).join('')}
-              </ul>
-            `).join('')}
-        </body>
-      </html>
-    `;
-
-    const plainText = Object.entries(selectedWorkouts as WeeklyWorkouts)
-      .map(([day, exercises]) => 
-        `${day}:\n${(exercises as Workout[]).map(ex => `- ${ex.title} (${ex.duration} mins)`).join('\n')}`
-      )
-      .join('\n\n');
-
-    return { htmlContent, plainText };
-  };
-
   const handleEmail = () => {
-    const { htmlContent, plainText } = generateEmailContent();
-    const dateRange = format(new Date(), 'MMM d') + ' - ' + format(new Date(new Date().setDate(new Date().getDate() + 7)), 'MMM d, yyyy');
+    const { htmlContent, plainText } = generateEmailContent(workouts, selectedDays);
+    const dateRange = format(new Date(), 'MMM d') + ' - ' + 
+                     format(new Date(new Date().setDate(new Date().getDate() + 7)), 'MMM d, yyyy');
     const subject = encodeURIComponent(`Weekly Workout Routine (${dateRange})`);
     
     // Check email size
     const emailSize = new Blob([htmlContent]).size;
     if (emailSize > EMAIL_SIZE_LIMIT) {
-      toast.error("Email content exceeds size limit. Please select fewer workouts.");
+      toast.error("Email content exceeds size limit (10MB). Please select fewer workouts.");
       return;
     }
 
