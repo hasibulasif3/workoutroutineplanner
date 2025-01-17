@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Download, RefreshCw, Mail, FileJson, FileText } from "lucide-react";
 import { CreateWorkoutDialog } from "./CreateWorkoutDialog";
 import { toast } from "sonner";
-import { WeeklyWorkouts } from "@/types/workout";
+import { WeeklyWorkouts, Workout } from "@/types/workout";
 import {
   Dialog,
   DialogContent,
