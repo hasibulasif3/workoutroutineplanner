@@ -24,6 +24,12 @@ type DbWorkout = {
   metadata: Json | null;
 };
 
+// Type for inserting a workout into the database
+type DbWorkoutInsert = Omit<DbWorkout, 'id' | 'created_at'> & {
+  id?: string;
+  created_at?: string;
+};
+
 // Convert database workout to frontend workout
 const mapDbWorkoutToWorkout = (dbWorkout: DbWorkout): Workout => ({
   id: dbWorkout.id,
@@ -38,15 +44,22 @@ const mapDbWorkoutToWorkout = (dbWorkout: DbWorkout): Workout => ({
 });
 
 // Convert frontend workout to database format
-const mapWorkoutToDb = (workout: Omit<Workout, "id">): Partial<DbWorkout> => ({
+const mapWorkoutToDb = (workout: Omit<Workout, "id">): DbWorkoutInsert => ({
   title: workout.title,
   type: workout.type,
   duration: workout.duration,
-  difficulty: workout.difficulty,
-  calories: workout.calories,
-  notes: workout.notes,
-  completed: workout.completed,
+  difficulty: workout.difficulty || null,
+  calories: workout.calories || null,
+  notes: workout.notes || null,
+  completed: workout.completed || false,
   last_modified: workout.lastModified.toISOString(),
+  user_id: null, // Will be set by RLS policy
+  exercises: null,
+  warmup_duration: null,
+  cooldown_duration: null,
+  rest_between_exercises: null,
+  version: '1.0',
+  metadata: {}
 });
 
 export const workoutService = {
