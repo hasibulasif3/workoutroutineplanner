@@ -3,53 +3,71 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { WeeklyWorkouts, Workout } from "@/types/workout";
-import { storageService } from "@/services/storageService";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { DayColumn } from "../DayColumn";
 import { WorkoutCard } from "../WorkoutCard";
 import { WeeklyBoardHeader } from "./WeeklyBoardHeader";
 import { DragProvider } from "./DragContext";
 import { useWorkoutDrag } from "./useWorkoutDrag";
-import { initialWorkouts } from "./initialData";
+import { workoutService } from "@/services/workoutService";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function WeeklyBoard() {
-  const [workouts, setWorkouts] = useState<WeeklyWorkouts>(initialWorkouts);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  const { data: workouts = {
+    Monday: [],
+    Tuesday: [],
+    Wednesday: [],
+    Thursday: [],
+    Friday: [],
+    Saturday: [],
+    Sunday: [],
+  }, isLoading } = useQuery({
+    queryKey: ['workouts'],
+    queryFn: workoutService.fetchWorkouts,
+  });
 
   const {
-    activeId,
     handleDragStart,
     handleDragEnd,
     undoLastMove,
     hasUndo
-  } = useWorkoutDrag(workouts, setWorkouts, dropSound);
-
-  useEffect(() => {
-    const savedWorkouts = storageService.loadWorkouts();
-    if (savedWorkouts) {
-      setWorkouts(savedWorkouts);
+  } = useWorkoutDrag(workouts, async (newWorkouts) => {
+    // Update workouts in database when drag ends
+    const updatedWorkout = Object.values(newWorkouts)
+      .flat()
+      .find(w => w.id === activeId);
+    
+    if (updatedWorkout) {
+      await workoutService.updateWorkout(updatedWorkout);
+      queryClient.invalidateQueries({ queryKey: ['workouts'] });
     }
-    setIsLoading(false);
-  }, []);
+  }, dropSound);
 
+  // Subscribe to real-time updates
   useEffect(() => {
-    if (!isLoading) {
-      storageService.saveWorkouts(workouts);
-    }
-  }, [workouts, isLoading]);
+    const unsubscribe = workoutService.subscribeToWorkouts((updatedWorkouts) => {
+      queryClient.setQueryData(['workouts'], updatedWorkouts);
+    });
 
-  const handleWorkoutCreate = (workoutData: Omit<Workout, 'id' | 'lastModified'>) => {
-    const newWorkout: Workout = {
-      id: uuidv4(),
-      lastModified: new Date(),
+    return () => {
+      unsubscribe();
+    };
+  }, [queryClient]);
+
+  const handleWorkoutCreate = async (workoutData: Omit<Workout, "id" | "lastModified">) => {
+    const newWorkout = {
       ...workoutData,
+      lastModified: new Date(),
     };
     
-    setWorkouts(prev => ({
-      ...prev,
-      Monday: [...prev.Monday, newWorkout],
-    }));
+    const createdWorkout = await workoutService.createWorkout(newWorkout);
+    if (createdWorkout) {
+      queryClient.invalidateQueries({ queryKey: ['workouts'] });
+    }
   };
 
   if (isLoading) {
@@ -69,7 +87,7 @@ export function WeeklyBoard() {
         <div className="p-4 md:p-8 animate-fade-in">
           <WeeklyBoardHeader 
             workouts={workouts} 
-            onWorkoutCreate={handleWorkoutCreate} 
+            onWorkoutCreate={handleWorkoutCreate}
           />
 
           <div className="overflow-x-auto pb-4">

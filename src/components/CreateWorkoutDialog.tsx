@@ -58,7 +58,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       if (parsed.exercises) {
         const duration = calculateTotalDuration(parsed.exercises);
         setTotalDuration(duration);
-        form.setValue('duration', String(Math.ceil(duration / 60))); // Convert to minutes
+        form.setValue('duration', String(Math.ceil(duration / 60)));
       }
     }
   }, []);
@@ -66,11 +66,13 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
   // Save form state on changes
   useEffect(() => {
     const subscription = form.watch((value) => {
-      localStorage.setItem('workout-form-state', JSON.stringify(value));
+      if (Object.keys(form.formState.dirtyFields).length > 0) {
+        localStorage.setItem('workout-form-state', JSON.stringify(value));
+      }
       if (value.exercises) {
         const duration = calculateTotalDuration(value.exercises);
         setTotalDuration(duration);
-        form.setValue('duration', String(Math.ceil(duration / 60))); // Convert to minutes
+        form.setValue('duration', String(Math.ceil(duration / 60)));
       }
       if (value.title) {
         setPreviewData({ id: "preview", ...value });
@@ -87,11 +89,11 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
 
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      onWorkoutCreate(data);
+      await onWorkoutCreate(data);
       form.reset();
       localStorage.removeItem('workout-form-state');
       setShowDialog(false);
+      setPreviewData(null);
       toast.success("Workout created successfully!");
     } catch (error) {
       toast.error("Failed to create workout");
@@ -109,7 +111,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       if (template.exercises) {
         const duration = calculateTotalDuration(template.exercises);
         setTotalDuration(duration);
-        form.setValue('duration', String(Math.ceil(duration / 60))); // Convert to minutes
+        form.setValue('duration', String(Math.ceil(duration / 60)));
       }
     }
   };

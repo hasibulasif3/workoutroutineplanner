@@ -13,41 +13,59 @@ export type Database = {
         Row: {
           calories: string | null
           completed: boolean | null
+          cooldown_duration: string | null
           created_at: string | null
           difficulty: string | null
           duration: string
+          exercises: Json | null
           id: string
           last_modified: string | null
+          metadata: Json | null
           notes: string | null
+          rest_between_exercises: string | null
           title: string
           type: string
           user_id: string | null
+          version: string | null
+          warmup_duration: string | null
         }
         Insert: {
           calories?: string | null
           completed?: boolean | null
+          cooldown_duration?: string | null
           created_at?: string | null
           difficulty?: string | null
           duration: string
+          exercises?: Json | null
           id?: string
           last_modified?: string | null
+          metadata?: Json | null
           notes?: string | null
+          rest_between_exercises?: string | null
           title: string
           type: string
           user_id?: string | null
+          version?: string | null
+          warmup_duration?: string | null
         }
         Update: {
           calories?: string | null
           completed?: boolean | null
+          cooldown_duration?: string | null
           created_at?: string | null
           difficulty?: string | null
           duration?: string
+          exercises?: Json | null
           id?: string
           last_modified?: string | null
+          metadata?: Json | null
           notes?: string | null
+          rest_between_exercises?: string | null
           title?: string
           type?: string
           user_id?: string | null
+          version?: string | null
+          warmup_duration?: string | null
         }
         Relationships: []
       }
