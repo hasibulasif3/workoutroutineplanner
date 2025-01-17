@@ -1,12 +1,12 @@
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { useState } from "react";
+import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useState, useEffect } from "react";
 import { DayColumn } from "./DayColumn";
 import { WorkoutCard } from "./WorkoutCard";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { WeeklyWorkouts, Workout, WorkoutType, WorkoutDifficulty } from "@/types/workout";
+import { WeeklyWorkouts, Workout } from "@/types/workout";
 import { StatsBar } from "./StatsBar";
 import { ActionBar } from "./ActionBar";
 import { ErrorBoundary } from "./ErrorBoundary";
@@ -18,8 +18,9 @@ import { supabase } from "@/integrations/supabase/client";
 export function WeeklyBoard() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
+  const [isLoading, setIsLoading] = useState(true);
   const queryClient = useQueryClient();
-  const { syncWorkout } = useWorkoutSync();
+  const { syncWorkout, syncWorkouts } = useWorkoutSync();
 
   // Fetch workouts with React Query
   const { data: workouts = {
@@ -30,7 +31,7 @@ export function WeeklyBoard() {
     Friday: [],
     Saturday: [],
     Sunday: [],
-  }, isLoading, error: fetchError } = useQuery({
+  }, error: fetchError } = useQuery({
     queryKey: ['workouts'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -52,19 +53,13 @@ export function WeeklyBoard() {
       };
 
       data.forEach((workout) => {
-        const metadata = workout.metadata as { day?: string } | null;
-        const day = metadata?.day || 'Monday';
-        
-        // Ensure type safety for workout type and difficulty
-        const workoutType = validateWorkoutType(workout.type);
-        const workoutDifficulty = validateWorkoutDifficulty(workout.difficulty);
-
+        const day = workout.metadata?.day || 'Monday';
         groupedWorkouts[day].push({
           id: workout.id,
           title: workout.title,
-          type: workoutType,
+          type: workout.type,
           duration: workout.duration,
-          difficulty: workoutDifficulty,
+          difficulty: workout.difficulty,
           calories: workout.calories,
           notes: workout.notes,
           completed: workout.completed,
@@ -78,20 +73,12 @@ export function WeeklyBoard() {
     staleTime: 1000 * 60, // 1 minute
   });
 
-  // Validation functions for type safety
-  const validateWorkoutType = (type: string): WorkoutType => {
-    const validTypes: WorkoutType[] = ["strength", "cardio", "flexibility"];
-    return validTypes.includes(type as WorkoutType) 
-      ? type as WorkoutType 
-      : "strength";
-  };
-
-  const validateWorkoutDifficulty = (difficulty: string | null): WorkoutDifficulty | undefined => {
-    const validDifficulties: WorkoutDifficulty[] = ["beginner", "intermediate", "advanced"];
-    return difficulty && validDifficulties.includes(difficulty as WorkoutDifficulty)
-      ? difficulty as WorkoutDifficulty
-      : undefined;
-  };
+  useEffect(() => {
+    if (fetchError) {
+      toast.error('Failed to fetch workouts');
+      console.error('Fetch error:', fetchError);
+    }
+  }, [fetchError]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id.toString());
@@ -149,7 +136,7 @@ export function WeeklyBoard() {
     }
   };
 
-  const handleWorkoutCreate = async (workoutData: Omit<Workout, "id" | "lastModified">) => {
+  const handleWorkoutCreate = async (workoutData: Omit<Workout, 'id' | 'lastModified'>) => {
     const newWorkout: Workout = {
       id: uuidv4(),
       lastModified: new Date(),
