@@ -7,78 +7,100 @@ import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { WeeklyWorkouts, Workout } from "@/types/workout";
+import { storageService } from "@/services/storageService";
 import { StatsBar } from "./StatsBar";
 import { ActionBar } from "./ActionBar";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { DragProvider } from "./weekly-board/DragContext";
-import { useWorkoutSync } from "@/hooks/useWorkoutSync";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
+const initialWorkouts: WeeklyWorkouts = {
+  Monday: [
+    { 
+      id: "1", 
+      title: "Morning Run", 
+      duration: "30", 
+      type: "cardio", 
+      difficulty: "beginner", 
+      calories: "300",
+      lastModified: new Date()
+    },
+    { 
+      id: "2", 
+      title: "Push-ups", 
+      duration: "15", 
+      type: "strength", 
+      difficulty: "intermediate", 
+      calories: "150",
+      lastModified: new Date()
+    },
+  ],
+  Tuesday: [
+    { 
+      id: "3", 
+      title: "Yoga", 
+      duration: "45", 
+      type: "flexibility", 
+      difficulty: "beginner", 
+      calories: "200",
+      lastModified: new Date()
+    },
+  ],
+  Wednesday: [
+    { 
+      id: "4", 
+      title: "HIIT", 
+      duration: "25", 
+      type: "cardio", 
+      difficulty: "advanced", 
+      calories: "400",
+      lastModified: new Date()
+    },
+  ],
+  Thursday: [
+    { 
+      id: "5", 
+      title: "Swimming", 
+      duration: "40", 
+      type: "cardio", 
+      difficulty: "intermediate", 
+      calories: "450",
+      lastModified: new Date()
+    },
+  ],
+  Friday: [
+    { 
+      id: "6", 
+      title: "Weight Training", 
+      duration: "50", 
+      type: "strength", 
+      difficulty: "advanced", 
+      calories: "500",
+      lastModified: new Date()
+    },
+  ],
+  Saturday: [],
+  Sunday: [],
+};
 
 export function WeeklyBoard() {
+  const [workouts, setWorkouts] = useState<WeeklyWorkouts>(initialWorkouts);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
   const [isLoading, setIsLoading] = useState(true);
-  const queryClient = useQueryClient();
-  const { syncWorkout, syncWorkouts } = useWorkoutSync();
-
-  // Fetch workouts with React Query
-  const { data: workouts = {
-    Monday: [],
-    Tuesday: [],
-    Wednesday: [],
-    Thursday: [],
-    Friday: [],
-    Saturday: [],
-    Sunday: [],
-  }, error: fetchError } = useQuery({
-    queryKey: ['workouts'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('workouts')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      // Group workouts by day using metadata
-      const groupedWorkouts: WeeklyWorkouts = {
-        Monday: [],
-        Tuesday: [],
-        Wednesday: [],
-        Thursday: [],
-        Friday: [],
-        Saturday: [],
-        Sunday: [],
-      };
-
-      data.forEach((workout) => {
-        const day = workout.metadata?.day || 'Monday';
-        groupedWorkouts[day].push({
-          id: workout.id,
-          title: workout.title,
-          type: workout.type,
-          duration: workout.duration,
-          difficulty: workout.difficulty,
-          calories: workout.calories,
-          notes: workout.notes,
-          completed: workout.completed,
-          lastModified: new Date(workout.last_modified),
-        });
-      });
-
-      return groupedWorkouts;
-    },
-    retry: 3,
-    staleTime: 1000 * 60, // 1 minute
-  });
 
   useEffect(() => {
-    if (fetchError) {
-      toast.error('Failed to fetch workouts');
-      console.error('Fetch error:', fetchError);
+    const savedWorkouts = storageService.loadWorkouts();
+    if (savedWorkouts) {
+      setWorkouts(savedWorkouts);
     }
-  }, [fetchError]);
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      storageService.saveWorkouts(workouts);
+    }
+  }, [workouts, isLoading]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id.toString());
@@ -87,7 +109,7 @@ export function WeeklyBoard() {
     }
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
     const { active, over } = event;
     
@@ -102,65 +124,43 @@ export function WeeklyBoard() {
     if (activeDay === overDay) return;
 
     if (activeDay) {
-      try {
-        const workout = workouts[activeDay].find(item => item.id === active.id.toString());
-        if (!workout) return;
+      setWorkouts(prev => {
+        const workout = prev[activeDay].find(item => item.id === active.id.toString());
+        if (!workout) return prev;
 
         const updatedWorkout: Workout = {
           ...workout,
           lastModified: new Date()
         };
 
-        // Optimistically update UI
-        queryClient.setQueryData<WeeklyWorkouts>(['workouts'], (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            [activeDay]: old[activeDay].filter(item => item.id !== active.id.toString()),
-            [overDay]: [...old[overDay], updatedWorkout]
-          };
-        });
-
-        // Sync with Supabase
-        await syncWorkout(updatedWorkout, overDay);
+        const newWorkouts = {
+          ...prev,
+          [activeDay]: prev[activeDay].filter(item => item.id !== active.id.toString()),
+          [overDay]: [...prev[overDay], updatedWorkout]
+        };
         
         dropSound.play().catch(() => {});
         toast.success("Workout moved successfully!");
-      } catch (error) {
-        console.error('Error moving workout:', error);
-        toast.error("Failed to move workout. Please try again.");
-        
-        // Revert optimistic update
-        queryClient.invalidateQueries({ queryKey: ['workouts'] });
-      }
+        return newWorkouts;
+      });
     }
   };
 
-  const handleWorkoutCreate = async (workoutData: Omit<Workout, 'id' | 'lastModified'>) => {
+  const handleWorkoutCreate = (workoutData: Omit<Workout, 'id' | 'lastModified'>) => {
     const newWorkout: Workout = {
       id: uuidv4(),
       lastModified: new Date(),
       ...workoutData,
     };
     
-    try {
-      // Optimistically update UI
-      queryClient.setQueryData<WeeklyWorkouts>(['workouts'], (old) => ({
-        ...old,
-        Monday: [...(old?.Monday || []), newWorkout],
-      }));
-
-      // Sync with Supabase
-      await syncWorkout(newWorkout, 'Monday');
-      
-      toast.success("New workout created!");
-    } catch (error) {
-      console.error('Error creating workout:', error);
-      toast.error("Failed to create workout. Please try again.");
-      
-      // Revert optimistic update
-      queryClient.invalidateQueries({ queryKey: ['workouts'] });
-    }
+    setWorkouts(prev => ({
+      ...prev,
+      Monday: [...prev.Monday, newWorkout],
+    }));
+    
+    toast.success("New workout created!", {
+      description: `${newWorkout.title} added to Monday`,
+    });
   };
 
   const activeWorkout = activeId ? 
