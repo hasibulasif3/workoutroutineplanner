@@ -46,11 +46,6 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
   });
 
   const handleDownload = async () => {
-    if (selectedDays.length === 0) {
-      toast.error("Please select at least one day to download");
-      return;
-    }
-
     const exportData = formatWorkoutForExport(workouts, selectedDays);
     
     if (exportData.metadata.fileSize > FILE_SIZE_WARNING) {
@@ -65,26 +60,21 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
       return;
     }
 
-    try {
-      const dataStr = JSON.stringify(exportData, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      const fileName = `workout-routine-${format(new Date(), 'yyyy-MM-dd')}.json`;
-      
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      toast.success('Workout routine downloaded successfully!');
-      setShowDownloadDialog(false);
-    } catch (error) {
-      console.error("Error downloading workouts:", error);
-      toast.error("Failed to download workout routine");
-    }
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    const fileName = `workout-routine-${format(new Date(), 'yyyy-MM-dd')}.json`;
+    
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success('Workout routine downloaded successfully!');
+    setShowDownloadDialog(false);
   };
 
   const handleEmail = () => {
