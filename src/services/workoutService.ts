@@ -3,7 +3,6 @@ import { Workout, WeeklyWorkouts } from "@/types/workout";
 import { toast } from "sonner";
 import { Json } from "@/integrations/supabase/types";
 
-// Type for the database workout shape
 type DbWorkout = {
   id: string;
   user_id: string | null;
@@ -24,13 +23,6 @@ type DbWorkout = {
   metadata: Json | null;
 };
 
-// Type for inserting a workout into the database
-type DbWorkoutInsert = Omit<DbWorkout, 'id' | 'created_at'> & {
-  id?: string;
-  created_at?: string;
-};
-
-// Convert database workout to frontend workout
 const mapDbWorkoutToWorkout = (dbWorkout: DbWorkout): Workout => ({
   id: dbWorkout.id,
   title: dbWorkout.title,
@@ -43,8 +35,7 @@ const mapDbWorkoutToWorkout = (dbWorkout: DbWorkout): Workout => ({
   lastModified: dbWorkout.last_modified ? new Date(dbWorkout.last_modified) : new Date(),
 });
 
-// Convert frontend workout to database format
-const mapWorkoutToDb = (workout: Omit<Workout, "id">): DbWorkoutInsert => ({
+const mapWorkoutToDb = (workout: Omit<Workout, "id">): Omit<DbWorkout, "id" | "created_at"> => ({
   title: workout.title,
   type: workout.type,
   duration: workout.duration,
@@ -52,8 +43,8 @@ const mapWorkoutToDb = (workout: Omit<Workout, "id">): DbWorkoutInsert => ({
   calories: workout.calories || null,
   notes: workout.notes || null,
   completed: workout.completed || false,
-  last_modified: workout.lastModified.toISOString(),
-  user_id: null, // Will be set by RLS policy
+  last_modified: new Date().toISOString(),
+  user_id: null,
   exercises: null,
   warmup_duration: null,
   cooldown_duration: null,
@@ -123,10 +114,8 @@ export const workoutService = {
 
       if (error) throw error;
 
-      // Convert all workouts to frontend format
       const convertedWorkouts = data.map(mapDbWorkoutToWorkout);
 
-      // Group workouts by day
       const weeklyWorkouts: WeeklyWorkouts = {
         Monday: [],
         Tuesday: [],
@@ -137,8 +126,6 @@ export const workoutService = {
         Sunday: [],
       };
 
-      // For now, assign to Monday by default
-      // TODO: Add day field to workout table
       convertedWorkouts.forEach((workout) => {
         weeklyWorkouts.Monday.push(workout);
       });
