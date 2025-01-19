@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Workout, WeeklyWorkouts, Exercise } from "@/types/workout";
 import { toast } from "sonner";
+import { Json } from "@/integrations/supabase/types";
 
 const mapWorkoutToDb = (workout: Omit<Workout, "id">) => ({
   title: workout.title,
@@ -11,7 +12,7 @@ const mapWorkoutToDb = (workout: Omit<Workout, "id">) => ({
   notes: workout.notes || null,
   completed: workout.completed || false,
   last_modified: new Date().toISOString(),
-  exercises: workout.exercises || [],
+  exercises: workout.exercises as unknown as Json,
   warmup_duration: workout.warmupDuration || null,
   cooldown_duration: workout.cooldownDuration || null,
   rest_between_exercises: workout.restBetweenExercises || null,
@@ -19,7 +20,7 @@ const mapWorkoutToDb = (workout: Omit<Workout, "id">) => ({
   metadata: {
     lastSyncedAt: new Date().toISOString(),
     version: "1.0",
-  },
+  } as Json,
 });
 
 const mapDbToWorkout = (dbWorkout: any): Workout => ({
@@ -32,7 +33,7 @@ const mapDbToWorkout = (dbWorkout: any): Workout => ({
   notes: dbWorkout.notes,
   completed: dbWorkout.completed || false,
   lastModified: new Date(dbWorkout.last_modified),
-  exercises: dbWorkout.exercises || [],
+  exercises: (dbWorkout.exercises as Exercise[]) || [],
   warmupDuration: dbWorkout.warmup_duration,
   cooldownDuration: dbWorkout.cooldown_duration,
   restBetweenExercises: dbWorkout.rest_between_exercises,

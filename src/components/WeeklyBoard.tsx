@@ -22,7 +22,8 @@ const initialWorkouts: WeeklyWorkouts = {
       type: "cardio", 
       difficulty: "beginner", 
       calories: "300",
-      lastModified: new Date()
+      lastModified: new Date(),
+      exercises: []
     },
     { 
       id: "2", 
@@ -31,7 +32,8 @@ const initialWorkouts: WeeklyWorkouts = {
       type: "strength", 
       difficulty: "intermediate", 
       calories: "150",
-      lastModified: new Date()
+      lastModified: new Date(),
+      exercises: []
     },
   ],
   Tuesday: [
@@ -42,7 +44,8 @@ const initialWorkouts: WeeklyWorkouts = {
       type: "flexibility", 
       difficulty: "beginner", 
       calories: "200",
-      lastModified: new Date()
+      lastModified: new Date(),
+      exercises: []
     },
   ],
   Wednesday: [
@@ -53,7 +56,8 @@ const initialWorkouts: WeeklyWorkouts = {
       type: "cardio", 
       difficulty: "advanced", 
       calories: "400",
-      lastModified: new Date()
+      lastModified: new Date(),
+      exercises: []
     },
   ],
   Thursday: [
@@ -64,7 +68,8 @@ const initialWorkouts: WeeklyWorkouts = {
       type: "cardio", 
       difficulty: "intermediate", 
       calories: "450",
-      lastModified: new Date()
+      lastModified: new Date(),
+      exercises: []
     },
   ],
   Friday: [
@@ -75,7 +80,8 @@ const initialWorkouts: WeeklyWorkouts = {
       type: "strength", 
       difficulty: "advanced", 
       calories: "500",
-      lastModified: new Date()
+      lastModified: new Date(),
+      exercises: []
     },
   ],
   Saturday: [],
@@ -151,6 +157,7 @@ export function WeeklyBoard() {
       id: uuidv4(),
       lastModified: new Date(),
       ...workoutData,
+      exercises: []
     };
     
     setWorkouts(prev => ({

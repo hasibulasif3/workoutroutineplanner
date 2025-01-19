@@ -9,7 +9,8 @@ export const initialWorkouts: WeeklyWorkouts = {
       type: "cardio", 
       difficulty: "beginner", 
       calories: "300",
-      lastModified: new Date()
+      lastModified: new Date(),
+      exercises: []
     },
     { 
       id: "2", 
@@ -18,7 +19,8 @@ export const initialWorkouts: WeeklyWorkouts = {
       type: "strength", 
       difficulty: "intermediate", 
       calories: "150",
-      lastModified: new Date()
+      lastModified: new Date(),
+      exercises: []
     },
   ],
   Tuesday: [
@@ -29,7 +31,8 @@ export const initialWorkouts: WeeklyWorkouts = {
       type: "flexibility", 
       difficulty: "beginner", 
       calories: "200",
-      lastModified: new Date()
+      lastModified: new Date(),
+      exercises: []
     },
   ],
   Wednesday: [
@@ -40,7 +43,8 @@ export const initialWorkouts: WeeklyWorkouts = {
       type: "cardio", 
       difficulty: "advanced", 
       calories: "400",
-      lastModified: new Date()
+      lastModified: new Date(),
+      exercises: []
     },
   ],
   Thursday: [
@@ -51,7 +55,8 @@ export const initialWorkouts: WeeklyWorkouts = {
       type: "cardio", 
       difficulty: "intermediate", 
       calories: "450",
-      lastModified: new Date()
+      lastModified: new Date(),
+      exercises: []
     },
   ],
   Friday: [
@@ -62,7 +67,8 @@ export const initialWorkouts: WeeklyWorkouts = {
       type: "strength", 
       difficulty: "advanced", 
       calories: "500",
-      lastModified: new Date()
+      lastModified: new Date(),
+      exercises: []
     },
   ],
   Saturday: [],
