@@ -1,3 +1,21 @@
+# Workout Routine Planner robots.txt
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /admin/
+Crawl-delay: 10
+
+# Allow Google Images to crawl images
+User-agent: Googlebot-Image
+Allow: /images/
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.gif$
+Allow: /*.png$
+
+# Allow Google Mobile to crawl
+User-agent: Googlebot-Mobile
+Allow: /
+
+# Sitemap location
 Sitemap: https://workout-routine-planner.netlify.app/sitemap.xml
