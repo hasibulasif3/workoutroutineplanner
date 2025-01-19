@@ -3,25 +3,29 @@ import { Workout, WeeklyWorkouts, Exercise } from "@/types/workout";
 import { toast } from "sonner";
 import { Json } from "@/integrations/supabase/types";
 
-const mapWorkoutToDb = (workout: Omit<Workout, "id">) => ({
-  title: workout.title,
-  type: workout.type,
-  duration: workout.duration,
-  difficulty: workout.difficulty || null,
-  calories: workout.calories || null,
-  notes: workout.notes || null,
-  completed: workout.completed || false,
-  last_modified: new Date().toISOString(),
-  exercises: workout.exercises as unknown as Json,
-  warmup_duration: workout.warmupDuration || null,
-  cooldown_duration: workout.cooldownDuration || null,
-  rest_between_exercises: workout.restBetweenExercises || null,
-  user_id: supabase.auth.getUser().then(({ data }) => data.user?.id) || null,
-  metadata: {
-    lastSyncedAt: new Date().toISOString(),
-    version: "1.0",
-  } as Json,
-});
+const mapWorkoutToDb = async (workout: Omit<Workout, "id">) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  return {
+    title: workout.title,
+    type: workout.type,
+    duration: workout.duration,
+    difficulty: workout.difficulty || null,
+    calories: workout.calories || null,
+    notes: workout.notes || null,
+    completed: workout.completed || false,
+    last_modified: new Date().toISOString(),
+    exercises: workout.exercises as unknown as Json,
+    warmup_duration: workout.warmupDuration || null,
+    cooldown_duration: workout.cooldownDuration || null,
+    rest_between_exercises: workout.restBetweenExercises || null,
+    user_id: user?.id || null,
+    metadata: {
+      lastSyncedAt: new Date().toISOString(),
+      version: "1.0",
+    } as Json,
+  };
+};
 
 const mapDbToWorkout = (dbWorkout: any): Workout => ({
   id: dbWorkout.id,
@@ -49,9 +53,10 @@ export const workoutService = {
         throw new Error("User not authenticated");
       }
 
+      const mappedWorkout = await mapWorkoutToDb(workout);
       const { data, error } = await supabase
         .from("workouts")
-        .insert([mapWorkoutToDb({ ...workout, userId: userData.user.id })])
+        .insert([mappedWorkout])
         .select()
         .single();
 
@@ -74,9 +79,10 @@ export const workoutService = {
 
   async updateWorkout(workout: Workout): Promise<Workout | null> {
     try {
+      const mappedWorkout = await mapWorkoutToDb(workout);
       const { data, error } = await supabase
         .from("workouts")
-        .update(mapWorkoutToDb(workout))
+        .update(mappedWorkout)
         .eq("id", workout.id)
         .select()
         .single();
