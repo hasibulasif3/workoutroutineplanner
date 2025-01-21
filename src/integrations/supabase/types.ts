@@ -17,11 +17,13 @@ export type Database = {
           created_at: string | null
           difficulty: string | null
           duration: string
+          exercise_order: Json | null
           exercises: Json | null
           id: string
           last_modified: string | null
           metadata: Json | null
           notes: string | null
+          offline_id: string | null
           rest_between_exercises: string | null
           title: string
           type: string
@@ -36,11 +38,13 @@ export type Database = {
           created_at?: string | null
           difficulty?: string | null
           duration: string
+          exercise_order?: Json | null
           exercises?: Json | null
           id?: string
           last_modified?: string | null
           metadata?: Json | null
           notes?: string | null
+          offline_id?: string | null
           rest_between_exercises?: string | null
           title: string
           type: string
@@ -55,11 +59,13 @@ export type Database = {
           created_at?: string | null
           difficulty?: string | null
           duration?: string
+          exercise_order?: Json | null
           exercises?: Json | null
           id?: string
           last_modified?: string | null
           metadata?: Json | null
           notes?: string | null
+          offline_id?: string | null
           rest_between_exercises?: string | null
           title?: string
           type?: string

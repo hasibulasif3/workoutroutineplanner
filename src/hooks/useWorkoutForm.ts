@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { WorkoutFormType } from '@/components/workout/types';
+import { toast } from 'sonner';
+
+const AUTOSAVE_DELAY = 2000; // 2 seconds
 
 export function useWorkoutForm(form: UseFormReturn<WorkoutFormType>) {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isAutosaving, setIsAutosaving] = useState(false);
 
   // Load saved form state
   useEffect(() => {
@@ -12,6 +16,7 @@ export function useWorkoutForm(form: UseFormReturn<WorkoutFormType>) {
       try {
         const parsed = JSON.parse(savedState);
         form.reset(parsed);
+        setHasUnsavedChanges(true);
       } catch (error) {
         console.error('Error parsing saved form state:', error);
         localStorage.removeItem('workout-form-state');
@@ -48,16 +53,40 @@ export function useWorkoutForm(form: UseFormReturn<WorkoutFormType>) {
     };
   }, [form, hasUnsavedChanges]);
 
-  // Save form state on changes
+  // Autosave form state
   useEffect(() => {
+    let autosaveTimeout: NodeJS.Timeout;
+
     const subscription = form.watch((value) => {
       if (Object.keys(form.formState.dirtyFields).length > 0) {
-        localStorage.setItem('workout-form-state', JSON.stringify(value));
         setHasUnsavedChanges(true);
+        setIsAutosaving(true);
+
+        // Clear existing timeout
+        if (autosaveTimeout) {
+          clearTimeout(autosaveTimeout);
+        }
+
+        // Set new timeout for autosave
+        autosaveTimeout = setTimeout(() => {
+          try {
+            localStorage.setItem('workout-form-state', JSON.stringify(value));
+            setIsAutosaving(false);
+            toast.success('Changes autosaved', { duration: 2000 });
+          } catch (error) {
+            console.error('Error autosaving form state:', error);
+            toast.error('Failed to autosave changes');
+          }
+        }, AUTOSAVE_DELAY);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (autosaveTimeout) {
+        clearTimeout(autosaveTimeout);
+      }
+    };
   }, [form.watch]);
 
   const clearFormState = () => {
@@ -68,6 +97,7 @@ export function useWorkoutForm(form: UseFormReturn<WorkoutFormType>) {
 
   return {
     hasUnsavedChanges,
+    isAutosaving,
     clearFormState
   };
 }
