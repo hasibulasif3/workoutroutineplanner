@@ -20,14 +20,9 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
-import { format } from "date-fns";
-import {
-  EMAIL_SIZE_LIMIT,
-  FILE_SIZE_WARNING,
-  EmailRecipients,
-  generateEmailContent,
-  formatWorkoutForExport
-} from "@/utils/exportUtils";
+import { downloadWorkouts } from "@/utils/downloadUtils";
+import { generateEmailContent, validateEmails, emailSchema } from "@/utils/emailUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ActionBarProps {
   workouts: WeeklyWorkouts;
@@ -39,68 +34,85 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);
   const [exportFormat, setExportFormat] = useState<"json" | "pdf">("json");
-  const [emailRecipients, setEmailRecipients] = useState<EmailRecipients>({ 
-    to: "", 
-    cc: "", 
-    bcc: "" 
+  const [isLoading, setIsLoading] = useState(false);
+  const [emailRecipients, setEmailRecipients] = useState({
+    to: "",
+    cc: "",
+    bcc: "",
   });
 
   const handleDownload = async () => {
-    const exportData = formatWorkoutForExport(workouts, selectedDays);
-    
-    if (exportData.metadata.fileSize > FILE_SIZE_WARNING) {
-      const proceed = window.confirm(
-        "The workout plan is quite large (over 5MB). This might affect performance when importing later. Continue with download?"
-      );
-      if (!proceed) return;
-    }
+    try {
+      if (selectedDays.length === 0) {
+        toast.error("Please select at least one day to download");
+        return;
+      }
 
-    if (exportFormat === "pdf") {
-      toast.error("PDF export coming soon!");
-      return;
+      setIsLoading(true);
+      const fileName = downloadWorkouts(workouts, selectedDays, exportFormat);
+      toast.success(`Downloaded ${fileName} successfully!`);
+      setShowDownloadDialog(false);
+      setSelectedDays([]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to download workouts");
+    } finally {
+      setIsLoading(false);
     }
-
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    const fileName = `workout-routine-${format(new Date(), 'yyyy-MM-dd')}.json`;
-    
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    
-    toast.success('Workout routine downloaded successfully!');
-    setShowDownloadDialog(false);
   };
 
-  const handleEmail = () => {
-    const { htmlContent, plainText } = generateEmailContent(workouts, selectedDays);
-    const dateRange = format(new Date(), 'MMM d') + ' - ' + 
-                     format(new Date(new Date().setDate(new Date().getDate() + 7)), 'MMM d, yyyy');
-    const subject = encodeURIComponent(`Weekly Workout Routine (${dateRange})`);
-    
-    // Check email size
-    const emailSize = new Blob([htmlContent]).size;
-    if (emailSize > EMAIL_SIZE_LIMIT) {
-      toast.error("Email content exceeds size limit (10MB). Please select fewer workouts.");
-      return;
-    }
+  const handleEmail = async () => {
+    try {
+      if (selectedDays.length === 0) {
+        toast.error("Please select at least one day");
+        return;
+      }
 
-    const mailtoLink = `mailto:${emailRecipients.to}?${
-      emailRecipients.cc ? `cc=${emailRecipients.cc}&` : ''
-    }${
-      emailRecipients.bcc ? `bcc=${emailRecipients.bcc}&` : ''
-    }subject=${subject}&body=${encodeURIComponent(plainText)}`;
+      setIsLoading(true);
 
-    if (window.confirm("Open email client to send workout routine?")) {
-      window.location.href = mailtoLink;
-      toast.success('Opening email client...');
+      // Validate email addresses
+      const validatedData = emailSchema.parse(emailRecipients);
+      const toEmails = validateEmails(validatedData.to);
+      const ccEmails = validatedData.cc ? validateEmails(validatedData.cc) : [];
+      const bccEmails = validatedData.bcc ? validateEmails(validatedData.bcc) : [];
+
+      if (toEmails.length === 0) {
+        throw new Error("Please enter at least one valid recipient email");
+      }
+
+      const { htmlContent, plainText } = generateEmailContent(workouts, selectedDays);
+      const dateRange = new Date().toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric'
+      }) + ' - ' + 
+      new Date(new Date().setDate(new Date().getDate() + 7))
+        .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: {
+          to: toEmails,
+          cc: ccEmails,
+          bcc: bccEmails,
+          subject: `Weekly Workout Routine (${dateRange})`,
+          html: htmlContent,
+          text: plainText,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success("Email sent successfully!");
       setShowEmailDialog(false);
+      setSelectedDays([]);
+      setEmailRecipients({ to: "", cc: "", bcc: "" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to send email");
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleSelectAll = () => {
+    setSelectedDays(selectedDays.length === Object.keys(workouts).length ? [] : Object.keys(workouts));
   };
 
   return (
@@ -123,7 +135,10 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Export Format</label>
-                <Select value={exportFormat} onValueChange={(value: "json" | "pdf") => setExportFormat(value)}>
+                <Select 
+                  value={exportFormat} 
+                  onValueChange={(value: "json" | "pdf") => setExportFormat(value)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -137,14 +152,23 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
                     <SelectItem value="pdf">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4" />
-                        PDF
+                        PDF (Coming Soon)
                       </div>
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Select Days</label>
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium">Select Days</label>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={handleSelectAll}
+                  >
+                    {selectedDays.length === Object.keys(workouts).length ? "Deselect All" : "Select All"}
+                  </Button>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   {Object.keys(workouts).map((day) => (
                     <div key={day} className="flex items-center space-x-2">
@@ -166,8 +190,8 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={handleDownload}>
-                Download
+              <Button onClick={handleDownload} disabled={isLoading}>
+                {isLoading ? "Downloading..." : "Download"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -198,34 +222,46 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">To:</label>
+                <label className="text-sm font-medium">To: (separate multiple emails with commas)</label>
                 <input
-                  type="email"
+                  type="text"
                   className="w-full px-3 py-2 border rounded-md"
                   value={emailRecipients.to}
                   onChange={(e) => setEmailRecipients(prev => ({ ...prev, to: e.target.value }))}
+                  placeholder="email@example.com, another@example.com"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">CC:</label>
+                <label className="text-sm font-medium">CC: (optional)</label>
                 <input
-                  type="email"
+                  type="text"
                   className="w-full px-3 py-2 border rounded-md"
                   value={emailRecipients.cc}
                   onChange={(e) => setEmailRecipients(prev => ({ ...prev, cc: e.target.value }))}
+                  placeholder="email@example.com, another@example.com"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">BCC:</label>
+                <label className="text-sm font-medium">BCC: (optional)</label>
                 <input
-                  type="email"
+                  type="text"
                   className="w-full px-3 py-2 border rounded-md"
                   value={emailRecipients.bcc}
                   onChange={(e) => setEmailRecipients(prev => ({ ...prev, bcc: e.target.value }))}
+                  placeholder="email@example.com, another@example.com"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Select Days</label>
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium">Select Days</label>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={handleSelectAll}
+                  >
+                    {selectedDays.length === Object.keys(workouts).length ? "Deselect All" : "Select All"}
+                  </Button>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   {Object.keys(workouts).map((day) => (
                     <div key={day} className="flex items-center space-x-2">
@@ -247,8 +283,8 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={handleEmail}>
-                Send Email
+              <Button onClick={handleEmail} disabled={isLoading}>
+                {isLoading ? "Sending..." : "Send Email"}
               </Button>
             </DialogFooter>
           </DialogContent>
