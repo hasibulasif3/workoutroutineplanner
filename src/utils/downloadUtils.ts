@@ -1,9 +1,7 @@
 import { WeeklyWorkouts } from "@/types/workout";
 import { format } from "date-fns";
 
-export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-
-export interface ExportMetadata {
+interface ExportMetadata {
   version: string;
   exportDate: string;
   totalWorkouts: number;
@@ -11,6 +9,7 @@ export interface ExportMetadata {
 }
 
 export const validateFileSize = (data: string): boolean => {
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
   const size = new Blob([data]).size;
   return size <= MAX_FILE_SIZE;
 };
