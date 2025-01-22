@@ -50,7 +50,7 @@ export const downloadWorkouts = (workouts: WeeklyWorkouts, selectedDays: string[
     throw new Error("PDF export is not supported yet");
   }
 
-  const { exportData, jsonString } = formatWorkoutForExport(workouts, selectedDays);
+  const { jsonString } = formatWorkoutForExport(workouts, selectedDays);
 
   if (!validateFileSize(jsonString)) {
     throw new Error("File size exceeds 10MB limit");
