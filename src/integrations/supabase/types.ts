@@ -9,13 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      column_preferences: {
+        Row: {
+          created_at: string | null
+          day: string
+          display_order: number | null
+          id: string
+          is_collapsed: boolean | null
+          is_hidden: boolean | null
+          last_modified: string | null
+          user_id: string | null
+          width: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          day: string
+          display_order?: number | null
+          id?: string
+          is_collapsed?: boolean | null
+          is_hidden?: boolean | null
+          last_modified?: string | null
+          user_id?: string | null
+          width?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          day?: string
+          display_order?: number | null
+          id?: string
+          is_collapsed?: boolean | null
+          is_hidden?: boolean | null
+          last_modified?: string | null
+          user_id?: string | null
+          width?: number | null
+        }
+        Relationships: []
+      }
       workouts: {
         Row: {
           calories: string | null
           completed: boolean | null
+          concurrent_version: number | null
           cooldown_duration: string | null
           created_at: string | null
           difficulty: string | null
+          display_order: number | null
           duration: string
           exercise_order: Json | null
           exercises: Json | null
@@ -24,6 +62,7 @@ export type Database = {
           metadata: Json | null
           notes: string | null
           offline_id: string | null
+          related_workouts: Json | null
           rest_between_exercises: string | null
           title: string
           type: string
@@ -34,9 +73,11 @@ export type Database = {
         Insert: {
           calories?: string | null
           completed?: boolean | null
+          concurrent_version?: number | null
           cooldown_duration?: string | null
           created_at?: string | null
           difficulty?: string | null
+          display_order?: number | null
           duration: string
           exercise_order?: Json | null
           exercises?: Json | null
@@ -45,6 +86,7 @@ export type Database = {
           metadata?: Json | null
           notes?: string | null
           offline_id?: string | null
+          related_workouts?: Json | null
           rest_between_exercises?: string | null
           title: string
           type: string
@@ -55,9 +97,11 @@ export type Database = {
         Update: {
           calories?: string | null
           completed?: boolean | null
+          concurrent_version?: number | null
           cooldown_duration?: string | null
           created_at?: string | null
           difficulty?: string | null
+          display_order?: number | null
           duration?: string
           exercise_order?: Json | null
           exercises?: Json | null
@@ -66,6 +110,7 @@ export type Database = {
           metadata?: Json | null
           notes?: string | null
           offline_id?: string | null
+          related_workouts?: Json | null
           rest_between_exercises?: string | null
           title?: string
           type?: string
