@@ -41,7 +41,7 @@ export const formatWorkoutForExport = (workouts: WeeklyWorkouts, selectedDays: s
   return { exportData, jsonString };
 };
 
-export const downloadWorkouts = (workouts: WeeklyWorkouts, selectedDays: string[], format: "json" | "pdf") => {
+export const downloadWorkouts = (workouts: WeeklyWorkouts, selectedDays: string[], format: "json" | "pdf"): string => {
   if (selectedDays.length === 0) {
     throw new Error("Please select at least one day to download");
   }
