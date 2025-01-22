@@ -1,13 +1,6 @@
 import { WeeklyWorkouts } from "@/types/workout";
 import { format } from "date-fns";
 
-interface ExportMetadata {
-  version: string;
-  exportDate: string;
-  totalWorkouts: number;
-  fileSize: number;
-}
-
 export const validateFileSize = (data: string): boolean => {
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
   const size = new Blob([data]).size;
@@ -22,7 +15,7 @@ export const formatWorkoutForExport = (workouts: WeeklyWorkouts, selectedDays: s
       [day]: workouts
     }), {} as WeeklyWorkouts);
 
-  const metadata: ExportMetadata = {
+  const metadata = {
     version: "1.0",
     exportDate: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss'Z'"),
     totalWorkouts: Object.values(selectedWorkouts).flat().length,
