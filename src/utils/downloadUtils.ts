@@ -51,7 +51,7 @@ const generatePDF = (workouts: WeeklyWorkouts, selectedDays: string[]): string =
     doc.setFont(undefined, 'normal');
     doc.setFontSize(12);
 
-    dayWorkouts.forEach(workout => {
+    dayWorkouts.forEach((workout: Workout) => {
       // Check if we need a new page
       if (yPosition > doc.internal.pageSize.height - margin) {
         doc.addPage();
@@ -68,7 +68,7 @@ const generatePDF = (workouts: WeeklyWorkouts, selectedDays: string[]): string =
         `Type: ${workout.type}`,
         workout.difficulty ? `Difficulty: ${workout.difficulty}` : null,
         workout.notes ? `Notes: ${workout.notes}` : null
-      ].filter(Boolean) as string[];
+      ].filter((detail): detail is string => Boolean(detail));
 
       details.forEach(detail => {
         // Check if we need a new page
