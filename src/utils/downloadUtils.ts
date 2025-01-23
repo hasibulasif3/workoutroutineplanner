@@ -1,5 +1,6 @@
 import { WeeklyWorkouts } from "@/types/workout";
 import { format } from "date-fns";
+import jsPDF from "jspdf";
 
 interface ExportMetadata {
   version: string;
@@ -12,6 +13,85 @@ export const validateFileSize = (data: string): boolean => {
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
   const size = new Blob([data]).size;
   return size <= MAX_FILE_SIZE;
+};
+
+const generatePDF = (workouts: WeeklyWorkouts, selectedDays: string[]): string => {
+  const doc = new jsPDF();
+  let yPosition = 20;
+  const lineHeight = 10;
+  const margin = 20;
+  const pageWidth = doc.internal.pageSize.width;
+
+  // Title
+  doc.setFontSize(20);
+  doc.text("Workout Routine", pageWidth / 2, yPosition, { align: "center" });
+  yPosition += lineHeight * 2;
+
+  // Date range
+  doc.setFontSize(12);
+  const dateRange = `${format(new Date(), 'MMM d')} - ${format(new Date(new Date().setDate(new Date().getDate() + 7)), 'MMM d, yyyy')}`;
+  doc.text(dateRange, pageWidth / 2, yPosition, { align: "center" });
+  yPosition += lineHeight * 2;
+
+  // Workouts by day
+  doc.setFontSize(14);
+  selectedDays.forEach(day => {
+    // Check if we need a new page
+    if (yPosition > doc.internal.pageSize.height - margin) {
+      doc.addPage();
+      yPosition = margin;
+    }
+
+    // Day header
+    doc.setFont(undefined, 'bold');
+    doc.text(day, margin, yPosition);
+    yPosition += lineHeight;
+
+    const dayWorkouts = workouts[day] || [];
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(12);
+
+    dayWorkouts.forEach(workout => {
+      // Check if we need a new page
+      if (yPosition > doc.internal.pageSize.height - margin) {
+        doc.addPage();
+        yPosition = margin;
+      }
+
+      // Workout details
+      doc.text(`• ${workout.title}`, margin + 5, yPosition);
+      yPosition += lineHeight;
+      
+      const details = [
+        `Duration: ${workout.duration} mins`,
+        workout.calories ? `Calories: ${workout.calories}` : null,
+        `Type: ${workout.type}`,
+        workout.difficulty ? `Difficulty: ${workout.difficulty}` : null,
+        workout.notes ? `Notes: ${workout.notes}` : null
+      ].filter(Boolean);
+
+      details.forEach(detail => {
+        if (detail) {
+          // Check if we need a new page
+          if (yPosition > doc.internal.pageSize.height - margin) {
+            doc.addPage();
+            yPosition = margin;
+          }
+          doc.setFontSize(10);
+          doc.text(detail, margin + 10, yPosition);
+          yPosition += lineHeight;
+        }
+      });
+
+      yPosition += lineHeight / 2; // Add some space between workouts
+    });
+
+    yPosition += lineHeight; // Add space between days
+  });
+
+  const fileName = `workout-routine-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+  doc.save(fileName);
+  return fileName;
 };
 
 export const formatWorkoutForExport = (workouts: WeeklyWorkouts, selectedDays: string[]) => {
@@ -46,7 +126,7 @@ export const downloadWorkouts = (workouts: WeeklyWorkouts, selectedDays: string[
   }
 
   if (format === "pdf") {
-    throw new Error("PDF export is not supported yet");
+    return generatePDF(workouts, selectedDays);
   }
 
   const { jsonString } = formatWorkoutForExport(workouts, selectedDays);

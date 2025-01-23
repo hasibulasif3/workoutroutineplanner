@@ -152,7 +152,7 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
                     <SelectItem value="pdf">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4" />
-                        PDF (Coming Soon)
+                        PDF
                       </div>
                     </SelectItem>
                   </SelectContent>
