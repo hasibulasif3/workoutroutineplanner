@@ -1,4 +1,4 @@
-import { WeeklyWorkouts } from "@/types/workout";
+import { WeeklyWorkouts, Workout } from "@/types/workout";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 
@@ -68,19 +68,17 @@ const generatePDF = (workouts: WeeklyWorkouts, selectedDays: string[]): string =
         `Type: ${workout.type}`,
         workout.difficulty ? `Difficulty: ${workout.difficulty}` : null,
         workout.notes ? `Notes: ${workout.notes}` : null
-      ].filter(Boolean);
+      ].filter(Boolean) as string[];
 
       details.forEach(detail => {
-        if (detail) {
-          // Check if we need a new page
-          if (yPosition > doc.internal.pageSize.height - margin) {
-            doc.addPage();
-            yPosition = margin;
-          }
-          doc.setFontSize(10);
-          doc.text(detail, margin + 10, yPosition);
-          yPosition += lineHeight;
+        // Check if we need a new page
+        if (yPosition > doc.internal.pageSize.height - margin) {
+          doc.addPage();
+          yPosition = margin;
         }
+        doc.setFontSize(10);
+        doc.text(detail, margin + 10, yPosition);
+        yPosition += lineHeight;
       });
 
       yPosition += lineHeight / 2; // Add some space between workouts
