@@ -61,16 +61,21 @@ const generatePDF = (workouts: WeeklyWorkouts, selectedDays: string[]): string =
       // Workout details
       doc.text(`• ${workout.title}`, margin + 5, yPosition);
       yPosition += lineHeight;
-      
+
       const details = [
         `Duration: ${workout.duration} mins`,
         workout.calories ? `Calories: ${workout.calories}` : null,
         `Type: ${workout.type}`,
         workout.difficulty ? `Difficulty: ${workout.difficulty}` : null,
         workout.notes ? `Notes: ${workout.notes}` : null
-      ].filter((detail): detail is string => detail !== null);
+      ];
 
-      details.forEach(detail => {
+      // Filter out null values and ensure we only have strings
+      const validDetails = details.filter((detail): detail is string => 
+        detail !== null
+      );
+
+      validDetails.forEach(detail => {
         // Check if we need a new page
         if (yPosition > doc.internal.pageSize.height - margin) {
           doc.addPage();
