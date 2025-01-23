@@ -72,7 +72,7 @@ const generatePDF = (workouts: WeeklyWorkouts, selectedDays: string[]): string =
 
       // Filter out null values and ensure we only have strings
       const validDetails = details.filter((detail): detail is string => 
-        detail !== null
+        detail !== null && typeof detail === 'string'
       );
 
       validDetails.forEach(detail => {
