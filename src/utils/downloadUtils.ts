@@ -68,7 +68,7 @@ const generatePDF = (workouts: WeeklyWorkouts, selectedDays: string[]): string =
         `Type: ${workout.type}`,
         workout.difficulty ? `Difficulty: ${workout.difficulty}` : null,
         workout.notes ? `Notes: ${workout.notes}` : null
-      ].filter((item): item is string => typeof item === 'string');
+      ].filter((item): item is string => item !== null);
 
       details.forEach(detail => {
         // Check if we need a new page
