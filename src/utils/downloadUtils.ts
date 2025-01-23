@@ -70,9 +70,9 @@ const generatePDF = (workouts: WeeklyWorkouts, selectedDays: string[]): string =
         workout.notes ? `Notes: ${workout.notes}` : null
       ];
 
-      // Use type predicate to ensure we only have strings
+      // Filter out null values and ensure we only have strings
       const validDetails = details.filter((detail): detail is string => 
-        detail !== null && typeof detail === 'string'
+        detail !== null
       );
 
       validDetails.forEach(detail => {
