@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Workout, WeeklyWorkouts, Exercise } from "@/types/workout";
+import { Workout, WeeklyWorkouts, Exercise, SyncStatus } from "@/types/workout";
 import { toast } from "sonner";
 import { Json } from "@/integrations/supabase/types";
 
@@ -20,6 +20,14 @@ const mapWorkoutToDb = async (workout: Omit<Workout, "id">) => {
     cooldown_duration: workout.cooldownDuration || null,
     rest_between_exercises: workout.restBetweenExercises || null,
     user_id: user?.id || null,
+    sync_status: workout.syncStatus || 'synced',
+    last_synced_at: workout.lastSyncedAt?.toISOString() || null,
+    local_changes: workout.localChanges as unknown as Json || {},
+    sync_conflicts: workout.syncConflicts as unknown as Json || [],
+    scheduled_time: workout.scheduledTime?.toISOString() || null,
+    time_zone: workout.timeZone || 'UTC',
+    exercise_validation_rules: workout.exerciseValidationRules as unknown as Json || {},
+    total_exercise_time: workout.totalExerciseTime || null,
     metadata: {
       lastSyncedAt: new Date().toISOString(),
       version: "1.0",
@@ -43,6 +51,14 @@ const mapDbToWorkout = (dbWorkout: any): Workout => ({
   restBetweenExercises: dbWorkout.rest_between_exercises,
   metadata: dbWorkout.metadata,
   userId: dbWorkout.user_id,
+  syncStatus: dbWorkout.sync_status as SyncStatus,
+  lastSyncedAt: dbWorkout.last_synced_at ? new Date(dbWorkout.last_synced_at) : undefined,
+  localChanges: dbWorkout.local_changes || {},
+  syncConflicts: dbWorkout.sync_conflicts || [],
+  scheduledTime: dbWorkout.scheduled_time ? new Date(dbWorkout.scheduled_time) : undefined,
+  timeZone: dbWorkout.time_zone || 'UTC',
+  exerciseValidationRules: dbWorkout.exercise_validation_rules || {},
+  totalExerciseTime: dbWorkout.total_exercise_time,
 });
 
 export const workoutService = {
@@ -134,7 +150,14 @@ export const workoutService = {
       };
 
       convertedWorkouts.forEach((workout) => {
-        weeklyWorkouts.Monday.push(workout);
+        // Assign workouts to days based on scheduledTime if available
+        if (workout.scheduledTime) {
+          const day = new Date(workout.scheduledTime)
+            .toLocaleDateString('en-US', { weekday: 'long' });
+          weeklyWorkouts[day].push(workout);
+        } else {
+          weeklyWorkouts.Monday.push(workout);
+        }
       });
 
       return weeklyWorkouts;
@@ -168,15 +191,11 @@ export const workoutService = {
             const workouts = await this.fetchWorkouts();
             callback(workouts);
             
-            // Handle concurrent edits
             if (payload.eventType === 'UPDATE') {
-              const localData = localStorage.getItem('workout-form-state');
-              if (localData) {
-                const localWorkout = JSON.parse(localData);
-                if (localWorkout.id === payload.new.id && 
-                    new Date(payload.new.last_modified) > new Date(localWorkout.lastModified)) {
-                  toast.warning("This workout was modified in another window");
-                }
+              const newWorkout = payload.new;
+              if (newWorkout.sync_conflicts && 
+                  (newWorkout.sync_conflicts as any[]).length > 0) {
+                toast.warning("Sync conflict detected. Please review changes.");
               }
             }
           } catch (error) {

@@ -1,5 +1,6 @@
 export type WorkoutDifficulty = "beginner" | "intermediate" | "advanced";
 export type WorkoutType = "strength" | "cardio" | "flexibility";
+export type SyncStatus = "synced" | "pending" | "conflict" | "error";
 
 export interface Exercise {
   name: string;
@@ -29,6 +30,18 @@ export interface Workout {
   restBetweenExercises?: string;
   metadata?: Record<string, unknown>;
   userId?: string;
+  syncStatus?: SyncStatus;
+  lastSyncedAt?: Date;
+  localChanges?: Record<string, unknown>;
+  syncConflicts?: Array<{
+    timestamp: Date;
+    oldValue: Workout;
+    newValue: Workout;
+  }>;
+  scheduledTime?: Date;
+  timeZone?: string;
+  exerciseValidationRules?: Record<string, unknown>;
+  totalExerciseTime?: number;
 }
 
 export type WeeklyWorkouts = {

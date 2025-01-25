@@ -56,15 +56,23 @@ export type Database = {
           display_order: number | null
           duration: string
           exercise_order: Json | null
+          exercise_validation_rules: Json | null
           exercises: Json | null
           id: string
           last_modified: string | null
+          last_synced_at: string | null
+          local_changes: Json | null
           metadata: Json | null
           notes: string | null
           offline_id: string | null
           related_workouts: Json | null
           rest_between_exercises: string | null
+          scheduled_time: string | null
+          sync_conflicts: Json | null
+          sync_status: string | null
+          time_zone: string | null
           title: string
+          total_exercise_time: number | null
           type: string
           user_id: string | null
           version: string | null
@@ -80,15 +88,23 @@ export type Database = {
           display_order?: number | null
           duration: string
           exercise_order?: Json | null
+          exercise_validation_rules?: Json | null
           exercises?: Json | null
           id?: string
           last_modified?: string | null
+          last_synced_at?: string | null
+          local_changes?: Json | null
           metadata?: Json | null
           notes?: string | null
           offline_id?: string | null
           related_workouts?: Json | null
           rest_between_exercises?: string | null
+          scheduled_time?: string | null
+          sync_conflicts?: Json | null
+          sync_status?: string | null
+          time_zone?: string | null
           title: string
+          total_exercise_time?: number | null
           type: string
           user_id?: string | null
           version?: string | null
@@ -104,15 +120,23 @@ export type Database = {
           display_order?: number | null
           duration?: string
           exercise_order?: Json | null
+          exercise_validation_rules?: Json | null
           exercises?: Json | null
           id?: string
           last_modified?: string | null
+          last_synced_at?: string | null
+          local_changes?: Json | null
           metadata?: Json | null
           notes?: string | null
           offline_id?: string | null
           related_workouts?: Json | null
           rest_between_exercises?: string | null
+          scheduled_time?: string | null
+          sync_conflicts?: Json | null
+          sync_status?: string | null
+          time_zone?: string | null
           title?: string
+          total_exercise_time?: number | null
           type?: string
           user_id?: string | null
           version?: string | null
