@@ -33,7 +33,7 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);
-  const [exportFormat, setExportFormat] = useState<"json" | "pdf">("json");
+  const [exportFormat, setExportFormat] = useState<"json" | "pdf">("pdf");
   const [isLoading, setIsLoading] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState({
     to: "",
