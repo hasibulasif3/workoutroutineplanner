@@ -136,7 +136,7 @@ export function WeeklyBoard() {
 
         const updatedWorkout: Workout = {
           ...workout,
-          lastModified: new Date()
+          last_modified: new Date().toISOString()
         };
 
         const newWorkouts = {
@@ -152,10 +152,10 @@ export function WeeklyBoard() {
     }
   };
 
-  const handleWorkoutCreate = (workoutData: Omit<Workout, 'id' | 'lastModified'>) => {
+  const handleWorkoutCreate = (workoutData: Omit<Workout, 'id' | 'last_modified'>) => {
     const newWorkout: Workout = {
       id: uuidv4(),
-      lastModified: new Date(),
+      last_modified: new Date().toISOString(),
       ...workoutData,
       exercises: []
     };

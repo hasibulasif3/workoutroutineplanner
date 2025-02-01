@@ -124,7 +124,6 @@ class WorkoutService {
 
     try {
       const workoutData = {
-        ...workout,
         duration: workout.duration || '0',
         title: workout.title || 'Untitled Workout',
         type: workout.type || 'cardio',
@@ -133,7 +132,9 @@ class WorkoutService {
         exercise_order: JSON.stringify(workout.exercise_order || []) as Json,
         related_workouts: JSON.stringify(workout.related_workouts || []) as Json,
         local_changes: JSON.stringify(workout.local_changes || {}) as Json,
-        sync_conflicts: JSON.stringify(workout.sync_conflicts || []) as Json
+        sync_conflicts: JSON.stringify(workout.sync_conflicts || []) as Json,
+        exercise_validation_rules: JSON.stringify(workout.exercise_validation_rules || {}) as Json,
+        ...workout
       };
 
       const { data, error } = await this.retryOperation(async () =>
