@@ -89,7 +89,7 @@ const generatePDF = (workouts: WeeklyWorkouts, selectedDays: string[]): string =
 
   const fileName = `workout-routine-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
   doc.save(fileName);
-  return fileName;
+  return fileName.toString();
 };
 
 export const formatWorkoutForExport = (workouts: WeeklyWorkouts, selectedDays: string[]) => {

@@ -82,7 +82,6 @@ class WorkoutService {
 
       if (error) throw error;
 
-      // Group workouts by day
       const groupedWorkouts: WeeklyWorkouts = {
         Monday: [],
         Tuesday: [],
@@ -124,10 +123,20 @@ class WorkoutService {
     }
 
     try {
+      const workoutData = {
+        ...workout,
+        exercises: JSON.stringify(workout.exercises || []),
+        metadata: JSON.stringify(workout.metadata || {}),
+        exercise_order: JSON.stringify(workout.exercise_order || []),
+        related_workouts: JSON.stringify(workout.related_workouts || []),
+        local_changes: JSON.stringify(workout.localChanges || {}),
+        sync_conflicts: JSON.stringify(workout.syncConflicts || [])
+      };
+
       const { data, error } = await this.retryOperation(async () =>
         await supabase
           .from('workouts')
-          .insert([workout])
+          .insert([workoutData])
           .select()
           .single()
       );

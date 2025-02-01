@@ -23,11 +23,10 @@ export interface Workout {
   calories?: string;
   notes?: string;
   completed?: boolean;
-  lastModified: Date;
   exercises: Exercise[];
-  warmupDuration?: string;
-  cooldownDuration?: string;
-  restBetweenExercises?: string;
+  warmup_duration?: string;
+  cooldown_duration?: string;
+  rest_between_exercises?: string;
   metadata?: Record<string, unknown>;
   userId?: string;
   syncStatus?: SyncStatus;
@@ -38,10 +37,17 @@ export interface Workout {
     oldValue: Workout;
     newValue: Workout;
   }>;
-  scheduledTime?: Date;
+  scheduled_time?: Date;
   timeZone?: string;
   exerciseValidationRules?: Record<string, unknown>;
   totalExerciseTime?: number;
+  created_at?: string;
+  last_modified?: string;
+  display_order?: number;
+  concurrent_version?: number;
+  exercise_order?: unknown[];
+  offline_id?: string;
+  related_workouts?: unknown[];
 }
 
 export type WeeklyWorkouts = {
