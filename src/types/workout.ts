@@ -30,17 +30,17 @@ export interface Workout {
   metadata?: Record<string, unknown>;
   userId?: string;
   syncStatus?: SyncStatus;
-  lastSyncedAt?: Date;
-  localChanges?: Record<string, unknown>;
-  syncConflicts?: Array<{
+  last_synced_at?: Date;
+  local_changes?: Record<string, unknown>;
+  sync_conflicts?: Array<{
     timestamp: Date;
     oldValue: Workout;
     newValue: Workout;
   }>;
   scheduled_time?: Date;
   timeZone?: string;
-  exerciseValidationRules?: Record<string, unknown>;
-  totalExerciseTime?: number;
+  exercise_validation_rules?: Record<string, unknown>;
+  total_exercise_time?: number;
   created_at?: string;
   last_modified?: string;
   display_order?: number;

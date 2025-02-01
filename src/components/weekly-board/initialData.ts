@@ -9,7 +9,7 @@ export const initialWorkouts: WeeklyWorkouts = {
       type: "cardio", 
       difficulty: "beginner", 
       calories: "300",
-      lastModified: new Date(),
+      last_modified: new Date().toISOString(),
       exercises: []
     },
     { 
@@ -19,7 +19,7 @@ export const initialWorkouts: WeeklyWorkouts = {
       type: "strength", 
       difficulty: "intermediate", 
       calories: "150",
-      lastModified: new Date(),
+      last_modified: new Date().toISOString(),
       exercises: []
     },
   ],
@@ -31,7 +31,7 @@ export const initialWorkouts: WeeklyWorkouts = {
       type: "flexibility", 
       difficulty: "beginner", 
       calories: "200",
-      lastModified: new Date(),
+      last_modified: new Date().toISOString(),
       exercises: []
     },
   ],
@@ -43,7 +43,7 @@ export const initialWorkouts: WeeklyWorkouts = {
       type: "cardio", 
       difficulty: "advanced", 
       calories: "400",
-      lastModified: new Date(),
+      last_modified: new Date().toISOString(),
       exercises: []
     },
   ],
@@ -55,7 +55,7 @@ export const initialWorkouts: WeeklyWorkouts = {
       type: "cardio", 
       difficulty: "intermediate", 
       calories: "450",
-      lastModified: new Date(),
+      last_modified: new Date().toISOString(),
       exercises: []
     },
   ],
@@ -67,7 +67,7 @@ export const initialWorkouts: WeeklyWorkouts = {
       type: "strength", 
       difficulty: "advanced", 
       calories: "500",
-      lastModified: new Date(),
+      last_modified: new Date().toISOString(),
       exercises: []
     },
   ],

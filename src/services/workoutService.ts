@@ -16,7 +16,6 @@ class WorkoutService {
     window.addEventListener('online', this.handleOnline);
     window.addEventListener('offline', this.handleOffline);
     
-    // Load offline queue from localStorage
     const savedQueue = localStorage.getItem('workoutOfflineQueue');
     if (savedQueue) {
       this.offlineQueue = JSON.parse(savedQueue);
@@ -129,8 +128,8 @@ class WorkoutService {
         metadata: JSON.stringify(workout.metadata || {}),
         exercise_order: JSON.stringify(workout.exercise_order || []),
         related_workouts: JSON.stringify(workout.related_workouts || []),
-        local_changes: JSON.stringify(workout.localChanges || {}),
-        sync_conflicts: JSON.stringify(workout.syncConflicts || [])
+        local_changes: JSON.stringify(workout.local_changes || {}),
+        sync_conflicts: JSON.stringify(workout.sync_conflicts || [])
       };
 
       const { data, error } = await this.retryOperation(async () =>
@@ -143,7 +142,7 @@ class WorkoutService {
 
       if (error) throw error;
       toast.success('Workout created successfully!');
-      return data;
+      return this.parseWorkoutData(data);
     } catch (error) {
       console.error('Error creating workout:', error);
       toast.error('Failed to create workout');
@@ -174,7 +173,7 @@ class WorkoutService {
       );
 
       if (error) throw error;
-      return data;
+      return this.parseWorkoutData(data);
     } catch (error) {
       console.error('Error updating workout:', error);
       toast.error('Failed to update workout');
@@ -230,6 +229,18 @@ class WorkoutService {
 
     return () => {
       supabase.removeChannel(channel);
+    };
+  }
+
+  private parseWorkoutData(data: any): Workout {
+    return {
+      ...data,
+      exercises: JSON.parse(data.exercises || '[]'),
+      metadata: JSON.parse(data.metadata || '{}'),
+      exercise_order: JSON.parse(data.exercise_order || '[]'),
+      related_workouts: JSON.parse(data.related_workouts || '[]'),
+      local_changes: JSON.parse(data.local_changes || '{}'),
+      sync_conflicts: JSON.parse(data.sync_conflicts || '[]')
     };
   }
 }

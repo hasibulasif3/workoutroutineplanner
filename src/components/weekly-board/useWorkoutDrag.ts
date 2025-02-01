@@ -41,7 +41,7 @@ export function useWorkoutDrag(
 
       const updatedWorkout: Workout = {
         ...workout,
-        lastModified: new Date()
+        last_modified: new Date().toISOString()
       };
 
       newWorkouts[activeDay] = workouts[activeDay].filter(item => item.id !== active.id.toString());
@@ -49,7 +49,6 @@ export function useWorkoutDrag(
       
       setWorkouts(newWorkouts);
       
-      // Add to undo stack
       setUndoStack(prev => [...prev, {
         sourceDay: activeDay,
         targetDay: overDay,
