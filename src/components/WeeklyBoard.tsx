@@ -1,112 +1,30 @@
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { DayColumn } from "./DayColumn";
 import { WorkoutCard } from "./WorkoutCard";
-import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { WeeklyWorkouts, Workout } from "@/types/workout";
-import { storageService } from "@/services/storageService";
 import { StatsBar } from "./StatsBar";
 import { ActionBar } from "./ActionBar";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { DragProvider } from "./weekly-board/DragContext";
-
-const initialWorkouts: WeeklyWorkouts = {
-  Monday: [
-    { 
-      id: "1", 
-      title: "Morning Run", 
-      duration: "30", 
-      type: "cardio", 
-      difficulty: "beginner", 
-      calories: "300",
-      last_modified: new Date().toISOString(),
-      exercises: []
-    },
-    { 
-      id: "2", 
-      title: "Push-ups", 
-      duration: "15", 
-      type: "strength", 
-      difficulty: "intermediate", 
-      calories: "150",
-      last_modified: new Date().toISOString(),
-      exercises: []
-    },
-  ],
-  Tuesday: [
-    { 
-      id: "3", 
-      title: "Yoga", 
-      duration: "45", 
-      type: "flexibility", 
-      difficulty: "beginner", 
-      calories: "200",
-      last_modified: new Date().toISOString(),
-      exercises: []
-    },
-  ],
-  Wednesday: [
-    { 
-      id: "4", 
-      title: "HIIT", 
-      duration: "25", 
-      type: "cardio", 
-      difficulty: "advanced", 
-      calories: "400",
-      last_modified: new Date().toISOString(),
-      exercises: []
-    },
-  ],
-  Thursday: [
-    { 
-      id: "5", 
-      title: "Swimming", 
-      duration: "40", 
-      type: "cardio", 
-      difficulty: "intermediate", 
-      calories: "450",
-      last_modified: new Date().toISOString(),
-      exercises: []
-    },
-  ],
-  Friday: [
-    { 
-      id: "6", 
-      title: "Weight Training", 
-      duration: "50", 
-      type: "strength", 
-      difficulty: "advanced", 
-      calories: "500",
-      last_modified: new Date().toISOString(),
-      exercises: []
-    },
-  ],
-  Saturday: [],
-  Sunday: [],
-};
+import { useWorkouts } from "@/hooks/useWorkouts";
+import { LoadingSpinner } from "./LoadingSpinner";
+import { EmptyState } from "./EmptyState";
 
 export function WeeklyBoard() {
-  const [workouts, setWorkouts] = useState<WeeklyWorkouts>(initialWorkouts);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const savedWorkouts = storageService.loadWorkouts();
-    if (savedWorkouts) {
-      setWorkouts(savedWorkouts);
-    }
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (!isLoading) {
-      storageService.saveWorkouts(workouts);
-    }
-  }, [workouts, isLoading]);
+  
+  const {
+    workouts,
+    isLoading,
+    isError,
+    createWorkout,
+    updateWorkout,
+  } = useWorkouts();
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id.toString());
@@ -121,73 +39,62 @@ export function WeeklyBoard() {
     
     if (!over) return;
 
-    const activeDay = Object.entries(workouts).find(([day, items]) =>
-      items.find((item) => item.id === active.id.toString())
-    )?.[0];
-
+    const activeWorkout = workouts.find(w => w.id === active.id.toString());
     const overDay = over.id.toString();
 
-    if (activeDay === overDay) return;
+    if (!activeWorkout) return;
 
-    if (activeDay) {
-      setWorkouts(prev => {
-        const workout = prev[activeDay].find(item => item.id === active.id.toString());
-        if (!workout) return prev;
+    updateWorkout({
+      id: activeWorkout.id,
+      workout: {
+        ...activeWorkout,
+        day: overDay,
+        last_modified: new Date().toISOString()
+      }
+    });
 
-        const updatedWorkout: Workout = {
-          ...workout,
-          last_modified: new Date().toISOString()
-        };
-
-        const newWorkouts = {
-          ...prev,
-          [activeDay]: prev[activeDay].filter(item => item.id !== active.id.toString()),
-          [overDay]: [...prev[overDay], updatedWorkout]
-        };
-        
-        dropSound.play().catch(() => {});
-        toast.success("Workout moved successfully!");
-        return newWorkouts;
-      });
-    }
+    dropSound.play().catch(() => {});
   };
 
   const handleWorkoutCreate = (workoutData: Omit<Workout, 'id' | 'last_modified'>) => {
-    const newWorkout: Workout = {
-      id: uuidv4(),
-      last_modified: new Date().toISOString(),
+    createWorkout({
       ...workoutData,
-      exercises: []
-    };
-    
-    setWorkouts(prev => ({
-      ...prev,
-      Monday: [...prev.Monday, newWorkout],
-    }));
-    
-    toast.success("New workout created!", {
-      description: `${newWorkout.title} added to Monday`,
+      day: "Monday",
     });
   };
 
-  const activeWorkout = activeId ? 
-    Object.values(workouts).flat().find(w => w.id === activeId) : null;
-
   if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (isError) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
+      <EmptyState
+        title="Error loading workouts"
+        description="There was a problem loading your workouts. Please try again."
+        actionLabel="Retry"
+        onAction={() => window.location.reload()}
+      />
     );
   }
+
+  const workoutsByDay = workouts.reduce((acc, workout) => {
+    const day = workout.day || "Monday";
+    if (!acc[day]) acc[day] = [];
+    acc[day].push(workout);
+    return acc;
+  }, {} as WeeklyWorkouts);
+
+  const activeWorkout = activeId ? 
+    workouts.find(w => w.id === activeId) : null;
 
   return (
     <ErrorBoundary>
       <DragProvider>
-        <div className="p-8 animate-fade-in">
-          <div className="flex flex-col items-center mb-12">
+        <div className="p-4 md:p-8 animate-fade-in">
+          <div className="flex flex-col items-center mb-8 md:mb-12">
             <motion.h1 
-              className="text-5xl font-bold title-gradient mb-4"
+              className="text-3xl md:text-5xl font-bold title-gradient mb-4"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
@@ -196,7 +103,7 @@ export function WeeklyBoard() {
             </motion.h1>
             
             <motion.p 
-              className="text-lg text-gray-400 mb-8"
+              className="text-base md:text-lg text-gray-400 mb-8"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
@@ -204,8 +111,8 @@ export function WeeklyBoard() {
               Plan your workouts, track your progress, achieve your goals
             </motion.p>
             
-            <StatsBar workouts={workouts} />
-            <ActionBar workouts={workouts} onWorkoutCreate={handleWorkoutCreate} />
+            <StatsBar workouts={workoutsByDay} />
+            <ActionBar workouts={workoutsByDay} onWorkoutCreate={handleWorkoutCreate} />
           </div>
 
           <DndContext 
@@ -214,7 +121,7 @@ export function WeeklyBoard() {
             collisionDetection={closestCenter}
           >
             <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-              {Object.entries(workouts).map(([day, dayWorkouts]) => (
+              {Object.entries(workoutsByDay).map(([day, dayWorkouts]) => (
                 <SortableContext
                   key={day}
                   items={dayWorkouts.map((w) => w.id)}
@@ -237,4 +144,3 @@ export function WeeklyBoard() {
     </ErrorBoundary>
   );
 }
-
