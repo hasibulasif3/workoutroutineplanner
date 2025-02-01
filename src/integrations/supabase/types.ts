@@ -45,6 +45,104 @@ export type Database = {
         }
         Relationships: []
       }
+      email_logs: {
+        Row: {
+          bcc: string[] | null
+          cc: string[] | null
+          delivery_status: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          opened_at: string | null
+          recipient: string
+          sent_at: string | null
+          status: string
+          subject: string
+          template_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          bcc?: string[] | null
+          cc?: string[] | null
+          delivery_status?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          opened_at?: string | null
+          recipient: string
+          sent_at?: string | null
+          status: string
+          subject: string
+          template_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          bcc?: string[] | null
+          cc?: string[] | null
+          delivery_status?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          opened_at?: string | null
+          recipient?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          template_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          html_content: string
+          id: string
+          is_default: boolean | null
+          name: string
+          subject: string
+          text_content: string
+          updated_at: string | null
+          user_id: string | null
+          version: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          html_content: string
+          id?: string
+          is_default?: boolean | null
+          name: string
+          subject: string
+          text_content: string
+          updated_at?: string | null
+          user_id?: string | null
+          version?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          html_content?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          subject?: string
+          text_content?: string
+          updated_at?: string | null
+          user_id?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
       workouts: {
         Row: {
           calories: string | null
@@ -149,7 +247,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_email_rate_limit: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
