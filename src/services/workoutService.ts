@@ -127,14 +127,39 @@ class WorkoutService {
         duration: workout.duration || '0',
         title: workout.title || 'Untitled Workout',
         type: workout.type || 'cardio',
-        exercises: JSON.stringify(workout.exercises || []) as Json,
-        metadata: JSON.stringify(workout.metadata || {}) as Json,
-        exercise_order: JSON.stringify(workout.exercise_order || []) as Json,
-        related_workouts: JSON.stringify(workout.related_workouts || []) as Json,
-        local_changes: JSON.stringify(workout.local_changes || {}) as Json,
-        sync_conflicts: JSON.stringify(workout.sync_conflicts || []) as Json,
-        exercise_validation_rules: JSON.stringify(workout.exercise_validation_rules || {}) as Json,
-        ...workout
+        exercises: Array.isArray(workout.exercises) 
+          ? JSON.stringify(workout.exercises) 
+          : '[]',
+        metadata: typeof workout.metadata === 'object' 
+          ? JSON.stringify(workout.metadata || {}) 
+          : '{}',
+        exercise_order: Array.isArray(workout.exercise_order) 
+          ? JSON.stringify(workout.exercise_order || []) 
+          : '[]',
+        related_workouts: Array.isArray(workout.related_workouts) 
+          ? JSON.stringify(workout.related_workouts || []) 
+          : '[]',
+        local_changes: typeof workout.local_changes === 'object' 
+          ? JSON.stringify(workout.local_changes || {}) 
+          : '{}',
+        sync_conflicts: Array.isArray(workout.sync_conflicts) 
+          ? JSON.stringify(workout.sync_conflicts || []) 
+          : '[]',
+        exercise_validation_rules: typeof workout.exercise_validation_rules === 'object' 
+          ? JSON.stringify(workout.exercise_validation_rules || {}) 
+          : '{}',
+        calories: workout.calories,
+        completed: workout.completed,
+        difficulty: workout.difficulty,
+        notes: workout.notes,
+        warmup_duration: workout.warmup_duration,
+        cooldown_duration: workout.cooldown_duration,
+        rest_between_exercises: workout.rest_between_exercises,
+        scheduled_time: workout.scheduled_time,
+        time_zone: workout.time_zone || 'UTC',
+        display_order: workout.display_order,
+        concurrent_version: workout.concurrent_version || 1,
+        sync_status: workout.sync_status || 'synced',
       };
 
       const { data, error } = await this.retryOperation(async () =>
@@ -168,10 +193,35 @@ class WorkoutService {
     }
 
     try {
+      const workoutData = {
+        ...workout,
+        exercises: Array.isArray(workout.exercises) 
+          ? JSON.stringify(workout.exercises) 
+          : undefined,
+        metadata: typeof workout.metadata === 'object' 
+          ? JSON.stringify(workout.metadata) 
+          : undefined,
+        exercise_order: Array.isArray(workout.exercise_order) 
+          ? JSON.stringify(workout.exercise_order) 
+          : undefined,
+        related_workouts: Array.isArray(workout.related_workouts) 
+          ? JSON.stringify(workout.related_workouts) 
+          : undefined,
+        local_changes: typeof workout.local_changes === 'object' 
+          ? JSON.stringify(workout.local_changes) 
+          : undefined,
+        sync_conflicts: Array.isArray(workout.sync_conflicts) 
+          ? JSON.stringify(workout.sync_conflicts) 
+          : undefined,
+        exercise_validation_rules: typeof workout.exercise_validation_rules === 'object' 
+          ? JSON.stringify(workout.exercise_validation_rules) 
+          : undefined,
+      };
+
       const { data, error } = await this.retryOperation(async () =>
         await supabase
           .from('workouts')
-          .update(workout)
+          .update(workoutData)
           .eq('id', workout.id)
           .select()
           .single()
@@ -245,7 +295,8 @@ class WorkoutService {
       exercise_order: JSON.parse(data.exercise_order || '[]'),
       related_workouts: JSON.parse(data.related_workouts || '[]'),
       local_changes: JSON.parse(data.local_changes || '{}'),
-      sync_conflicts: JSON.parse(data.sync_conflicts || '[]')
+      sync_conflicts: JSON.parse(data.sync_conflicts || '[]'),
+      exercise_validation_rules: JSON.parse(data.exercise_validation_rules || '{}'),
     };
   }
 }
