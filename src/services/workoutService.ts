@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { WeeklyWorkouts, Workout } from "@/types/workout";
 import { toast } from "sonner";
+import { Json } from "@/integrations/supabase/types";
 
 class WorkoutService {
   private offlineQueue: Array<{
@@ -124,12 +125,15 @@ class WorkoutService {
     try {
       const workoutData = {
         ...workout,
-        exercises: JSON.stringify(workout.exercises || []),
-        metadata: JSON.stringify(workout.metadata || {}),
-        exercise_order: JSON.stringify(workout.exercise_order || []),
-        related_workouts: JSON.stringify(workout.related_workouts || []),
-        local_changes: JSON.stringify(workout.local_changes || {}),
-        sync_conflicts: JSON.stringify(workout.sync_conflicts || [])
+        duration: workout.duration || '0',
+        title: workout.title || 'Untitled Workout',
+        type: workout.type || 'cardio',
+        exercises: JSON.stringify(workout.exercises || []) as Json,
+        metadata: JSON.stringify(workout.metadata || {}) as Json,
+        exercise_order: JSON.stringify(workout.exercise_order || []) as Json,
+        related_workouts: JSON.stringify(workout.related_workouts || []) as Json,
+        local_changes: JSON.stringify(workout.local_changes || {}) as Json,
+        sync_conflicts: JSON.stringify(workout.sync_conflicts || []) as Json
       };
 
       const { data, error } = await this.retryOperation(async () =>
