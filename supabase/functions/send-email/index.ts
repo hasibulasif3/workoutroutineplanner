@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { Resend } from "npm:resend@2.0.0"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,6 +14,8 @@ interface EmailRequest {
   subject: string;
   html: string;
   text: string;
+  templateId?: string;
+  metadata?: Record<string, any>;
 }
 
 serve(async (req) => {
@@ -26,35 +29,70 @@ serve(async (req) => {
       throw new Error('Missing Resend API key')
     }
 
-    const { to, cc, bcc, subject, html, text }: EmailRequest = await req.json()
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: 'Workout Planner <workouts@resend.dev>',
-        to,
+    const { to, cc, bcc, subject, html, text, templateId, metadata }: EmailRequest = await req.json()
+
+    // Check rate limit
+    const { data: { user } } = await supabaseClient.auth.getUser(req.headers.get('Authorization')?.split(' ')[1] ?? '')
+    if (!user?.id) {
+      throw new Error('Unauthorized')
+    }
+
+    const { data: rateLimit } = await supabaseClient
+      .rpc('check_email_rate_limit', { p_user_id: user.id })
+    
+    if (!rateLimit) {
+      throw new Error('Rate limit exceeded. Please try again later.')
+    }
+
+    const resend = new Resend(RESEND_API_KEY)
+    const emailResponse = await resend.emails.send({
+      from: 'Workout Planner <workouts@resend.dev>',
+      to,
+      cc,
+      bcc,
+      subject,
+      html,
+      text,
+    })
+
+    // Log the email
+    const { error: logError } = await supabaseClient
+      .from('email_logs')
+      .insert({
+        user_id: user.id,
+        template_id: templateId,
+        recipient: to.join(', '),
         cc,
         bcc,
         subject,
-        html,
-        text,
-      }),
-    })
+        status: 'sent',
+        metadata: {
+          ...metadata,
+          resend_id: emailResponse.id
+        }
+      })
 
-    const data = await res.json()
+    if (logError) {
+      console.error('Error logging email:', logError)
+    }
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify(emailResponse), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: res.ok ? 200 : 400,
+      status: 200,
     })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    })
+    console.error('Error in send-email function:', error)
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: error.message === 'Rate limit exceeded. Please try again later.' ? 429 : 500,
+      }
+    )
   }
 })
