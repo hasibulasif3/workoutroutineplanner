@@ -155,11 +155,11 @@ class WorkoutService {
         warmup_duration: workout.warmup_duration,
         cooldown_duration: workout.cooldown_duration,
         rest_between_exercises: workout.rest_between_exercises,
-        scheduled_time: workout.scheduled_time,
-        time_zone: workout.time_zone || 'UTC',
+        scheduled_time: workout.scheduled_time ? new Date(workout.scheduled_time).toISOString() : null,
+        time_zone: workout.timeZone || 'UTC',
         display_order: workout.display_order,
         concurrent_version: workout.concurrent_version || 1,
-        sync_status: workout.sync_status || 'synced',
+        sync_status: workout.syncStatus || 'synced',
       };
 
       const { data, error } = await this.retryOperation(async () =>
@@ -216,6 +216,8 @@ class WorkoutService {
         exercise_validation_rules: typeof workout.exercise_validation_rules === 'object' 
           ? JSON.stringify(workout.exercise_validation_rules) 
           : undefined,
+        scheduled_time: workout.scheduled_time ? new Date(workout.scheduled_time).toISOString() : null,
+        last_synced_at: workout.last_synced_at ? new Date(workout.last_synced_at).toISOString() : null,
       };
 
       const { data, error } = await this.retryOperation(async () =>
