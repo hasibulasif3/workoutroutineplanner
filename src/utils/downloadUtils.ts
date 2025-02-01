@@ -14,7 +14,7 @@ export const downloadWorkouts = (workouts: WeeklyWorkouts, selectedDays: string[
   }
 };
 
-const downloadWorkoutJson = (jsonString: string): string => {
+export const downloadWorkoutJson = (jsonString: string): string => {
   const blob = new Blob([jsonString], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

@@ -156,10 +156,10 @@ class WorkoutService {
         cooldown_duration: workout.cooldown_duration,
         rest_between_exercises: workout.rest_between_exercises,
         scheduled_time: workout.scheduled_time ? new Date(workout.scheduled_time).toISOString() : null,
-        time_zone: workout.timeZone || 'UTC',
+        timeZone: workout.timeZone || 'UTC',
         display_order: workout.display_order,
         concurrent_version: workout.concurrent_version || 1,
-        sync_status: workout.syncStatus || 'synced',
+        syncStatus: workout.syncStatus || 'synced',
       };
 
       const { data, error } = await this.retryOperation(async () =>
