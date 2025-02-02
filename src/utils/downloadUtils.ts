@@ -1,127 +1,67 @@
-import { WeeklyWorkouts, Workout } from "@/types/workout";
-import { format } from "date-fns";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import { WeeklyWorkouts } from "@/types/workout";
+import { jsPDF } from "jspdf";
+import autoTable from 'jspdf-autotable';
 
-export const downloadWorkoutJson = (jsonString: string): string => {
-  const blob = new Blob([jsonString], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  const fileName = `workout-routine-${format(new Date(), 'yyyy-MM-dd')}.json`;
+export const downloadWorkoutsAsPDF = (workouts: WeeklyWorkouts) => {
+  const doc = new jsPDF();
   
-  link.href = url;
-  link.download = fileName;
+  // Add title
+  doc.setFontSize(20);
+  doc.text("Weekly Workout Schedule", 14, 15);
+  
+  // Prepare data for the table
+  const tableData = Object.entries(workouts).flatMap(([day, dayWorkouts]) =>
+    dayWorkouts.map(workout => [
+      day,
+      workout.title,
+      workout.duration,
+      workout.type,
+      workout.difficulty || 'N/A',
+      workout.calories || 'N/A'
+    ])
+  );
+
+  // Add table
+  autoTable(doc, {
+    head: [['Day', 'Workout', 'Duration (min)', 'Type', 'Difficulty', 'Calories']],
+    body: tableData,
+    startY: 25,
+    styles: {
+      fontSize: 10,
+      cellPadding: 3,
+    },
+    headStyles: {
+      fillColor: [66, 66, 66],
+    },
+  });
+
+  // Save the PDF
+  doc.save('weekly-workouts.pdf');
+};
+
+export const downloadWorkoutsAsCSV = (workouts: WeeklyWorkouts) => {
+  const headers = ['Day', 'Workout', 'Duration (min)', 'Type', 'Difficulty', 'Calories'];
+  
+  const rows = Object.entries(workouts).flatMap(([day, dayWorkouts]) =>
+    dayWorkouts.map(workout => 
+      `${day},${workout.title},${workout.duration},${workout.type},${workout.difficulty || 'N/A'},${workout.calories || 'N/A'}`
+    )
+  );
+
+  const csvContent = [
+    headers.join(','),
+    ...rows
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', 'weekly-workouts.csv');
+  link.style.visibility = 'hidden';
+  
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-  
-  return fileName;
-};
-
-export const downloadWorkouts = (workouts: WeeklyWorkouts, selectedDays: string[], exportFormat: "json" | "pdf"): string => {
-  const selectedWorkouts = Object.entries(workouts)
-    .filter(([day]) => selectedDays.includes(day))
-    .reduce((acc, [day, workouts]) => ({ ...acc, [day]: workouts }), {});
-
-  if (exportFormat === "json") {
-    return downloadWorkoutJson(JSON.stringify(selectedWorkouts, null, 2));
-  } else {
-    return generatePDF(selectedWorkouts);
-  }
-};
-
-const generatePDF = (workouts: WeeklyWorkouts): string => {
-  const doc = new jsPDF();
-  const fileName = `workout-routine-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-  
-  // Add cover page
-  doc.setFillColor(89, 91, 213); // Primary color
-  doc.rect(0, 0, 220, 40, "F");
-  
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
-  doc.text("Weekly Workout Routine", 20, 30);
-  
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(12);
-  doc.text(`Generated on ${format(new Date(), 'MMMM d, yyyy')}`, 20, 50);
-
-  let yPosition = 70;
-
-  // Add content for each day
-  Object.entries(workouts).forEach(([day, dayWorkouts]) => {
-    // Add day header
-    if (yPosition > 250) {
-      doc.addPage();
-      yPosition = 20;
-    }
-    
-    doc.setFillColor(242, 242, 247);
-    doc.rect(20, yPosition - 5, 170, 10, "F");
-    
-    doc.setFontSize(14);
-    doc.setTextColor(89, 91, 213);
-    doc.text(day, 25, yPosition);
-    yPosition += 15;
-
-    // Add workouts for the day
-    dayWorkouts.forEach((workout: Workout) => {
-      if (yPosition > 250) {
-        doc.addPage();
-        yPosition = 20;
-      }
-
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`• ${workout.title}`, 25, yPosition);
-      yPosition += 7;
-
-      doc.setFontSize(10);
-      doc.setTextColor(128, 128, 128);
-      doc.text(`  Duration: ${workout.duration} mins`, 30, yPosition);
-      yPosition += 5;
-
-      if (workout.difficulty) {
-        doc.text(`  Difficulty: ${workout.difficulty}`, 30, yPosition);
-        yPosition += 5;
-      }
-
-      if (workout.calories) {
-        doc.text(`  Calories: ${workout.calories}`, 30, yPosition);
-        yPosition += 5;
-      }
-
-      if (workout.notes) {
-        doc.text(`  Notes: ${workout.notes}`, 30, yPosition);
-        yPosition += 5;
-      }
-
-      yPosition += 10;
-    });
-
-    yPosition += 10;
-  });
-
-  // Add footer
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(128, 128, 128);
-    doc.text(
-      "Generated by Your Workout App - www.yourworkoutapp.com",
-      20,
-      doc.internal.pageSize.height - 10
-    );
-    doc.text(
-      `Page ${i} of ${pageCount}`,
-      doc.internal.pageSize.width - 40,
-      doc.internal.pageSize.height - 10
-    );
-  }
-
-  // Save and return
-  doc.save(fileName);
-  return fileName;
 };

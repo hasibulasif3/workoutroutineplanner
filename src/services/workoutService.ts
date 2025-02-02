@@ -1,6 +1,81 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Workout, WorkoutInput, WeeklyWorkouts } from "@/types/workout";
+import { Workout, WorkoutInput, WeeklyWorkouts, WorkoutType, WorkoutDifficulty } from "@/types/workout";
 import { toast } from "sonner";
+
+const initialWorkouts: WeeklyWorkouts = {
+  Monday: [
+    {
+      id: "1",
+      title: "Morning Run",
+      duration: "30",
+      type: "cardio",
+      difficulty: "beginner",
+      calories: "300",
+      exercises: [],
+      last_modified: new Date().toISOString()
+    },
+    {
+      id: "2",
+      title: "Push-ups",
+      duration: "15",
+      type: "strength",
+      difficulty: "intermediate",
+      calories: "150",
+      exercises: [],
+      last_modified: new Date().toISOString()
+    }
+  ],
+  Tuesday: [
+    {
+      id: "3",
+      title: "Yoga",
+      duration: "45",
+      type: "flexibility",
+      difficulty: "beginner",
+      calories: "200",
+      exercises: [],
+      last_modified: new Date().toISOString()
+    }
+  ],
+  Wednesday: [
+    {
+      id: "4",
+      title: "HIIT",
+      duration: "25",
+      type: "cardio",
+      difficulty: "advanced",
+      calories: "400",
+      exercises: [],
+      last_modified: new Date().toISOString()
+    }
+  ],
+  Thursday: [
+    {
+      id: "5",
+      title: "Swimming",
+      duration: "40",
+      type: "cardio",
+      difficulty: "intermediate",
+      calories: "450",
+      exercises: [],
+      last_modified: new Date().toISOString()
+    }
+  ],
+  Friday: [
+    {
+      id: "6",
+      title: "Weight Training",
+      duration: "50",
+      type: "strength",
+      difficulty: "advanced",
+      calories: "500",
+      exercises: [],
+      last_modified: new Date().toISOString()
+    }
+  ],
+  Saturday: [],
+  Sunday: []
+};
 
 class WorkoutService {
   async getWorkouts(): Promise<WeeklyWorkouts> {
@@ -12,6 +87,11 @@ class WorkoutService {
 
       if (error) throw error;
 
+      if (!data || data.length === 0) {
+        // If no data exists, return initial workouts
+        return initialWorkouts;
+      }
+
       const groupedWorkouts: WeeklyWorkouts = {
         Monday: [],
         Tuesday: [],
@@ -19,16 +99,21 @@ class WorkoutService {
         Thursday: [],
         Friday: [],
         Saturday: [],
-        Sunday: [],
+        Sunday: []
       };
 
-      data.forEach((workout: Workout) => {
+      data.forEach((workout) => {
         const day = workout.scheduled_time 
           ? new Date(workout.scheduled_time).toLocaleString('en-US', { weekday: 'long' })
           : 'Monday';
         
         if (groupedWorkouts[day]) {
-          groupedWorkouts[day].push(workout);
+          groupedWorkouts[day].push({
+            ...workout,
+            type: workout.type as WorkoutType,
+            difficulty: workout.difficulty as WorkoutDifficulty,
+            exercises: workout.exercises || []
+          });
         }
       });
 
@@ -36,7 +121,7 @@ class WorkoutService {
     } catch (error) {
       console.error('Error fetching workouts:', error);
       toast.error('Failed to fetch workouts');
-      throw error;
+      return initialWorkouts; // Fallback to initial workouts on error
     }
   }
 
@@ -46,15 +131,20 @@ class WorkoutService {
         .from('workouts')
         .insert([{
           ...workout,
-          exercises: JSON.stringify(workout.exercises || []),
+          exercises: workout.exercises || [],
           created_at: new Date().toISOString(),
-          last_modified: new Date().toISOString(),
+          last_modified: new Date().toISOString()
         }])
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      return {
+        ...data,
+        type: data.type as WorkoutType,
+        difficulty: data.difficulty as WorkoutDifficulty,
+        exercises: data.exercises || []
+      };
     } catch (error) {
       console.error('Error creating workout:', error);
       toast.error('Failed to create workout');
@@ -68,15 +158,19 @@ class WorkoutService {
         .from('workouts')
         .update({
           ...workout,
-          exercises: workout.exercises ? JSON.stringify(workout.exercises) : undefined,
-          last_modified: new Date().toISOString(),
+          last_modified: new Date().toISOString()
         })
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      return {
+        ...data,
+        type: data.type as WorkoutType,
+        difficulty: data.difficulty as WorkoutDifficulty,
+        exercises: data.exercises || []
+      };
     } catch (error) {
       console.error('Error updating workout:', error);
       toast.error('Failed to update workout');
@@ -99,7 +193,7 @@ class WorkoutService {
     }
   }
 
-  subscribeToWorkouts(callback: (workouts: WeeklyWorkouts) => void) {
+  subscribeToWorkouts(callback: (workouts: WeeklyWorkouts) => void): () => void {
     const channel = supabase
       .channel('workout-changes')
       .on(
