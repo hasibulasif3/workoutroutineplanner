@@ -22,43 +22,9 @@ export interface Workout {
   difficulty?: WorkoutDifficulty;
   calories?: string;
   notes?: string;
-  completed?: boolean;
   exercises: Exercise[];
-  warmup_duration?: string;
-  cooldown_duration?: string;
-  rest_between_exercises?: string;
-  metadata?: Record<string, unknown>;
-  userId?: string;
-  syncStatus?: SyncStatus;
-  last_synced_at?: Date;
-  local_changes?: Record<string, unknown>;
-  sync_conflicts?: Array<{
-    timestamp: Date;
-    oldValue: Workout;
-    newValue: Workout;
-  }>;
-  scheduled_time?: Date;
-  timeZone?: string;
-  exercise_validation_rules?: Record<string, unknown>;
-  total_exercise_time?: number;
-  created_at?: string;
-  last_modified?: string;
-  display_order?: number;
-  concurrent_version?: number;
-  exercise_order?: unknown[];
-  offline_id?: string;
-  related_workouts?: unknown[];
+  last_modified: string;
 }
-
-export type WeeklyWorkouts = {
-  Monday: Workout[];
-  Tuesday: Workout[];
-  Wednesday: Workout[];
-  Thursday: Workout[];
-  Friday: Workout[];
-  Saturday: Workout[];
-  Sunday: Workout[];
-};
 
 export interface WorkoutInput {
   title: string;
@@ -69,3 +35,7 @@ export interface WorkoutInput {
   notes?: string;
   exercises?: Exercise[];
 }
+
+export type WeeklyWorkouts = {
+  [key in 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday']: Workout[];
+};

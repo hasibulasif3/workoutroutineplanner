@@ -2,7 +2,15 @@ import { WeeklyWorkouts } from "@/types/workout";
 import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
 
-export const downloadWorkoutsAsPDF = (workouts: WeeklyWorkouts) => {
+export const downloadWorkouts = (workouts: WeeklyWorkouts, selectedDays: string[], format: "json" | "pdf" = "pdf"): string => {
+  if (format === "pdf") {
+    return downloadWorkoutsAsPDF(workouts, selectedDays);
+  } else {
+    return downloadWorkoutsAsJSON(workouts, selectedDays);
+  }
+};
+
+const downloadWorkoutsAsPDF = (workouts: WeeklyWorkouts, selectedDays: string[]): string => {
   const doc = new jsPDF();
   
   // Add title
@@ -10,8 +18,8 @@ export const downloadWorkoutsAsPDF = (workouts: WeeklyWorkouts) => {
   doc.text("Weekly Workout Schedule", 14, 15);
   
   // Prepare data for the table
-  const tableData = Object.entries(workouts).flatMap(([day, dayWorkouts]) =>
-    dayWorkouts.map(workout => [
+  const tableData = selectedDays.flatMap(day =>
+    workouts[day as keyof WeeklyWorkouts].map(workout => [
       day,
       workout.title,
       workout.duration,
@@ -35,33 +43,31 @@ export const downloadWorkoutsAsPDF = (workouts: WeeklyWorkouts) => {
     },
   });
 
-  // Save the PDF
-  doc.save('weekly-workouts.pdf');
+  const fileName = 'weekly-workouts.pdf';
+  doc.save(fileName);
+  return fileName;
 };
 
-export const downloadWorkoutsAsCSV = (workouts: WeeklyWorkouts) => {
-  const headers = ['Day', 'Workout', 'Duration (min)', 'Type', 'Difficulty', 'Calories'];
+const downloadWorkoutsAsJSON = (workouts: WeeklyWorkouts, selectedDays: string[]): string => {
+  const selectedWorkouts = selectedDays.reduce((acc, day) => {
+    acc[day] = workouts[day as keyof WeeklyWorkouts];
+    return acc;
+  }, {} as Partial<WeeklyWorkouts>);
+
+  const blob = new Blob([JSON.stringify(selectedWorkouts, null, 2)], { 
+    type: 'application/json' 
+  });
   
-  const rows = Object.entries(workouts).flatMap(([day, dayWorkouts]) =>
-    dayWorkouts.map(workout => 
-      `${day},${workout.title},${workout.duration},${workout.type},${workout.difficulty || 'N/A'},${workout.calories || 'N/A'}`
-    )
-  );
-
-  const csvContent = [
-    headers.join(','),
-    ...rows
-  ].join('\n');
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const fileName = 'weekly-workouts.json';
   
-  link.setAttribute('href', url);
-  link.setAttribute('download', 'weekly-workouts.csv');
-  link.style.visibility = 'hidden';
-  
+  link.href = url;
+  link.download = fileName;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  return fileName;
 };
