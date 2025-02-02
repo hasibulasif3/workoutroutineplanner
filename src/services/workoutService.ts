@@ -1,7 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Exercise, Workout, WorkoutInput, WeeklyWorkouts } from "@/types/workout";
-
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+import { Exercise, Workout, WorkoutInput, WeeklyWorkouts, WorkoutType, WorkoutDifficulty } from "@/types/workout";
 
 const DEFAULT_WORKOUTS: WeeklyWorkouts = {
   Monday: [
@@ -40,8 +38,8 @@ export class WorkoutService {
         return DEFAULT_WORKOUTS;
       }
 
-      const groupedWorkouts = DAYS_OF_WEEK.reduce((acc, day) => {
-        acc[day] = [];
+      const groupedWorkouts = Object.keys(DEFAULT_WORKOUTS).reduce((acc, day) => {
+        acc[day as keyof WeeklyWorkouts] = [];
         return acc;
       }, {} as WeeklyWorkouts);
 
@@ -51,10 +49,15 @@ export class WorkoutService {
         
         if (groupedWorkouts[day]) {
           groupedWorkouts[day].push({
-            ...workout,
-            exercises: (workout.exercises as unknown as Exercise[]) || [],
-            type: workout.type,
-            difficulty: workout.difficulty
+            id: workout.id,
+            title: workout.title,
+            duration: workout.duration,
+            type: workout.type as WorkoutType,
+            difficulty: workout.difficulty as WorkoutDifficulty,
+            calories: workout.calories,
+            notes: workout.notes,
+            exercises: workout.exercises ? JSON.parse(workout.exercises as string) : [],
+            last_modified: workout.last_modified
           });
         }
       });
@@ -81,21 +84,28 @@ export class WorkoutService {
     if (error) throw error;
 
     return {
-      ...data,
-      exercises: JSON.parse(data.exercises as string) as Exercise[],
-      type: data.type,
-      difficulty: data.difficulty
+      id: data.id,
+      title: data.title,
+      duration: data.duration,
+      type: data.type as WorkoutType,
+      difficulty: data.difficulty as WorkoutDifficulty,
+      calories: data.calories,
+      notes: data.notes,
+      exercises: data.exercises ? JSON.parse(data.exercises as string) : [],
+      last_modified: data.last_modified
     };
   }
 
   async updateWorkout(id: string, workout: Partial<WorkoutInput>): Promise<Workout> {
+    const updateData = {
+      ...workout,
+      exercises: workout.exercises ? JSON.stringify(workout.exercises) : undefined,
+      last_modified: new Date().toISOString()
+    };
+
     const { data, error } = await supabase
       .from('workouts')
-      .update({
-        ...workout,
-        exercises: workout.exercises ? JSON.stringify(workout.exercises) : undefined,
-        last_modified: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -103,26 +113,38 @@ export class WorkoutService {
     if (error) throw error;
 
     return {
-      ...data,
-      exercises: JSON.parse(data.exercises as string) as Exercise[],
-      type: data.type,
-      difficulty: data.difficulty
+      id: data.id,
+      title: data.title,
+      duration: data.duration,
+      type: data.type as WorkoutType,
+      difficulty: data.difficulty as WorkoutDifficulty,
+      calories: data.calories,
+      notes: data.notes,
+      exercises: data.exercises ? JSON.parse(data.exercises as string) : [],
+      last_modified: data.last_modified
     };
   }
 
-  async deleteWorkout(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('workouts')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
-  }
-
-  subscribeToWorkouts(callback: (workouts: WeeklyWorkouts) => void) {
+  subscribeToWorkouts(callback: (workouts: WeeklyWorkouts) => void): () => void {
     this.subscribers.push(callback);
+    
+    // Set up real-time subscription
+    const subscription = supabase
+      .channel('workouts_channel')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'workouts' 
+      }, async () => {
+        const workouts = await this.getWorkouts();
+        this.notifySubscribers(workouts);
+      })
+      .subscribe();
+
+    // Return cleanup function
     return () => {
       this.subscribers = this.subscribers.filter(cb => cb !== callback);
+      subscription.unsubscribe();
     };
   }
 
