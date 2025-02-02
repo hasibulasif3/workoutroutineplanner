@@ -1,6 +1,6 @@
 import { DndContext, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { WeeklyWorkouts, Workout } from "@/types/workout";
 import { ErrorBoundary } from "../ErrorBoundary";
@@ -10,7 +10,7 @@ import { WeeklyBoardHeader } from "./WeeklyBoardHeader";
 import { DragProvider } from "./DragContext";
 import { useWorkoutDrag } from "./useWorkoutDrag";
 import { workoutService } from "@/services/workoutService";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useMediaQuery } from "@/hooks/use-mobile";
 import { Button } from "../ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -19,7 +19,6 @@ export function WeeklyBoard() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
-  const queryClient = useQueryClient();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const { data: workouts = {
@@ -32,10 +31,10 @@ export function WeeklyBoard() {
     Sunday: [],
   }, isLoading } = useQuery({
     queryKey: ['workouts'],
-    queryFn: workoutService.fetchWorkouts,
+    queryFn: () => workoutService.getWorkouts(),
   });
 
-  const days = Object.keys(workouts);
+  const days = Object.keys(workouts) as Array<keyof WeeklyWorkouts>;
 
   const {
     handleDragStart,
@@ -48,20 +47,9 @@ export function WeeklyBoard() {
       .find(w => w.id === activeId);
     
     if (updatedWorkout) {
-      await workoutService.updateWorkout(updatedWorkout);
-      queryClient.invalidateQueries({ queryKey: ['workouts'] });
+      await workoutService.updateWorkout(updatedWorkout.id, updatedWorkout);
     }
   }, dropSound);
-
-  useEffect(() => {
-    const unsubscribe = workoutService.subscribeToWorkouts((updatedWorkouts) => {
-      queryClient.setQueryData(['workouts'], updatedWorkouts);
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [queryClient]);
 
   const handleNext = () => {
     setCurrentDayIndex((prev) => (prev + 1) % days.length);

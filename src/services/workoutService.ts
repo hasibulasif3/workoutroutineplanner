@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Exercise, Workout, WorkoutInput, WeeklyWorkouts, WorkoutType, WorkoutDifficulty } from "@/types/workout";
+import { Exercise, Workout, WorkoutInput, WeeklyWorkouts } from "@/types/workout";
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
@@ -25,6 +25,8 @@ const DEFAULT_WORKOUTS: WeeklyWorkouts = {
 };
 
 export class WorkoutService {
+  private subscribers: ((workouts: WeeklyWorkouts) => void)[] = [];
+
   async getWorkouts(): Promise<WeeklyWorkouts> {
     try {
       const { data, error } = await supabase
@@ -50,9 +52,9 @@ export class WorkoutService {
         if (groupedWorkouts[day]) {
           groupedWorkouts[day].push({
             ...workout,
-            exercises: workout.exercises as Exercise[] || [],
-            type: workout.type as WorkoutType,
-            difficulty: workout.difficulty as WorkoutDifficulty
+            exercises: (workout.exercises as unknown as Exercise[]) || [],
+            type: workout.type,
+            difficulty: workout.difficulty
           });
         }
       });
@@ -69,7 +71,7 @@ export class WorkoutService {
       .from('workouts')
       .insert([{
         ...workout,
-        exercises: workout.exercises || [],
+        exercises: JSON.stringify(workout.exercises || []),
         created_at: new Date().toISOString(),
         last_modified: new Date().toISOString()
       }])
@@ -80,9 +82,9 @@ export class WorkoutService {
 
     return {
       ...data,
-      exercises: data.exercises as Exercise[],
-      type: data.type as WorkoutType,
-      difficulty: data.difficulty as WorkoutDifficulty
+      exercises: JSON.parse(data.exercises as string) as Exercise[],
+      type: data.type,
+      difficulty: data.difficulty
     };
   }
 
@@ -91,6 +93,7 @@ export class WorkoutService {
       .from('workouts')
       .update({
         ...workout,
+        exercises: workout.exercises ? JSON.stringify(workout.exercises) : undefined,
         last_modified: new Date().toISOString()
       })
       .eq('id', id)
@@ -101,9 +104,9 @@ export class WorkoutService {
 
     return {
       ...data,
-      exercises: data.exercises as Exercise[],
-      type: data.type as WorkoutType,
-      difficulty: data.difficulty as WorkoutDifficulty
+      exercises: JSON.parse(data.exercises as string) as Exercise[],
+      type: data.type,
+      difficulty: data.difficulty
     };
   }
 
@@ -114,6 +117,17 @@ export class WorkoutService {
       .eq('id', id);
 
     if (error) throw error;
+  }
+
+  subscribeToWorkouts(callback: (workouts: WeeklyWorkouts) => void) {
+    this.subscribers.push(callback);
+    return () => {
+      this.subscribers = this.subscribers.filter(cb => cb !== callback);
+    };
+  }
+
+  private notifySubscribers(workouts: WeeklyWorkouts) {
+    this.subscribers.forEach(callback => callback(workouts));
   }
 }
 
