@@ -51,5 +51,21 @@ export interface Workout {
 }
 
 export type WeeklyWorkouts = {
-  [key: string]: Workout[];
+  Monday: Workout[];
+  Tuesday: Workout[];
+  Wednesday: Workout[];
+  Thursday: Workout[];
+  Friday: Workout[];
+  Saturday: Workout[];
+  Sunday: Workout[];
 };
+
+export interface WorkoutInput {
+  title: string;
+  duration: string;
+  type: WorkoutType;
+  difficulty?: WorkoutDifficulty;
+  calories?: string;
+  notes?: string;
+  exercises?: Exercise[];
+}
