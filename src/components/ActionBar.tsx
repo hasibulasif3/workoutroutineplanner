@@ -295,18 +295,24 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
         <CreateWorkoutDialog onWorkoutCreate={onWorkoutCreate} />
         <Button
           asChild
-          className="gap-2 relative overflow-hidden group"
+          className="gap-2 relative overflow-hidden group transition-all duration-300 hover:scale-105"
           variant="outline"
         >
           <Link to="/workout-gears" className="relative z-10 flex items-center">
             <Dumbbell size={16} className="mr-2" />
-            <span>Workout Gears</span>
+            <span>Exercise Essentials for You</span>
             <div 
-              className="absolute inset-0 -z-10 bg-gradient-to-r from-primary/20 via-secondary/20 to-accent/20 group-hover:opacity-100 opacity-0 transition-opacity duration-300"
+              className="absolute inset-0 -z-10 opacity-100"
               style={{
-                background: "linear-gradient(-45deg, rgba(155,135,245,0.2), rgba(14,165,233,0.2), rgba(236,72,153,0.2))",
-                backgroundSize: "200% 200%",
-                animation: "gradient 5s ease infinite"
+                background: `linear-gradient(-45deg, 
+                  rgba(155,135,245,0.4), 
+                  rgba(14,165,233,0.4), 
+                  rgba(236,72,153,0.4),
+                  rgba(139,92,246,0.4),
+                  rgba(59,130,246,0.4),
+                  rgba(236,72,153,0.4))`,
+                backgroundSize: '400% 400%',
+                animation: 'gradient 15s ease infinite'
               }}
             />
           </Link>
