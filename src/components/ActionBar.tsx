@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw, Mail, FileJson, FileText } from "lucide-react";
+import { Download, RefreshCw, Mail, FileJson, FileText, Dumbbell } from "lucide-react";
 import { CreateWorkoutDialog } from "./CreateWorkoutDialog";
 import { toast } from "sonner";
-import { WeeklyWorkouts, Workout } from "@/types/workout";
+import { WeeklyWorkouts } from "@/types/workout";
+import { Link } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface ActionBarProps {
   workouts: WeeklyWorkouts;
-  onWorkoutCreate: (workout: Workout) => void;
+  onWorkoutCreate: (workout: any) => void;
 }
 
 export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
@@ -290,7 +291,27 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
           </DialogContent>
         </Dialog>
       </div>
-      <CreateWorkoutDialog onWorkoutCreate={onWorkoutCreate} />
+      <div className="flex gap-2">
+        <CreateWorkoutDialog onWorkoutCreate={onWorkoutCreate} />
+        <Button
+          asChild
+          className="gap-2 relative overflow-hidden group"
+          variant="outline"
+        >
+          <Link to="/workout-gears" className="relative z-10 flex items-center">
+            <Dumbbell size={16} className="mr-2" />
+            <span>Workout Gears</span>
+            <div 
+              className="absolute inset-0 -z-10 bg-gradient-to-r from-primary/20 via-secondary/20 to-accent/20 group-hover:opacity-100 opacity-0 transition-opacity duration-300"
+              style={{
+                background: "linear-gradient(-45deg, rgba(155,135,245,0.2), rgba(14,165,233,0.2), rgba(236,72,153,0.2))",
+                backgroundSize: "200% 200%",
+                animation: "gradient 5s ease infinite"
+              }}
+            />
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }
