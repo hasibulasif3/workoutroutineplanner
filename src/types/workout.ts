@@ -30,14 +30,14 @@ export interface Workout {
   metadata?: Record<string, unknown>;
   userId?: string;
   syncStatus?: SyncStatus;
-  last_synced_at?: string;
+  last_synced_at?: Date;
   local_changes?: Record<string, unknown>;
   sync_conflicts?: Array<{
-    timestamp: string;
+    timestamp: Date;
     oldValue: Workout;
     newValue: Workout;
   }>;
-  scheduled_time?: string;
+  scheduled_time?: Date;
   timeZone?: string;
   exercise_validation_rules?: Record<string, unknown>;
   total_exercise_time?: number;
@@ -45,21 +45,11 @@ export interface Workout {
   last_modified?: string;
   display_order?: number;
   concurrent_version?: number;
-  exercise_order?: string[];
+  exercise_order?: unknown[];
   offline_id?: string;
-  related_workouts?: string[];
+  related_workouts?: unknown[];
 }
 
 export type WeeklyWorkouts = {
-  [key in "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday"]: Workout[];
+  [key: string]: Workout[];
 };
-
-export interface WorkoutInput {
-  title: string;
-  duration: string;
-  type: WorkoutType;
-  difficulty?: WorkoutDifficulty;
-  calories?: string;
-  notes?: string;
-  exercises?: Exercise[];
-}
