@@ -24,36 +24,68 @@ const initialWorkouts: WeeklyWorkouts = {
       calories: "300",
       last_modified: new Date().toISOString(),
       exercises: []
-    }
+    },
+    { 
+      id: "2", 
+      title: "Push-ups", 
+      duration: "15", 
+      type: "strength", 
+      difficulty: "intermediate", 
+      calories: "150",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    },
   ],
-  Tuesday: [],
-  Wednesday: [],
-  Thursday: [],
-  Friday: [
+  Tuesday: [
+    { 
+      id: "3", 
+      title: "Yoga", 
+      duration: "45", 
+      type: "flexibility", 
+      difficulty: "beginner", 
+      calories: "200",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    },
+  ],
+  Wednesday: [
     { 
       id: "4", 
-      title: "HIIT Workout", 
-      duration: "45", 
+      title: "HIIT", 
+      duration: "25", 
       type: "cardio", 
+      difficulty: "advanced", 
+      calories: "400",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    },
+  ],
+  Thursday: [
+    { 
+      id: "5", 
+      title: "Swimming", 
+      duration: "40", 
+      type: "cardio", 
+      difficulty: "intermediate", 
+      calories: "450",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    },
+  ],
+  Friday: [
+    { 
+      id: "6", 
+      title: "Weight Training", 
+      duration: "50", 
+      type: "strength", 
       difficulty: "advanced", 
       calories: "500",
       last_modified: new Date().toISOString(),
       exercises: []
-    }
+    },
   ],
   Saturday: [],
-  Sunday: [
-    { 
-      id: "3", 
-      title: "Yoga Flow", 
-      duration: "60", 
-      type: "flexibility", 
-      difficulty: "intermediate", 
-      calories: "200",
-      last_modified: new Date().toISOString(),
-      exercises: []
-    }
-  ],
+  Sunday: [],
 };
 
 export function WeeklyBoard() {
@@ -205,3 +237,4 @@ export function WeeklyBoard() {
     </ErrorBoundary>
   );
 }
+

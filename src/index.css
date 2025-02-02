@@ -72,7 +72,6 @@
 .workout-card.dragging {
   @apply scale-105 rotate-2 shadow-2xl opacity-90;
   animation: card-pulse 1s infinite;
-  z-index: 50;
 }
 
 .workout-card.touch-feedback {
@@ -124,6 +123,32 @@
   animation: gradient 3s ease infinite;
 }
 
+.stats-bar {
+  @apply flex justify-around items-center p-4 mb-8 glass-card rounded-lg;
+}
+
+.stats-item {
+  @apply flex flex-col items-center;
+}
+
+.quick-action {
+  @apply opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute right-2 top-2;
+}
+
+.difficulty-badge {
+  @apply text-xs px-2 py-1 rounded-full;
+}
+
+.difficulty-badge.beginner { @apply bg-green-500/20 text-green-300; }
+.difficulty-badge.intermediate { @apply bg-yellow-500/20 text-yellow-300; }
+.difficulty-badge.advanced { @apply bg-red-500/20 text-red-300; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient-bg, .title-gradient {
+    animation: none;
+  }
+}
+
 /* Touch device optimizations */
 @media (hover: none) {
   .quick-action {
@@ -133,10 +158,6 @@
   .workout-card:hover {
     transform: none;
   }
-  
-  .workout-card.dragging {
-    @apply scale-110;
-  }
 }
 
 /* Drag feedback */
@@ -145,41 +166,25 @@
   z-index: 50;
 }
 
-/* Improved touch feedback */
-.touch-drag-handle {
-  @apply touch-none select-none;
+/* Column collapse transition */
+.column-collapse-enter {
+  max-height: 0;
+  opacity: 0;
 }
 
-/* Auto-scrolling zones */
-.auto-scroll-zone {
-  @apply absolute w-full h-16 pointer-events-none;
+.column-collapse-enter-active {
+  max-height: 1000px;
+  opacity: 1;
+  transition: all 300ms ease-in-out;
 }
 
-.auto-scroll-zone.top {
-  @apply top-0 bg-gradient-to-b from-background/50;
+.column-collapse-exit {
+  max-height: 1000px;
+  opacity: 1;
 }
 
-.auto-scroll-zone.bottom {
-  @apply bottom-0 bg-gradient-to-t from-background/50;
-}
-
-/* Accessibility improvements */
-[role="button"],
-[role="tab"] {
-  @apply focus:outline-none focus:ring-2 focus:ring-primary;
-}
-
-/* Error states */
-.error-state {
-  @apply border-destructive bg-destructive/10 text-destructive;
-}
-
-/* Loading states */
-.loading-overlay {
-  @apply absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center;
-}
-
-/* Column transitions */
-.column-transition {
-  transition: width 200ms ease-out, height 200ms ease-out;
+.column-collapse-exit-active {
+  max-height: 0;
+  opacity: 0;
+  transition: all 300ms ease-in-out;
 }

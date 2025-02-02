@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useCallback, useRef, useEffect } f
 import { DragState, ColumnPreferences, DragContextType } from "./types";
 import { debounce } from "lodash";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { toast } from "sonner";
 
 const DRAG_THRESHOLD = 8;
 const TOUCH_TIMEOUT = 150;
@@ -50,13 +49,11 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     eventCleanupRef.current = [];
     
     document.body.style.overflow = '';
-    document.body.style.touchAction = '';
     
     setDragState(prev => ({
       ...prev,
       isDragging: false,
       touchPoint: null,
-      isDropAnimating: false
     }));
 
     if (resizeObserverRef.current) {
@@ -88,7 +85,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
           ...prev,
           width: {
             ...prev.width,
-            [day]: Math.max(200, Math.min(800, width)),
+            [day]: Math.max(200, Math.min(800, width)), // Constrain width
           }
         }));
       });
@@ -108,24 +105,6 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     });
   }, [setColumnPreferences]);
 
-  const handleDragStart = useCallback((e: TouchEvent | MouseEvent) => {
-    if (window.navigator.vibrate) {
-      window.navigator.vibrate(50);
-    }
-    
-    const pos = 'touches' in e ? e.touches[0] : e;
-    dragStartPositionRef.current = { x: pos.clientX, y: pos.clientY };
-    
-    setDragState(prev => ({
-      ...prev,
-      isDragging: true,
-      lastDragTime: Date.now()
-    }));
-    
-    document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
-  }, []);
-
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && dragState.isDragging) {
@@ -133,21 +112,73 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    const handleScroll = () => {
-      if (dragState.isDragging) {
-        cleanup();
-      }
-    };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('scroll', handleScroll);
       cleanup();
     };
   }, [dragState.isDragging, cleanup]);
+
+  const touchStartHandler = useCallback((e: TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    
+    const touch = e.touches[0];
+    lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+    dragStartPositionRef.current = { x: touch.clientX, y: touch.clientY };
+    
+    cleanup();
+    
+    longPressTimeoutRef.current = window.setTimeout(() => {
+      if (dragStartPositionRef.current) {
+        document.body.style.overflow = 'hidden';
+        setDragState(prev => ({ 
+          ...prev, 
+          isDragging: true,
+          lastDragTime: Date.now()
+        }));
+        
+        if (window.navigator.vibrate) {
+          window.navigator.vibrate([50]);
+        }
+      }
+    }, LONG_PRESS_DURATION);
+
+    const preventScroll = (e: TouchEvent) => {
+      if (dragState.isDragging) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('touchmove', preventScroll, { passive: false });
+    eventCleanupRef.current.push(() => {
+      document.removeEventListener('touchmove', preventScroll);
+    });
+  }, [cleanup, dragState.isDragging]);
+
+  const touchMoveHandler = useCallback((e: TouchEvent) => {
+    if (!lastTouchRef.current || !dragStartPositionRef.current) return;
+
+    const touch = e.touches[0];
+    const now = Date.now();
+    const deltaTime = now - (dragState.lastDragTime || now);
+    const deltaX = touch.clientX - dragStartPositionRef.current.x;
+    const deltaY = touch.clientY - dragStartPositionRef.current.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    const speed = distance / deltaTime;
+
+    if (dragState.isDragging) {
+      e.preventDefault();
+      requestAnimationFrame(() => {
+        setDragState(prevState => ({
+          ...prevState,
+          dragDistance: distance,
+          touchPoint: { x: touch.clientX, y: touch.clientY },
+          lastDragTime: now,
+          dragSpeed: speed
+        }));
+      });
+    }
+  }, [dragState.isDragging, dragState.lastDragTime]);
 
   return (
     <DragContext.Provider
@@ -160,7 +191,8 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
         toggleColumnCollapse,
         adjustColumnWidth,
         setColumnHeight,
-        handleDragStart,
+        touchStartHandler,
+        touchMoveHandler,
         cleanup,
       }}
     >
