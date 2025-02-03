@@ -1,127 +1,103 @@
-import { WeeklyWorkouts, Workout } from "@/types/workout";
-import { format } from "date-fns";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import { WeeklyWorkouts } from "@/types/workout";
+import { jsPDF } from "jspdf";
+import autoTable from 'jspdf-autotable';
 
-export const downloadWorkoutJson = (jsonString: string): string => {
-  const blob = new Blob([jsonString], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
+export const downloadWorkouts = (workouts: WeeklyWorkouts, selectedDays: string[], format: "json" | "pdf" = "pdf"): string => {
+  if (format === "json") {
+    return downloadWorkoutsAsJSON(workouts, selectedDays);
+  }
+  return downloadWorkoutsAsPDF(workouts, selectedDays);
+};
+
+const downloadWorkoutsAsJSON = (workouts: WeeklyWorkouts, selectedDays: string[]): string => {
+  const selectedWorkouts = selectedDays.reduce((acc, day) => {
+    acc[day as keyof WeeklyWorkouts] = workouts[day as keyof WeeklyWorkouts];
+    return acc;
+  }, {} as WeeklyWorkouts);
+
+  const fileName = `workouts-${new Date().toISOString().split('T')[0]}.json`;
+  const dataStr = JSON.stringify(selectedWorkouts, null, 2);
+  const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
+
   const link = document.createElement('a');
-  const fileName = `workout-routine-${format(new Date(), 'yyyy-MM-dd')}.json`;
-  
-  link.href = url;
-  link.download = fileName;
+  link.setAttribute('href', dataUri);
+  link.setAttribute('download', fileName);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-  
+
   return fileName;
 };
 
-export const downloadWorkouts = (workouts: WeeklyWorkouts, selectedDays: string[], exportFormat: "json" | "pdf"): string => {
-  const selectedWorkouts = Object.entries(workouts)
-    .filter(([day]) => selectedDays.includes(day))
-    .reduce((acc, [day, workouts]) => ({ ...acc, [day]: workouts }), {});
-
-  if (exportFormat === "json") {
-    return downloadWorkoutJson(JSON.stringify(selectedWorkouts, null, 2));
-  } else {
-    return generatePDF(selectedWorkouts);
-  }
-};
-
-const generatePDF = (workouts: WeeklyWorkouts): string => {
+const downloadWorkoutsAsPDF = (workouts: WeeklyWorkouts, selectedDays: string[]): string => {
   const doc = new jsPDF();
-  const fileName = `workout-routine-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-  
-  // Add cover page
-  doc.setFillColor(89, 91, 213); // Primary color
-  doc.rect(0, 0, 220, 40, "F");
-  
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
-  doc.text("Weekly Workout Routine", 20, 30);
-  
-  doc.setTextColor(0, 0, 0);
+  const fileName = `workouts-${new Date().toISOString().split('T')[0]}.pdf`;
+
+  doc.setFontSize(20);
+  doc.text('Weekly Workout Routine', 14, 20);
   doc.setFontSize(12);
-  doc.text(`Generated on ${format(new Date(), 'MMMM d, yyyy')}`, 20, 50);
 
-  let yPosition = 70;
+  let yPos = 40;
 
-  // Add content for each day
-  Object.entries(workouts).forEach(([day, dayWorkouts]) => {
-    // Add day header
-    if (yPosition > 250) {
-      doc.addPage();
-      yPosition = 20;
-    }
-    
-    doc.setFillColor(242, 242, 247);
-    doc.rect(20, yPosition - 5, 170, 10, "F");
-    
-    doc.setFontSize(14);
-    doc.setTextColor(89, 91, 213);
-    doc.text(day, 25, yPosition);
-    yPosition += 15;
+  selectedDays.forEach(day => {
+    const dayWorkouts = workouts[day as keyof WeeklyWorkouts];
+    if (dayWorkouts.length === 0) return;
 
-    // Add workouts for the day
-    dayWorkouts.forEach((workout: Workout) => {
-      if (yPosition > 250) {
+    doc.setFontSize(16);
+    doc.text(day, 14, yPos);
+    yPos += 10;
+
+    dayWorkouts.forEach(workout => {
+      const tableData = [
+        ['Title', workout.title],
+        ['Duration', `${workout.duration} minutes`],
+        ['Type', workout.type],
+        ['Difficulty', workout.difficulty || 'N/A'],
+        ['Calories', workout.calories || 'N/A']
+      ];
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [],
+        body: tableData,
+        theme: 'striped',
+        styles: { fontSize: 10 },
+        margin: { left: 14 }
+      });
+
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+
+      if (workout.exercises.length > 0) {
+        doc.setFontSize(12);
+        doc.text('Exercises:', 14, yPos);
+        yPos += 5;
+
+        const exerciseData = workout.exercises.map(ex => [
+          ex.name,
+          `${ex.sets} sets`,
+          `${ex.reps} reps`,
+          `${ex.restPeriod}s rest`
+        ]);
+
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Exercise', 'Sets', 'Reps', 'Rest']],
+          body: exerciseData,
+          theme: 'grid',
+          styles: { fontSize: 8 },
+          margin: { left: 14 }
+        });
+
+        yPos = (doc as any).lastAutoTable.finalY + 15;
+      }
+
+      if (yPos > 250) {
         doc.addPage();
-        yPosition = 20;
+        yPos = 20;
       }
-
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`• ${workout.title}`, 25, yPosition);
-      yPosition += 7;
-
-      doc.setFontSize(10);
-      doc.setTextColor(128, 128, 128);
-      doc.text(`  Duration: ${workout.duration} mins`, 30, yPosition);
-      yPosition += 5;
-
-      if (workout.difficulty) {
-        doc.text(`  Difficulty: ${workout.difficulty}`, 30, yPosition);
-        yPosition += 5;
-      }
-
-      if (workout.calories) {
-        doc.text(`  Calories: ${workout.calories}`, 30, yPosition);
-        yPosition += 5;
-      }
-
-      if (workout.notes) {
-        doc.text(`  Notes: ${workout.notes}`, 30, yPosition);
-        yPosition += 5;
-      }
-
-      yPosition += 10;
     });
-
-    yPosition += 10;
   });
 
-  // Add footer
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(128, 128, 128);
-    doc.text(
-      "Generated by Your Workout App - www.yourworkoutapp.com",
-      20,
-      doc.internal.pageSize.height - 10
-    );
-    doc.text(
-      `Page ${i} of ${pageCount}`,
-      doc.internal.pageSize.width - 40,
-      doc.internal.pageSize.height - 10
-    );
-  }
-
-  // Save and return
   doc.save(fileName);
   return fileName;
 };

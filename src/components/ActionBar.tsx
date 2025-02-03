@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw, Mail, FileJson, FileText } from "lucide-react";
+import { Download, RefreshCw, Mail, FileJson, FileText, Dumbbell } from "lucide-react";
 import { CreateWorkoutDialog } from "./CreateWorkoutDialog";
 import { toast } from "sonner";
-import { WeeklyWorkouts, Workout } from "@/types/workout";
+import { WeeklyWorkouts } from "@/types/workout";
+import { Link } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface ActionBarProps {
   workouts: WeeklyWorkouts;
-  onWorkoutCreate: (workout: Workout) => void;
+  onWorkoutCreate: (workout: any) => void;
 }
 
 export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
@@ -290,7 +291,33 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
           </DialogContent>
         </Dialog>
       </div>
-      <CreateWorkoutDialog onWorkoutCreate={onWorkoutCreate} />
+      <div className="flex gap-2">
+        <CreateWorkoutDialog onWorkoutCreate={onWorkoutCreate} />
+        <Button
+          asChild
+          className="gap-2 relative overflow-hidden group transition-all duration-300 hover:scale-105"
+          variant="outline"
+        >
+          <Link to="/workout-gears" className="relative z-10 flex items-center">
+            <Dumbbell size={16} className="mr-2" />
+            <span>Exercise Essentials for You</span>
+            <div 
+              className="absolute inset-0 -z-10 opacity-100"
+              style={{
+                background: `linear-gradient(-45deg, 
+                  rgba(155,135,245,0.4), 
+                  rgba(14,165,233,0.4), 
+                  rgba(236,72,153,0.4),
+                  rgba(139,92,246,0.4),
+                  rgba(59,130,246,0.4),
+                  rgba(236,72,153,0.4))`,
+                backgroundSize: '400% 400%',
+                animation: 'gradient 15s ease infinite'
+              }}
+            />
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }
