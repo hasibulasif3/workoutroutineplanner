@@ -2,7 +2,7 @@ import { WeeklyBoard } from "@/components/WeeklyBoard";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+    <div className="min-h-screen gradient-bg">
       <main>
         <WeeklyBoard />
       </main>
