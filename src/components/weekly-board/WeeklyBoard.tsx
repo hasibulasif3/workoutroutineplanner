@@ -92,7 +92,7 @@ export function WeeklyBoard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-[#0A0A0A]">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
@@ -104,12 +104,15 @@ export function WeeklyBoard() {
   return (
     <ErrorBoundary>
       <DragProvider>
-        <div className="relative p-4 md:p-8 min-h-screen bg-gradient-to-br from-background via-background/95 to-background/90 backdrop-blur-sm transition-all duration-300 animate-fade-in dark:bg-gradient-to-br dark:from-background/95 dark:via-background/90 dark:to-background/85">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-secondary/5 to-accent/5 opacity-50"></div>
-          <div className="relative z-10">
-            <div className="flex flex-col items-center mb-12">
+        <div className="relative min-h-screen bg-[#0A0A0A] bg-gradient-to-b from-[#0A0A0A] via-[#111111] to-[#0A0A0A]">
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-blue-500/5 to-pink-500/5 pointer-events-none" />
+          
+          {/* Content container with glass effect */}
+          <div className="relative z-10 px-4 md:px-8 py-12 mx-auto max-w-7xl">
+            <div className="flex flex-col items-center mb-12 space-y-6">
               <motion.h1 
-                className="text-5xl font-bold title-gradient mb-4"
+                className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
@@ -118,7 +121,7 @@ export function WeeklyBoard() {
               </motion.h1>
               
               <motion.p 
-                className="text-lg text-gray-400 mb-8"
+                className="text-base md:text-lg text-gray-400"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.5 }}
@@ -126,7 +129,10 @@ export function WeeklyBoard() {
                 Plan your workouts, track your progress, achieve your goals
               </motion.p>
               
-              <StatsBar workouts={workouts} />
+              <div className="w-full max-w-4xl backdrop-blur-lg bg-white/5 rounded-2xl p-6 shadow-xl border border-white/10">
+                <StatsBar workouts={workouts} />
+              </div>
+              
               <ActionBar workouts={workouts} onWorkoutCreate={(workout) => workoutService.createWorkout(workout)} />
             </div>
 
@@ -136,24 +142,24 @@ export function WeeklyBoard() {
               collisionDetection={closestCenter}
             >
               {isMobile ? (
-                <div className="relative">
+                <div className="relative backdrop-blur-md bg-white/5 rounded-2xl p-6 border border-white/10">
                   <div className="flex justify-between items-center mb-4">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={handlePrev}
-                      className="absolute left-0 z-10"
+                      className="absolute left-4 z-10 hover:bg-white/10"
                     >
                       <ChevronLeft className="h-6 w-6" />
                     </Button>
-                    <h2 className="text-xl font-bold text-center w-full">
+                    <h2 className="text-xl font-bold text-center w-full text-white">
                       {days[currentDayIndex]}
                     </h2>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={handleNext}
-                      className="absolute right-0 z-10"
+                      className="absolute right-4 z-10 hover:bg-white/10"
                     >
                       <ChevronRight className="h-6 w-6" />
                     </Button>
