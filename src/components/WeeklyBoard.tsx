@@ -6,107 +6,33 @@ import { WorkoutCard } from "./WorkoutCard";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { WeeklyWorkouts, Workout } from "@/types/workout";
-import { storageService } from "@/services/storageService";
+import { WeeklyWorkouts, Workout, WorkoutInput } from "@/types/workout";
+import { workoutService } from "@/services/workoutService";
 import { StatsBar } from "./StatsBar";
 import { ActionBar } from "./ActionBar";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { DragProvider } from "./weekly-board/DragContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const initialWorkouts: WeeklyWorkouts = {
-  Monday: [
-    { 
-      id: "1", 
-      title: "Morning Run", 
-      duration: "30", 
-      type: "cardio", 
-      difficulty: "beginner", 
-      calories: "300",
-      last_modified: new Date().toISOString(),
-      exercises: []
-    },
-    { 
-      id: "2", 
-      title: "Push-ups", 
-      duration: "15", 
-      type: "strength", 
-      difficulty: "intermediate", 
-      calories: "150",
-      last_modified: new Date().toISOString(),
-      exercises: []
-    },
-  ],
-  Tuesday: [
-    { 
-      id: "3", 
-      title: "Yoga", 
-      duration: "45", 
-      type: "flexibility", 
-      difficulty: "beginner", 
-      calories: "200",
-      last_modified: new Date().toISOString(),
-      exercises: []
-    },
-  ],
-  Wednesday: [
-    { 
-      id: "4", 
-      title: "HIIT", 
-      duration: "25", 
-      type: "cardio", 
-      difficulty: "advanced", 
-      calories: "400",
-      last_modified: new Date().toISOString(),
-      exercises: []
-    },
-  ],
-  Thursday: [
-    { 
-      id: "5", 
-      title: "Swimming", 
-      duration: "40", 
-      type: "cardio", 
-      difficulty: "intermediate", 
-      calories: "450",
-      last_modified: new Date().toISOString(),
-      exercises: []
-    },
-  ],
-  Friday: [
-    { 
-      id: "6", 
-      title: "Weight Training", 
-      duration: "50", 
-      type: "strength", 
-      difficulty: "advanced", 
-      calories: "500",
-      last_modified: new Date().toISOString(),
-      exercises: []
-    },
-  ],
+  Monday: [],
+  Tuesday: [],
+  Wednesday: [],
+  Thursday: [],
+  Friday: [],
   Saturday: [],
   Sunday: [],
 };
 
 export function WeeklyBoard() {
-  const [workouts, setWorkouts] = useState<WeeklyWorkouts>(initialWorkouts);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const savedWorkouts = storageService.loadWorkouts();
-    if (savedWorkouts) {
-      setWorkouts(savedWorkouts);
-    }
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (!isLoading) {
-      storageService.saveWorkouts(workouts);
-    }
-  }, [workouts, isLoading]);
+  const { data: workouts = initialWorkouts, isLoading } = useQuery({
+    queryKey: ['workouts'],
+    queryFn: () => workoutService.fetchWorkouts(),
+  });
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id.toString());
@@ -115,13 +41,13 @@ export function WeeklyBoard() {
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     setActiveId(null);
     const { active, over } = event;
     
     if (!over) return;
 
-    const activeDay = Object.entries(workouts).find(([day, items]) =>
+    const activeDay = Object.entries(workouts).find(([_, items]) =>
       items.find((item) => item.id === active.id.toString())
     )?.[0];
 
@@ -130,44 +56,53 @@ export function WeeklyBoard() {
     if (activeDay === overDay) return;
 
     if (activeDay) {
-      setWorkouts(prev => {
-        const workout = prev[activeDay].find(item => item.id === active.id.toString());
-        if (!workout) return prev;
+      const workout = workouts[activeDay as keyof WeeklyWorkouts].find(
+        item => item.id === active.id.toString()
+      );
+      
+      if (!workout) return;
 
-        const updatedWorkout: Workout = {
+      try {
+        const updatedWorkout = {
           ...workout,
-          last_modified: new Date().toISOString()
+          scheduled_time: new Date().toISOString(), // You might want to calculate this based on the day
         };
 
-        const newWorkouts = {
-          ...prev,
-          [activeDay]: prev[activeDay].filter(item => item.id !== active.id.toString()),
-          [overDay]: [...prev[overDay], updatedWorkout]
-        };
+        await workoutService.updateWorkout(workout.id, updatedWorkout);
+        
+        queryClient.setQueryData(['workouts'], (old: WeeklyWorkouts) => ({
+          ...old,
+          [activeDay]: old[activeDay as keyof WeeklyWorkouts].filter(
+            item => item.id !== active.id.toString()
+          ),
+          [overDay]: [...old[overDay as keyof WeeklyWorkouts], updatedWorkout],
+        }));
         
         dropSound.play().catch(() => {});
         toast.success("Workout moved successfully!");
-        return newWorkouts;
-      });
+      } catch (error) {
+        console.error('Error moving workout:', error);
+        toast.error("Failed to move workout");
+      }
     }
   };
 
-  const handleWorkoutCreate = (workoutData: Omit<Workout, 'id' | 'last_modified'>) => {
-    const newWorkout: Workout = {
-      id: uuidv4(),
-      last_modified: new Date().toISOString(),
-      ...workoutData,
-      exercises: []
-    };
-    
-    setWorkouts(prev => ({
-      ...prev,
-      Monday: [...prev.Monday, newWorkout],
-    }));
-    
-    toast.success("New workout created!", {
-      description: `${newWorkout.title} added to Monday`,
-    });
+  const handleWorkoutCreate = async (workoutData: WorkoutInput) => {
+    try {
+      const newWorkout = await workoutService.createWorkout(workoutData);
+      
+      queryClient.setQueryData(['workouts'], (old: WeeklyWorkouts) => ({
+        ...old,
+        Monday: [...old.Monday, newWorkout],
+      }));
+      
+      toast.success("New workout created!", {
+        description: `${newWorkout.title} added to Monday`,
+      });
+    } catch (error) {
+      console.error('Error creating workout:', error);
+      toast.error("Failed to create workout");
+    }
   };
 
   const activeWorkout = activeId ? 
@@ -214,13 +149,13 @@ export function WeeklyBoard() {
             collisionDetection={closestCenter}
           >
             <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-              {Object.entries(workouts).map(([day, dayWorkouts]) => (
+              {(Object.keys(workouts) as Array<keyof WeeklyWorkouts>).map((day) => (
                 <SortableContext
                   key={day}
-                  items={dayWorkouts.map((w) => w.id)}
+                  items={workouts[day].map((w) => w.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <DayColumn day={day} workouts={dayWorkouts} />
+                  <DayColumn day={day} workouts={workouts[day]} />
                 </SortableContext>
               ))}
             </div>
@@ -237,4 +172,3 @@ export function WeeklyBoard() {
     </ErrorBoundary>
   );
 }
-

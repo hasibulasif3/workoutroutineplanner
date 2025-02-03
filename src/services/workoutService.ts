@@ -1,9 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Workout, WorkoutInput, WeeklyWorkouts } from "@/types/workout";
+import { WeeklyWorkouts, Workout, WorkoutInput } from "@/types/workout";
 import { toast } from "sonner";
 
 class WorkoutService {
-  async getWorkouts(): Promise<WeeklyWorkouts> {
+  async fetchWorkouts(): Promise<WeeklyWorkouts> {
     try {
       const { data, error } = await supabase
         .from('workouts')
@@ -22,13 +22,13 @@ class WorkoutService {
         Sunday: [],
       };
 
-      data.forEach((workout: Workout) => {
+      data.forEach((workout) => {
         const day = workout.scheduled_time 
           ? new Date(workout.scheduled_time).toLocaleString('en-US', { weekday: 'long' })
           : 'Monday';
         
-        if (groupedWorkouts[day]) {
-          groupedWorkouts[day].push(workout);
+        if (day in groupedWorkouts) {
+          groupedWorkouts[day as keyof WeeklyWorkouts].push(this.parseWorkoutData(workout));
         }
       });
 
@@ -42,19 +42,27 @@ class WorkoutService {
 
   async createWorkout(workout: WorkoutInput): Promise<Workout> {
     try {
+      const workoutData = {
+        title: workout.title,
+        duration: workout.duration,
+        type: workout.type,
+        difficulty: workout.difficulty,
+        calories: workout.calories,
+        notes: workout.notes,
+        exercises: workout.exercises ? JSON.stringify(workout.exercises) : '[]',
+        user_id: (await supabase.auth.getUser()).data.user?.id,
+      };
+
       const { data, error } = await supabase
         .from('workouts')
-        .insert([{
-          ...workout,
-          exercises: JSON.stringify(workout.exercises || []),
-          created_at: new Date().toISOString(),
-          last_modified: new Date().toISOString(),
-        }])
+        .insert([workoutData])
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+
+      toast.success('Workout created successfully!');
+      return this.parseWorkoutData(data);
     } catch (error) {
       console.error('Error creating workout:', error);
       toast.error('Failed to create workout');
@@ -64,19 +72,20 @@ class WorkoutService {
 
   async updateWorkout(id: string, workout: Partial<WorkoutInput>): Promise<Workout> {
     try {
+      const workoutData = {
+        ...workout,
+        exercises: workout.exercises ? JSON.stringify(workout.exercises) : undefined,
+      };
+
       const { data, error } = await supabase
         .from('workouts')
-        .update({
-          ...workout,
-          exercises: workout.exercises ? JSON.stringify(workout.exercises) : undefined,
-          last_modified: new Date().toISOString(),
-        })
+        .update(workoutData)
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      return this.parseWorkoutData(data);
     } catch (error) {
       console.error('Error updating workout:', error);
       toast.error('Failed to update workout');
@@ -92,6 +101,7 @@ class WorkoutService {
         .eq('id', id);
 
       if (error) throw error;
+      toast.success('Workout deleted successfully!');
     } catch (error) {
       console.error('Error deleting workout:', error);
       toast.error('Failed to delete workout');
@@ -110,7 +120,7 @@ class WorkoutService {
           table: 'workouts'
         },
         async () => {
-          const workouts = await this.getWorkouts();
+          const workouts = await this.fetchWorkouts();
           callback(workouts);
         }
       )
@@ -118,6 +128,15 @@ class WorkoutService {
 
     return () => {
       supabase.removeChannel(channel);
+    };
+  }
+
+  private parseWorkoutData(data: any): Workout {
+    return {
+      ...data,
+      exercises: JSON.parse(data.exercises || '[]'),
+      type: data.type as WorkoutType,
+      difficulty: data.difficulty as WorkoutDifficulty,
     };
   }
 }

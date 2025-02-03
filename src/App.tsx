@@ -1,19 +1,37 @@
-import { BrowserRouter } from 'react-router-dom';
-import { WeeklyBoard } from './components/weekly-board/WeeklyBoard';
-import { Toaster } from './components/ui/toaster';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from "@/components/ui/toaster"
+import { Toaster as Sonner } from "@/components/ui/sonner"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { BrowserRouter, Routes, Route } from "react-router-dom"
+import Index from "./pages/Index"
+import React from 'react'
 
-const queryClient = new QueryClient();
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+})
 
-function App() {
+const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
+    <React.StrictMode>
       <BrowserRouter>
-        <WeeklyBoard />
-        <Toaster />
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+            </Routes>
+            <Toaster />
+            <Sonner />
+          </TooltipProvider>
+        </QueryClientProvider>
       </BrowserRouter>
-    </QueryClientProvider>
-  );
+    </React.StrictMode>
+  )
 }
 
-export default App;
+export default App

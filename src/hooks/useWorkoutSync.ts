@@ -7,8 +7,18 @@ export function useWorkoutSync() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    // Initial load from local storage
+    const savedWorkouts = localStorage.getItem('workouts');
+    if (savedWorkouts) {
+      const parsedWorkouts = JSON.parse(savedWorkouts);
+      queryClient.setQueryData(['workouts'], parsedWorkouts);
+    }
+
+    // Subscribe to real-time updates
     const unsubscribe = workoutService.subscribeToWorkouts((workouts) => {
+      // Update both cache and local storage
       queryClient.setQueryData(['workouts'], workouts);
+      localStorage.setItem('workouts', JSON.stringify(workouts));
     });
 
     return () => {
@@ -18,13 +28,13 @@ export function useWorkoutSync() {
 
   const syncWorkouts = async (workouts: WeeklyWorkouts) => {
     try {
-      // Update cache
-      queryClient.setQueryData(['workouts'], workouts);
+      // Update local storage
+      localStorage.setItem('workouts', JSON.stringify(workouts));
       
       // Update database
       const promises = Object.values(workouts)
         .flat()
-        .map(workout => workoutService.updateWorkout(workout.id, workout));
+        .map(workout => workoutService.updateWorkout(workout));
       
       await Promise.all(promises);
       
