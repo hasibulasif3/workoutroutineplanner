@@ -146,6 +146,7 @@ export type Database = {
       workouts: {
         Row: {
           calories: string | null
+          client_timestamp: string | null
           completed: boolean | null
           concurrent_version: number | null
           cooldown_duration: string | null
@@ -165,8 +166,11 @@ export type Database = {
           offline_id: string | null
           related_workouts: Json | null
           rest_between_exercises: string | null
+          retry_count: number | null
           scheduled_time: string | null
           sync_conflicts: Json | null
+          sync_error: string | null
+          sync_hash: string | null
           sync_status: string | null
           time_zone: string | null
           title: string
@@ -178,6 +182,7 @@ export type Database = {
         }
         Insert: {
           calories?: string | null
+          client_timestamp?: string | null
           completed?: boolean | null
           concurrent_version?: number | null
           cooldown_duration?: string | null
@@ -197,8 +202,11 @@ export type Database = {
           offline_id?: string | null
           related_workouts?: Json | null
           rest_between_exercises?: string | null
+          retry_count?: number | null
           scheduled_time?: string | null
           sync_conflicts?: Json | null
+          sync_error?: string | null
+          sync_hash?: string | null
           sync_status?: string | null
           time_zone?: string | null
           title: string
@@ -210,6 +218,7 @@ export type Database = {
         }
         Update: {
           calories?: string | null
+          client_timestamp?: string | null
           completed?: boolean | null
           concurrent_version?: number | null
           cooldown_duration?: string | null
@@ -229,8 +238,11 @@ export type Database = {
           offline_id?: string | null
           related_workouts?: Json | null
           rest_between_exercises?: string | null
+          retry_count?: number | null
           scheduled_time?: string | null
           sync_conflicts?: Json | null
+          sync_error?: string | null
+          sync_hash?: string | null
           sync_status?: string | null
           time_zone?: string | null
           title?: string
