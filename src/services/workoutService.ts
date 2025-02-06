@@ -71,7 +71,7 @@ export class WorkoutService {
   async createWorkout(workout: WorkoutInput): Promise<Workout> {
     const workoutData = {
       ...workout,
-      exercises: workout.exercises || [],
+      exercises: JSON.stringify(workout.exercises || []),
       created_at: new Date().toISOString(),
       last_modified: new Date().toISOString(),
       sync_status: 'synced',
@@ -94,7 +94,7 @@ export class WorkoutService {
       difficulty: data.difficulty as WorkoutDifficulty,
       calories: data.calories,
       notes: data.notes,
-      exercises: (data.exercises as unknown as Exercise[]) || [],
+      exercises: (JSON.parse(data.exercises as string) as Exercise[]) || [],
       last_modified: data.last_modified
     };
   }
@@ -102,7 +102,7 @@ export class WorkoutService {
   async updateWorkout(id: string, workout: Partial<Workout>): Promise<Workout> {
     const workoutData = {
       ...workout,
-      exercises: workout.exercises || [],
+      exercises: workout.exercises ? JSON.stringify(workout.exercises) : undefined,
       last_modified: new Date().toISOString()
     };
 
@@ -123,7 +123,7 @@ export class WorkoutService {
       difficulty: data.difficulty as WorkoutDifficulty,
       calories: data.calories,
       notes: data.notes,
-      exercises: (data.exercises as unknown as Exercise[]) || [],
+      exercises: (JSON.parse(data.exercises as string) as Exercise[]) || [],
       last_modified: data.last_modified
     };
   }
