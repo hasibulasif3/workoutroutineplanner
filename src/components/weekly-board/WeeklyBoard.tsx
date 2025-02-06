@@ -7,20 +7,24 @@ import { motion } from "framer-motion";
 import { WeeklyWorkouts, Workout } from "@/types/workout";
 import { StatsBar } from "../StatsBar";
 import { ActionBar } from "../ActionBar";
-import { ErrorBoundary } from "../ErrorBoundary";
+import { RetryableErrorBoundary } from "../RetryableErrorBoundary";
 import { DragProvider } from "./DragContext";
+import { useWorkoutSync } from "@/hooks/useWorkoutSync";
+import { useOfflineSync } from "@/hooks/useOfflineSync";
+import { useRealtimeWorkouts } from "@/hooks/useRealtimeWorkouts";
 import { useQuery } from "@tanstack/react-query";
 import { workoutService } from "@/services/workoutService";
+import { Loader2 } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-mobile";
-import { Button } from "../ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useWorkoutSync } from "@/hooks/useWorkoutSync";
 
 export function WeeklyBoard() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  
   const { syncWorkout } = useWorkoutSync();
+  const { isOnline, saveOffline } = useOfflineSync();
+  const { isSubscribed } = useRealtimeWorkouts();
 
   const { data: workouts = {
     Monday: [],
@@ -30,14 +34,12 @@ export function WeeklyBoard() {
     Friday: [],
     Saturday: [],
     Sunday: [],
-  }, isLoading } = useQuery({
+  }, isLoading, error } = useQuery({
     queryKey: ['workouts'],
     queryFn: () => workoutService.getWorkouts(),
-    staleTime: 1000 * 60, // Consider data fresh for 1 minute
+    staleTime: 1000 * 60,
     refetchOnWindowFocus: true,
   });
-
-  const days = Object.keys(workouts) as Array<keyof WeeklyWorkouts>;
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id.toString());
@@ -67,126 +69,122 @@ export function WeeklyBoard() {
       
       if (!workout) return;
 
+      if (!isOnline) {
+        await saveOffline(workout);
+        return;
+      }
+
       await syncWorkout(workout, activeDay, overDay);
     }
   };
 
-  const handleNext = () => {
-    setCurrentDayIndex((prev) => (prev + 1) % days.length);
-  };
-
-  const handlePrev = () => {
-    setCurrentDayIndex((prev) => (prev - 1 + days.length) % days.length);
-  };
+  if (error) {
+    return (
+      <RetryableErrorBoundary>
+        <div className="p-8">
+          <h1>Error loading workouts</h1>
+        </div>
+      </RetryableErrorBoundary>
+    );
+  }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#0A0A0A]">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading your workouts...</p>
+        </div>
       </div>
     );
   }
 
-  const activeWorkout = activeId ? 
-    Object.values(workouts).flat().find(w => w.id === activeId) : null;
-
   return (
-    <ErrorBoundary>
-      <DragProvider>
-        <div className="relative min-h-screen bg-[#0A0A0A] bg-gradient-to-b from-[#0A0A0A] via-[#111111] to-[#0A0A0A]">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-blue-500/5 to-pink-500/5 pointer-events-none" />
-          
-          <div className="relative z-10 px-4 md:px-8 py-12 mx-auto max-w-7xl">
-            <div className="flex flex-col items-center mb-12 space-y-6">
-              <motion.h1 
-                className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                Workout Routine Planner
-              </motion.h1>
-              
-              <motion.p 
-                className="text-base md:text-lg text-gray-400"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-              >
-                Plan your workouts, track your progress, achieve your goals
-              </motion.p>
-              
-              <div className="w-full max-w-4xl backdrop-blur-lg bg-white/5 rounded-2xl p-6 shadow-xl border border-white/10">
-                <StatsBar workouts={workouts} />
-              </div>
-              
-              <ActionBar workouts={workouts} onWorkoutCreate={(workout) => workoutService.createWorkout(workout)} />
-            </div>
+    <div className="p-8 animate-fade-in">
+      <div className="flex flex-col items-center mb-12">
+        <motion.h1 
+          className="text-5xl font-bold title-gradient mb-4"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          Workout Routine Planner
+        </motion.h1>
+        
+        <motion.p 
+          className="text-lg text-gray-400 mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          Plan your workouts, track your progress, achieve your goals
+        </motion.p>
+        
+        <StatsBar workouts={workouts} />
+        <ActionBar workouts={workouts} onWorkoutCreate={(workout) => workoutService.createWorkout(workout)} />
+      </div>
 
-            <DndContext 
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd} 
-              collisionDetection={closestCenter}
-            >
-              {isMobile ? (
-                <div className="relative backdrop-blur-md bg-white/5 rounded-2xl p-6 border border-white/10">
-                  <div className="flex justify-between items-center mb-4">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handlePrev}
-                      className="absolute left-4 z-10 hover:bg-white/10"
-                    >
-                      <ChevronLeft className="h-6 w-6" />
-                    </Button>
-                    <h2 className="text-xl font-bold text-center w-full text-white">
-                      {days[currentDayIndex]}
-                    </h2>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleNext}
-                      className="absolute right-4 z-10 hover:bg-white/10"
-                    >
-                      <ChevronRight className="h-6 w-6" />
-                    </Button>
-                  </div>
-                  <div className="w-full">
-                    <SortableContext
-                      items={workouts[days[currentDayIndex]].map((w) => w.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <DayColumn 
-                        day={days[currentDayIndex]} 
-                        workouts={workouts[days[currentDayIndex]]} 
-                      />
-                    </SortableContext>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-                  {Object.entries(workouts).map(([day, dayWorkouts]) => (
-                    <SortableContext
-                      key={day}
-                      items={dayWorkouts.map((w) => w.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <DayColumn day={day} workouts={dayWorkouts} />
-                    </SortableContext>
-                  ))}
-                </div>
-              )}
-              <DragOverlay>
-                {activeId && activeWorkout ? (
-                  <div className="opacity-80 rotate-3 scale-105 pointer-events-none">
-                    <WorkoutCard {...activeWorkout} />
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
+      <DndContext 
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd} 
+        collisionDetection={closestCenter}
+      >
+        {isMobile ? (
+          <div className="relative backdrop-blur-md bg-white/5 rounded-2xl p-6 border border-white/10">
+            <div className="flex justify-between items-center mb-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handlePrev}
+                className="absolute left-4 z-10 hover:bg-white/10"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </Button>
+              <h2 className="text-xl font-bold text-center w-full text-white">
+                {days[currentDayIndex]}
+              </h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleNext}
+                className="absolute right-4 z-10 hover:bg-white/10"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </Button>
+            </div>
+            <div className="w-full">
+              <SortableContext
+                items={workouts[days[currentDayIndex]].map((w) => w.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <DayColumn 
+                  day={days[currentDayIndex]} 
+                  workouts={workouts[days[currentDayIndex]]} 
+                />
+              </SortableContext>
+            </div>
           </div>
-        </div>
-      </DragProvider>
-    </ErrorBoundary>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+            {Object.entries(workouts).map(([day, dayWorkouts]) => (
+              <SortableContext
+                key={day}
+                items={dayWorkouts.map((w) => w.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <DayColumn day={day} workouts={dayWorkouts} />
+              </SortableContext>
+            ))}
+          </div>
+        )}
+        <DragOverlay>
+          {activeId && activeWorkout ? (
+            <div className="opacity-80 rotate-3 scale-105 pointer-events-none">
+              <WorkoutCard {...activeWorkout} />
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </div>
   );
 }

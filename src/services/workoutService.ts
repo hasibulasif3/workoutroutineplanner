@@ -22,9 +22,24 @@ const DEFAULT_WORKOUTS: WeeklyWorkouts = {
   Sunday: []
 };
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
+
 export class WorkoutService {
-  async getWorkouts(): Promise<WeeklyWorkouts> {
+  private async retryOperation<T>(operation: () => Promise<T>, retries = MAX_RETRIES): Promise<T> {
     try {
+      return await operation();
+    } catch (error) {
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        return this.retryOperation(operation, retries - 1);
+      }
+      throw error;
+    }
+  }
+
+  async getWorkouts(): Promise<WeeklyWorkouts> {
+    return this.retryOperation(async () => {
       const { data, error } = await supabase
         .from('workouts')
         .select('*')
@@ -32,16 +47,12 @@ export class WorkoutService {
 
       if (error) throw error;
 
-      if (!data || data.length === 0) {
-        return DEFAULT_WORKOUTS;
-      }
-
       const groupedWorkouts = Object.keys(DEFAULT_WORKOUTS).reduce((acc, day) => {
         acc[day as keyof WeeklyWorkouts] = [];
         return acc;
       }, {} as WeeklyWorkouts);
 
-      data.forEach((workout) => {
+      data?.forEach((workout) => {
         const day = new Date(workout.scheduled_time || workout.created_at)
           .toLocaleString('en-US', { weekday: 'long' }) as keyof WeeklyWorkouts;
         
@@ -54,17 +65,14 @@ export class WorkoutService {
             difficulty: workout.difficulty as WorkoutDifficulty,
             calories: workout.calories,
             notes: workout.notes,
-            exercises: (workout.exercises as unknown as Exercise[]) || [],
+            exercises: workout.exercises || [],
             last_modified: workout.last_modified
           });
         }
       });
 
       return groupedWorkouts;
-    } catch (error) {
-      console.error('Error fetching workouts:', error);
-      throw error;
-    }
+    });
   }
 
   async createWorkout(workout: WorkoutInput): Promise<Workout> {
