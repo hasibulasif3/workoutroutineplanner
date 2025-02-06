@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Exercise, Workout, WorkoutInput, WeeklyWorkouts, WorkoutType, WorkoutDifficulty } from "@/types/workout";
-import { Json } from "@/integrations/supabase/types";
 
 const DEFAULT_WORKOUTS: WeeklyWorkouts = {
   Monday: [
