@@ -1,27 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Exercise, Workout, WorkoutInput, WeeklyWorkouts, WorkoutType, WorkoutDifficulty } from "@/types/workout";
 
-const DEFAULT_WORKOUTS: WeeklyWorkouts = {
-  Monday: [
-    {
-      id: "1",
-      title: "Morning Run",
-      duration: "30",
-      type: "cardio",
-      difficulty: "beginner",
-      calories: "300",
-      exercises: [],
-      last_modified: new Date().toISOString()
-    }
-  ],
-  Tuesday: [],
-  Wednesday: [],
-  Thursday: [],
-  Friday: [],
-  Saturday: [],
-  Sunday: []
-};
-
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
@@ -47,10 +26,15 @@ export class WorkoutService {
 
       if (error) throw error;
 
-      const groupedWorkouts = Object.keys(DEFAULT_WORKOUTS).reduce((acc, day) => {
-        acc[day as keyof WeeklyWorkouts] = [];
-        return acc;
-      }, {} as WeeklyWorkouts);
+      const groupedWorkouts = {
+        Monday: [],
+        Tuesday: [],
+        Wednesday: [],
+        Thursday: [],
+        Friday: [],
+        Saturday: [],
+        Sunday: []
+      } as WeeklyWorkouts;
 
       data?.forEach((workout) => {
         const day = new Date(workout.scheduled_time || workout.created_at)
@@ -65,7 +49,9 @@ export class WorkoutService {
             difficulty: workout.difficulty as WorkoutDifficulty,
             calories: workout.calories,
             notes: workout.notes,
-            exercises: workout.exercises || [],
+            exercises: Array.isArray(workout.exercises) 
+              ? workout.exercises 
+              : JSON.parse(workout.exercises || '[]') as Exercise[],
             last_modified: workout.last_modified
           });
         }
@@ -101,7 +87,7 @@ export class WorkoutService {
       difficulty: data.difficulty as WorkoutDifficulty,
       calories: data.calories,
       notes: data.notes,
-      exercises: (JSON.parse(data.exercises as string) as Exercise[]) || [],
+      exercises: JSON.parse(data.exercises || '[]') as Exercise[],
       last_modified: data.last_modified
     };
   }
@@ -130,7 +116,7 @@ export class WorkoutService {
       difficulty: data.difficulty as WorkoutDifficulty,
       calories: data.calories,
       notes: data.notes,
-      exercises: (JSON.parse(data.exercises as string) as Exercise[]) || [],
+      exercises: JSON.parse(data.exercises || '[]') as Exercise[],
       last_modified: data.last_modified
     };
   }

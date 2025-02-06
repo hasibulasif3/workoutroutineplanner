@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { WeeklyWorkouts, Workout } from '@/types/workout';
+import { WeeklyWorkouts, Workout, Exercise } from '@/types/workout';
 import { toast } from 'sonner';
 
 export function useOfflineSync() {
@@ -9,7 +9,6 @@ export function useOfflineSync() {
   const [pendingSync, setPendingSync] = useState<Workout[]>([]);
   const queryClient = useQueryClient();
 
-  // Track online status
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
@@ -26,7 +25,6 @@ export function useOfflineSync() {
     };
   }, []);
 
-  // Handle offline storage
   const saveOffline = async (workout: Workout) => {
     try {
       const offlineData = localStorage.getItem('offline_workouts');
@@ -44,7 +42,6 @@ export function useOfflineSync() {
     }
   };
 
-  // Sync pending changes when online
   const syncPendingChanges = async () => {
     if (!isOnline || pendingSync.length === 0) return;
 
@@ -53,9 +50,18 @@ export function useOfflineSync() {
         const { data, error } = await supabase
           .from('workouts')
           .upsert({
-            ...workout,
+            id: workout.id,
+            title: workout.title,
+            duration: workout.duration,
+            type: workout.type,
+            difficulty: workout.difficulty,
+            calories: workout.calories,
+            notes: workout.notes,
+            exercises: JSON.stringify(workout.exercises),
+            last_modified: workout.last_modified,
             sync_status: 'synced',
-            last_synced_at: new Date().toISOString()
+            last_synced_at: new Date().toISOString(),
+            client_timestamp: new Date().toISOString()
           });
 
         if (error) throw error;
