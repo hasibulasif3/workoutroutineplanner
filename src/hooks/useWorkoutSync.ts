@@ -98,7 +98,7 @@ export function useWorkoutSync() {
         description: 'Please try again'
       });
     }
-  };
+  }, [queryClient]);
 
   return { syncWorkout };
 }
