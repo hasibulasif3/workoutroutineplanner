@@ -41,17 +41,19 @@ export class WorkoutService {
           .toLocaleString('en-US', { weekday: 'long' }) as keyof WeeklyWorkouts;
         
         if (groupedWorkouts[day]) {
+          const parsedExercises = typeof workout.exercises === 'string' 
+            ? JSON.parse(workout.exercises) 
+            : (Array.isArray(workout.exercises) ? workout.exercises : []) as Exercise[];
+
           groupedWorkouts[day].push({
             id: workout.id,
             title: workout.title,
-            duration: workout.duration,
+            duration: String(workout.duration),
             type: workout.type as WorkoutType,
             difficulty: workout.difficulty as WorkoutDifficulty,
-            calories: workout.calories,
-            notes: workout.notes,
-            exercises: Array.isArray(workout.exercises) 
-              ? workout.exercises 
-              : JSON.parse(workout.exercises || '[]') as Exercise[],
+            calories: workout.calories ? String(workout.calories) : undefined,
+            notes: workout.notes ? String(workout.notes) : undefined,
+            exercises: parsedExercises,
             last_modified: workout.last_modified
           });
         }
@@ -79,15 +81,19 @@ export class WorkoutService {
 
     if (error) throw error;
 
+    const parsedExercises = typeof data.exercises === 'string' 
+      ? JSON.parse(data.exercises) 
+      : (Array.isArray(data.exercises) ? data.exercises : []) as Exercise[];
+
     return {
       id: data.id,
       title: data.title,
-      duration: data.duration,
+      duration: String(data.duration),
       type: data.type as WorkoutType,
       difficulty: data.difficulty as WorkoutDifficulty,
-      calories: data.calories,
-      notes: data.notes,
-      exercises: JSON.parse(data.exercises || '[]') as Exercise[],
+      calories: data.calories ? String(data.calories) : undefined,
+      notes: data.notes ? String(data.notes) : undefined,
+      exercises: parsedExercises,
       last_modified: data.last_modified
     };
   }
@@ -108,15 +114,19 @@ export class WorkoutService {
 
     if (error) throw error;
 
+    const parsedExercises = typeof data.exercises === 'string' 
+      ? JSON.parse(data.exercises) 
+      : (Array.isArray(data.exercises) ? data.exercises : []) as Exercise[];
+
     return {
       id: data.id,
       title: data.title,
-      duration: data.duration,
+      duration: String(data.duration),
       type: data.type as WorkoutType,
       difficulty: data.difficulty as WorkoutDifficulty,
-      calories: data.calories,
-      notes: data.notes,
-      exercises: JSON.parse(data.exercises || '[]') as Exercise[],
+      calories: data.calories ? String(data.calories) : undefined,
+      notes: data.notes ? String(data.notes) : undefined,
+      exercises: parsedExercises,
       last_modified: data.last_modified
     };
   }
