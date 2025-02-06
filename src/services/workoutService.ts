@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Exercise, Workout, WorkoutInput, WeeklyWorkouts, WorkoutType, WorkoutDifficulty } from "@/types/workout";
+import { Json } from "@/integrations/supabase/types";
 
 const DEFAULT_WORKOUTS: WeeklyWorkouts = {
   Monday: [
@@ -54,7 +55,7 @@ export class WorkoutService {
             difficulty: workout.difficulty as WorkoutDifficulty,
             calories: workout.calories,
             notes: workout.notes,
-            exercises: workout.exercises || [],
+            exercises: (workout.exercises as unknown as Exercise[]) || [],
             last_modified: workout.last_modified
           });
         }
@@ -68,16 +69,18 @@ export class WorkoutService {
   }
 
   async createWorkout(workout: WorkoutInput): Promise<Workout> {
+    const workoutData = {
+      ...workout,
+      exercises: workout.exercises || [],
+      created_at: new Date().toISOString(),
+      last_modified: new Date().toISOString(),
+      sync_status: 'synced',
+      sync_hash: Date.now().toString()
+    };
+
     const { data, error } = await supabase
       .from('workouts')
-      .insert([{
-        ...workout,
-        exercises: workout.exercises || [],
-        created_at: new Date().toISOString(),
-        last_modified: new Date().toISOString(),
-        sync_status: 'synced',
-        sync_hash: Date.now().toString()
-      }])
+      .insert([workoutData])
       .select()
       .single();
 
@@ -91,19 +94,21 @@ export class WorkoutService {
       difficulty: data.difficulty as WorkoutDifficulty,
       calories: data.calories,
       notes: data.notes,
-      exercises: data.exercises || [],
+      exercises: (data.exercises as unknown as Exercise[]) || [],
       last_modified: data.last_modified
     };
   }
 
   async updateWorkout(id: string, workout: Partial<Workout>): Promise<Workout> {
+    const workoutData = {
+      ...workout,
+      exercises: workout.exercises || [],
+      last_modified: new Date().toISOString()
+    };
+
     const { data, error } = await supabase
       .from('workouts')
-      .update({
-        ...workout,
-        exercises: workout.exercises || [],
-        last_modified: new Date().toISOString()
-      })
+      .update(workoutData)
       .eq('id', id)
       .select()
       .single();
@@ -118,7 +123,7 @@ export class WorkoutService {
       difficulty: data.difficulty as WorkoutDifficulty,
       calories: data.calories,
       notes: data.notes,
-      exercises: data.exercises || [],
+      exercises: (data.exercises as unknown as Exercise[]) || [],
       last_modified: data.last_modified
     };
   }
