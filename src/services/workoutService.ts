@@ -23,8 +23,6 @@ const DEFAULT_WORKOUTS: WeeklyWorkouts = {
 };
 
 export class WorkoutService {
-  private subscribers: ((workouts: WeeklyWorkouts) => void)[] = [];
-
   async getWorkouts(): Promise<WeeklyWorkouts> {
     try {
       const { data, error } = await supabase
@@ -56,7 +54,7 @@ export class WorkoutService {
             difficulty: workout.difficulty as WorkoutDifficulty,
             calories: workout.calories,
             notes: workout.notes,
-            exercises: workout.exercises ? JSON.parse(workout.exercises as string) : [],
+            exercises: workout.exercises || [],
             last_modified: workout.last_modified
           });
         }
@@ -65,7 +63,7 @@ export class WorkoutService {
       return groupedWorkouts;
     } catch (error) {
       console.error('Error fetching workouts:', error);
-      return DEFAULT_WORKOUTS;
+      throw error;
     }
   }
 
@@ -74,9 +72,11 @@ export class WorkoutService {
       .from('workouts')
       .insert([{
         ...workout,
-        exercises: JSON.stringify(workout.exercises || []),
+        exercises: workout.exercises || [],
         created_at: new Date().toISOString(),
-        last_modified: new Date().toISOString()
+        last_modified: new Date().toISOString(),
+        sync_status: 'synced',
+        sync_hash: Date.now().toString()
       }])
       .select()
       .single();
@@ -91,21 +91,19 @@ export class WorkoutService {
       difficulty: data.difficulty as WorkoutDifficulty,
       calories: data.calories,
       notes: data.notes,
-      exercises: data.exercises ? JSON.parse(data.exercises as string) : [],
+      exercises: data.exercises || [],
       last_modified: data.last_modified
     };
   }
 
-  async updateWorkout(id: string, workout: Partial<WorkoutInput>): Promise<Workout> {
-    const updateData = {
-      ...workout,
-      exercises: workout.exercises ? JSON.stringify(workout.exercises) : undefined,
-      last_modified: new Date().toISOString()
-    };
-
+  async updateWorkout(id: string, workout: Partial<Workout>): Promise<Workout> {
     const { data, error } = await supabase
       .from('workouts')
-      .update(updateData)
+      .update({
+        ...workout,
+        exercises: workout.exercises || [],
+        last_modified: new Date().toISOString()
+      })
       .eq('id', id)
       .select()
       .single();
@@ -120,36 +118,9 @@ export class WorkoutService {
       difficulty: data.difficulty as WorkoutDifficulty,
       calories: data.calories,
       notes: data.notes,
-      exercises: data.exercises ? JSON.parse(data.exercises as string) : [],
+      exercises: data.exercises || [],
       last_modified: data.last_modified
     };
-  }
-
-  subscribeToWorkouts(callback: (workouts: WeeklyWorkouts) => void): () => void {
-    this.subscribers.push(callback);
-    
-    // Set up real-time subscription
-    const subscription = supabase
-      .channel('workouts_channel')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'workouts' 
-      }, async () => {
-        const workouts = await this.getWorkouts();
-        this.notifySubscribers(workouts);
-      })
-      .subscribe();
-
-    // Return cleanup function
-    return () => {
-      this.subscribers = this.subscribers.filter(cb => cb !== callback);
-      subscription.unsubscribe();
-    };
-  }
-
-  private notifySubscribers(workouts: WeeklyWorkouts) {
-    this.subscribers.forEach(callback => callback(workouts));
   }
 }
 

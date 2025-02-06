@@ -3,7 +3,6 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useState } from "react";
 import { DayColumn } from "../DayColumn";
 import { WorkoutCard } from "../WorkoutCard";
-import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { WeeklyWorkouts, Workout } from "@/types/workout";
 import { StatsBar } from "../StatsBar";
@@ -15,12 +14,13 @@ import { workoutService } from "@/services/workoutService";
 import { useMediaQuery } from "@/hooks/use-mobile";
 import { Button } from "../ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useWorkoutSync } from "@/hooks/useWorkoutSync";
 
 export function WeeklyBoard() {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const { syncWorkout } = useWorkoutSync();
 
   const { data: workouts = {
     Monday: [],
@@ -33,6 +33,8 @@ export function WeeklyBoard() {
   }, isLoading } = useQuery({
     queryKey: ['workouts'],
     queryFn: () => workoutService.getWorkouts(),
+    staleTime: 1000 * 60, // Consider data fresh for 1 minute
+    refetchOnWindowFocus: true,
   });
 
   const days = Object.keys(workouts) as Array<keyof WeeklyWorkouts>;
@@ -44,7 +46,7 @@ export function WeeklyBoard() {
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     setActiveId(null);
     const { active, over } = event;
     
@@ -65,20 +67,7 @@ export function WeeklyBoard() {
       
       if (!workout) return;
 
-      const updatedWorkout: Workout = {
-        ...workout,
-        last_modified: new Date().toISOString()
-      };
-
-      workoutService.updateWorkout(updatedWorkout.id, updatedWorkout)
-        .then(() => {
-          dropSound.play().catch(() => {});
-          toast.success("Workout moved successfully!");
-        })
-        .catch((error) => {
-          console.error('Error updating workout:', error);
-          toast.error("Failed to move workout");
-        });
+      await syncWorkout(workout, activeDay, overDay);
     }
   };
 
@@ -105,10 +94,8 @@ export function WeeklyBoard() {
     <ErrorBoundary>
       <DragProvider>
         <div className="relative min-h-screen bg-[#0A0A0A] bg-gradient-to-b from-[#0A0A0A] via-[#111111] to-[#0A0A0A]">
-          {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-blue-500/5 to-pink-500/5 pointer-events-none" />
           
-          {/* Content container with glass effect */}
           <div className="relative z-10 px-4 md:px-8 py-12 mx-auto max-w-7xl">
             <div className="flex flex-col items-center mb-12 space-y-6">
               <motion.h1 
