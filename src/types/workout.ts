@@ -39,3 +39,14 @@ export interface WorkoutInput {
 export type WeeklyWorkouts = {
   [key in 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday']: Workout[];
 };
+
+// Helper type for database operations
+export type WorkoutDB = Omit<Workout, 'exercises'> & {
+  exercises: Json;
+  user_id?: string;
+  sync_status?: SyncStatus;
+  last_synced_at?: string;
+};
+
+// JSON type for database operations
+export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
