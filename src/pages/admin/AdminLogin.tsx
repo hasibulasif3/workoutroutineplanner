@@ -35,14 +35,19 @@ export default function AdminLogin() {
         throw new Error('No user found');
       }
 
-      // Check if user is an admin
+      // Check if user is an admin using maybeSingle() instead of single()
       const { data: adminData, error: adminError } = await supabase
         .from('admin_users')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (adminError || !adminData) {
+      if (adminError) {
+        await supabase.auth.signOut();
+        throw adminError;
+      }
+
+      if (!adminData) {
         // Sign out the user if they're not an admin
         await supabase.auth.signOut();
         throw new Error('You do not have admin access. Please contact your administrator.');
