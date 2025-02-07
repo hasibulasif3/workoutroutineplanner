@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -18,31 +18,41 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      const { data: { user }, error } = await supabase.auth.signInWithPassword({
+      // First attempt to sign in
+      const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
-
-      if (user) {
-        const { data: adminData, error: adminError } = await supabase
-          .from('admin_users')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-
-        if (adminError || !adminData) {
-          await supabase.auth.signOut();
-          throw new Error('Unauthorized access');
+      if (signInError) {
+        if (signInError.message === 'Invalid login credentials') {
+          throw new Error('Invalid email or password. Please try again.');
         }
-
-        toast({
-          title: "Success",
-          description: "Logged in successfully",
-        });
-        navigate('/admin/dashboard');
+        throw signInError;
       }
+
+      if (!user) {
+        throw new Error('No user found');
+      }
+
+      // Check if user is an admin
+      const { data: adminData, error: adminError } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (adminError || !adminData) {
+        // Sign out the user if they're not an admin
+        await supabase.auth.signOut();
+        throw new Error('You do not have admin access. Please contact your administrator.');
+      }
+
+      toast({
+        title: "Success",
+        description: "Logged in successfully",
+      });
+      navigate('/admin/dashboard');
     } catch (error: any) {
       toast({
         title: "Error",
