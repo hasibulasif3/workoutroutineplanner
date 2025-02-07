@@ -3,46 +3,115 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useState, useEffect } from "react";
 import { DayColumn } from "../DayColumn";
 import { WorkoutCard } from "../WorkoutCard";
+import { v4 as uuidv4 } from "uuid";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { WeeklyWorkouts, Workout } from "@/types/workout";
+import { storageService } from "@/services/storageService";
 import { StatsBar } from "../StatsBar";
 import { ActionBar } from "../ActionBar";
-import { RetryableErrorBoundary } from "../RetryableErrorBoundary";
+import { ErrorBoundary } from "../ErrorBoundary";
 import { DragProvider } from "./DragContext";
-import { useWorkoutSync } from "@/hooks/useWorkoutSync";
-import { useOfflineSync } from "@/hooks/useOfflineSync";
-import { useRealtimeWorkouts } from "@/hooks/useRealtimeWorkouts";
-import { useQuery } from "@tanstack/react-query";
-import { workoutService } from "@/services/workoutService";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useMediaQuery } from "@/hooks/use-mobile";
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+const initialWorkouts: WeeklyWorkouts = {
+  Monday: [
+    {
+      id: "1",
+      title: "Push-ups",
+      duration: "15",
+      type: "strength",
+      difficulty: "intermediate",
+      calories: "150",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    },
+    {
+      id: "2",
+      title: "HIIT",
+      duration: "25",
+      type: "cardio",
+      difficulty: "advanced",
+      calories: "400",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    }
+  ],
+  Tuesday: [
+    {
+      id: "3",
+      title: "Yoga",
+      duration: "45",
+      type: "flexibility",
+      difficulty: "beginner",
+      calories: "200",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    }
+  ],
+  Wednesday: [], // Rest Day
+  Thursday: [
+    {
+      id: "4",
+      title: "Swimming",
+      duration: "40",
+      type: "cardio",
+      difficulty: "advanced",
+      calories: "450",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    }
+  ],
+  Friday: [
+    {
+      id: "5",
+      title: "Weight Training",
+      duration: "50",
+      type: "strength",
+      difficulty: "advanced",
+      calories: "500",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    }
+  ],
+  Saturday: [
+    {
+      id: "6",
+      title: "Morning Run",
+      duration: "30",
+      type: "cardio",
+      difficulty: "beginner",
+      calories: "300",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    }
+  ],
+  Sunday: [
+    {
+      id: "7",
+      title: "Dynamic Stretching",
+      duration: "25",
+      type: "flexibility",
+      difficulty: "beginner",
+      calories: "150",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    }
+  ]
+};
 
 export function WeeklyBoard() {
+  const [workouts, setWorkouts] = useState<WeeklyWorkouts>(initialWorkouts);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [currentDayIndex, setCurrentDayIndex] = useState(0);
-  const isMobile = useMediaQuery("(max-width: 768px)");
-  
-  const { syncWorkout } = useWorkoutSync();
-  const { isOnline, saveOffline } = useOfflineSync();
-  const { isSubscribed } = useRealtimeWorkouts();
+  const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { data: workouts = {
-    Monday: [],
-    Tuesday: [],
-    Wednesday: [],
-    Thursday: [],
-    Friday: [],
-    Saturday: [],
-    Sunday: [],
-  }, isLoading, error } = useQuery({
-    queryKey: ['workouts'],
-    queryFn: () => workoutService.getWorkouts(),
-    staleTime: 1000 * 60,
-    refetchOnWindowFocus: true,
-  });
+  useEffect(() => {
+    const savedWorkouts = storageService.loadWorkouts();
+    if (savedWorkouts) {
+      setWorkouts(savedWorkouts);
+    }
+    setIsLoading(false);
+  }, []);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id.toString());
@@ -51,7 +120,7 @@ export function WeeklyBoard() {
     }
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
     const { active, over } = event;
     
@@ -66,120 +135,89 @@ export function WeeklyBoard() {
     if (activeDay === overDay) return;
 
     if (activeDay) {
-      const workout = workouts[activeDay as keyof WeeklyWorkouts].find(
-        item => item.id === active.id.toString()
-      );
-      
-      if (!workout) return;
+      setWorkouts(prev => {
+        const workout = prev[activeDay].find(item => item.id === active.id.toString());
+        if (!workout) return prev;
 
-      if (!isOnline) {
-        await saveOffline(workout);
-        return;
-      }
+        const updatedWorkout: Workout = {
+          ...workout,
+          last_modified: new Date().toISOString()
+        };
 
-      await syncWorkout(workout, activeDay, overDay);
+        const newWorkouts = {
+          ...prev,
+          [activeDay]: prev[activeDay].filter(item => item.id !== active.id.toString()),
+          [overDay]: [...prev[overDay], updatedWorkout]
+        };
+        
+        dropSound.play().catch(() => {});
+        toast.success("Workout moved successfully!");
+        return newWorkouts;
+      });
     }
   };
 
-  const handlePrev = () => {
-    setCurrentDayIndex((prev) => (prev === 0 ? DAYS.length - 1 : prev - 1));
-  };
-
-  const handleNext = () => {
-    setCurrentDayIndex((prev) => (prev === DAYS.length - 1 ? 0 : prev + 1));
+  const handleWorkoutCreate = (workoutData: Omit<Workout, 'id' | 'last_modified'>) => {
+    const newWorkout: Workout = {
+      id: uuidv4(),
+      last_modified: new Date().toISOString(),
+      ...workoutData,
+      exercises: []
+    };
+    
+    setWorkouts(prev => ({
+      ...prev,
+      Monday: [...prev.Monday, newWorkout],
+    }));
+    
+    toast.success("New workout created!", {
+      description: `${newWorkout.title} added to Monday`,
+    });
   };
 
   const activeWorkout = activeId ? 
     Object.values(workouts).flat().find(w => w.id === activeId) : null;
 
-  if (error) {
-    return (
-      <RetryableErrorBoundary>
-        <div className="p-8">
-          <h1>Error loading workouts</h1>
-        </div>
-      </RetryableErrorBoundary>
-    );
-  }
-
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading your workouts...</p>
-        </div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <DragProvider>
-      <div className="p-8 animate-fade-in">
-        <div className="flex flex-col items-center mb-12">
-          <motion.h1 
-            className="text-5xl font-bold title-gradient mb-4"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            Workout Routine Planner
-          </motion.h1>
-          
-          <motion.p 
-            className="text-lg text-gray-400 mb-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-          >
-            Plan your workouts, track your progress, achieve your goals
-          </motion.p>
-          
-          <StatsBar workouts={workouts} />
-          <ActionBar workouts={workouts} onWorkoutCreate={(workout) => workoutService.createWorkout(workout)} />
-        </div>
+    <ErrorBoundary>
+      <DragProvider>
+        <div className="p-8 animate-fade-in">
+          <div className="flex flex-col items-center mb-12">
+            <motion.h1 
+              className="text-5xl font-bold title-gradient mb-4"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              Unfit Weekly Planner
+            </motion.h1>
+            
+            <motion.p 
+              className="text-lg text-gray-400 mb-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              Plan your workouts, track your progress, achieve your goals
+            </motion.p>
+            
+            <StatsBar workouts={workouts} />
+            <ActionBar workouts={workouts} onWorkoutCreate={handleWorkoutCreate} />
+          </div>
 
-        <DndContext 
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd} 
-          collisionDetection={closestCenter}
-        >
-          {isMobile ? (
-            <div className="relative backdrop-blur-md bg-white/5 rounded-2xl p-6 border border-white/10">
-              <div className="flex justify-between items-center mb-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handlePrev}
-                  className="absolute left-4 z-10 hover:bg-white/10"
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </Button>
-                <h2 className="text-xl font-bold text-center w-full text-white">
-                  {DAYS[currentDayIndex]}
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleNext}
-                  className="absolute right-4 z-10 hover:bg-white/10"
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </Button>
-              </div>
-              <div className="w-full">
-                <SortableContext
-                  items={workouts[DAYS[currentDayIndex]].map((w) => w.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <DayColumn 
-                    day={DAYS[currentDayIndex]} 
-                    workouts={workouts[DAYS[currentDayIndex]]} 
-                  />
-                </SortableContext>
-              </div>
-            </div>
-          ) : (
+          <DndContext 
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd} 
+            collisionDetection={closestCenter}
+          >
             <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
               {Object.entries(workouts).map(([day, dayWorkouts]) => (
                 <SortableContext
@@ -191,16 +229,16 @@ export function WeeklyBoard() {
                 </SortableContext>
               ))}
             </div>
-          )}
-          <DragOverlay>
-            {activeId && activeWorkout ? (
-              <div className="opacity-80 rotate-3 scale-105 pointer-events-none">
-                <WorkoutCard {...activeWorkout} />
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-      </div>
-    </DragProvider>
+            <DragOverlay>
+              {activeId && activeWorkout ? (
+                <div className="opacity-80 rotate-3 scale-105">
+                  <WorkoutCard {...activeWorkout} />
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </div>
+      </DragProvider>
+    </ErrorBoundary>
   );
 }
