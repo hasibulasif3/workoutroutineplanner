@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["admin_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["admin_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["admin_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       column_preferences: {
         Row: {
           created_at: string | null
@@ -143,6 +167,121 @@ export type Database = {
         }
         Relationships: []
       }
+      products: {
+        Row: {
+          affiliate_link: string
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string
+          difficulty: string | null
+          id: string
+          image_url: string | null
+          is_featured: boolean | null
+          metadata: Json | null
+          name: string
+          price: number
+          rating: number | null
+          reviews_count: number | null
+          stock_status: number | null
+          updated_at: string
+        }
+        Insert: {
+          affiliate_link: string
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          difficulty?: string | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          metadata?: Json | null
+          name: string
+          price: number
+          rating?: number | null
+          reviews_count?: number | null
+          stock_status?: number | null
+          updated_at?: string
+        }
+        Update: {
+          affiliate_link?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          difficulty?: string | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          metadata?: Json | null
+          name?: string
+          price?: number
+          rating?: number | null
+          reviews_count?: number | null
+          stock_status?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotional_banners: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_date: string
+          id: string
+          is_active: boolean | null
+          link_url: string | null
+          message: string
+          position: string | null
+          start_date: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          link_url?: string | null
+          message: string
+          position?: string | null
+          start_date: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          link_url?: string | null
+          message?: string
+          position?: string | null
+          start_date?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotional_banners_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workouts: {
         Row: {
           calories: string | null
@@ -265,9 +404,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      admin_role: "super_admin" | "product_manager" | "content_manager"
     }
     CompositeTypes: {
       [_ in never]: never
