@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
-import { ExternalLink } from "lucide-react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { ExternalLink, ShieldCheck, Star, Package } from "lucide-react";
+import { useInView } from "framer-motion";
+import { useRef, useState } from "react";
+import { Progress } from "@/components/ui/progress";
 
 interface WorkoutGear {
   id: string;
@@ -9,6 +12,9 @@ interface WorkoutGear {
   price: string;
   imageUrl: string;
   affiliateLink: string;
+  rating?: number;
+  reviews?: number;
+  stock?: number;
 }
 
 const workoutGears: WorkoutGear[] = [
@@ -18,7 +24,10 @@ const workoutGears: WorkoutGear[] = [
     description: "High-density foam mat perfect for yoga and floor exercises",
     price: "$29.99",
     imageUrl: "/placeholder.svg",
-    affiliateLink: "https://example.com/yoga-mat"
+    affiliateLink: "https://example.com/yoga-mat",
+    rating: 4.8,
+    reviews: 128,
+    stock: 45
   },
   {
     id: "2",
@@ -39,54 +48,145 @@ const workoutGears: WorkoutGear[] = [
 ];
 
 const WorkoutGears = () => {
+  const { scrollY } = useScroll();
+  const [isLoading, setIsLoading] = useState(false);
+  const containerRef = useRef(null);
+  const isInView = useInView(containerRef, { once: true });
+
+  const backgroundY = useTransform(scrollY, [0, 500], [0, 100]);
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.1,
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    })
+  };
+
+  const handlePurchase = async (gear: WorkoutGear) => {
+    setIsLoading(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsLoading(false);
+    window.open(gear.affiliateLink, '_blank');
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 p-8">
-      <h1 className="text-4xl font-bold text-center mb-8 title-gradient">
-        Essential Workout Gear
-      </h1>
-      <p className="text-gray-400 text-center mb-12 max-w-2xl mx-auto">
-        Enhance your workout experience with our carefully selected fitness equipment. 
-        Each item is chosen for quality, durability, and value for money.
-      </p>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-        {workoutGears.map((gear) => (
-          <motion.div
-            key={gear.id}
-            className="glass-card p-6 rounded-lg"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            whileHover={{ scale: 1.05 }}
-          >
-            <div className="aspect-square mb-4 bg-gray-800 rounded-lg overflow-hidden">
-              <img 
-                src={gear.imageUrl} 
-                alt={gear.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">{gear.name}</h3>
-            <p className="text-gray-400 mb-4">{gear.description}</p>
-            <div className="flex justify-between items-center">
-              <span className="text-primary font-bold">{gear.price}</span>
-              <Button
-                asChild
-                className="bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-opacity"
-              >
-                <a 
-                  href={gear.affiliateLink} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2"
-                >
-                  Buy Now
-                  <ExternalLink size={16} />
-                </a>
-              </Button>
-            </div>
-          </motion.div>
-        ))}
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Animated mesh gradient background */}
+      <motion.div 
+        className="absolute inset-0 -z-10"
+        style={{ y: backgroundY }}
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_#1a1f2c_0%,_#0f1117_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,_rgba(155,135,245,0.1)_0%,_transparent_40%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,_rgba(14,165,233,0.1)_0%,_transparent_40%)]" />
+      </motion.div>
+
+      <div className="container mx-auto px-4 py-16 max-w-7xl">
+        <motion.h1 
+          className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-4 title-gradient"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          Essential Workout Gear
+        </motion.h1>
+        
+        <motion.p 
+          className="text-gray-400 text-center mb-12 max-w-2xl mx-auto text-lg md:text-xl"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+        >
+          Enhance your workout experience with our carefully selected fitness equipment. 
+          Each item is chosen for quality, durability, and value for money.
+        </motion.p>
+        
+        <motion.div 
+          ref={containerRef}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12"
+          style={{
+            opacity: isInView ? 1 : 0,
+            transform: isInView ? "none" : "translateY(20px)"
+          }}
+        >
+          {workoutGears.map((gear, index) => (
+            <motion.div
+              key={gear.id}
+              custom={index}
+              initial="hidden"
+              animate="visible"
+              variants={cardVariants}
+              className="group relative"
+            >
+              <div className="glass-card p-6 rounded-xl transition-all duration-300 
+                             hover:scale-[1.02] hover:shadow-2xl
+                             bg-gradient-to-br from-white/10 to-white/5
+                             border border-white/10 backdrop-blur-md
+                             relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 opacity-0 
+                               group-hover:opacity-100 transition-opacity duration-500" />
+                
+                <div className="aspect-square mb-4 bg-gray-800/50 rounded-lg overflow-hidden">
+                  <motion.img 
+                    src={gear.imageUrl} 
+                    alt={gear.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold mb-2 text-white/90">{gear.name}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{gear.description}</p>
+                  
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center space-x-2">
+                      <Star className="w-4 h-4 text-yellow-500" />
+                      <span className="text-sm text-gray-300">{gear.rating} ({gear.reviews} reviews)</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Package className="w-4 h-4 text-green-500" />
+                      <span className="text-sm text-gray-300">{gear.stock} in stock</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-4">
+                    <div className="space-y-1">
+                      <span className="text-2xl font-bold text-white">{gear.price}</span>
+                      <div className="flex items-center space-x-1">
+                        <ShieldCheck className="w-4 h-4 text-green-500" />
+                        <span className="text-xs text-gray-400">Secure payment</span>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={() => handlePurchase(gear)}
+                      disabled={isLoading}
+                      className="relative overflow-hidden group bg-gradient-to-r from-primary via-secondary to-accent 
+                                hover:opacity-90 transition-all duration-300"
+                    >
+                      {isLoading ? (
+                        <Progress value={100} className="w-full absolute inset-0" />
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          Buy Now
+                          <ExternalLink size={16} />
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
     </div>
   );
