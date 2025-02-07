@@ -17,20 +17,20 @@ const initialWorkouts: WeeklyWorkouts = {
   Monday: [
     { 
       id: "1", 
-      title: "Morning Run", 
-      duration: "30", 
-      type: "cardio", 
-      difficulty: "beginner", 
-      calories: "300",
+      title: "Full Body Strength", 
+      duration: "60", 
+      type: "strength", 
+      difficulty: "intermediate", 
+      calories: "400",
       last_modified: new Date().toISOString(),
       exercises: []
     },
     { 
       id: "2", 
-      title: "Push-ups", 
-      duration: "15", 
-      type: "strength", 
-      difficulty: "intermediate", 
+      title: "Evening Yoga Flow", 
+      duration: "30", 
+      type: "flexibility", 
+      difficulty: "beginner", 
       calories: "150",
       last_modified: new Date().toISOString(),
       exercises: []
@@ -39,31 +39,51 @@ const initialWorkouts: WeeklyWorkouts = {
   Tuesday: [
     { 
       id: "3", 
-      title: "Yoga", 
+      title: "HIIT Cardio", 
       duration: "45", 
-      type: "flexibility", 
-      difficulty: "beginner", 
+      type: "cardio", 
+      difficulty: "advanced", 
+      calories: "500",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    },
+    {
+      id: "4",
+      title: "Core Strength",
+      duration: "20",
+      type: "strength",
+      difficulty: "intermediate",
       calories: "200",
       last_modified: new Date().toISOString(),
       exercises: []
-    },
+    }
   ],
   Wednesday: [
     { 
-      id: "4", 
-      title: "HIIT", 
-      duration: "25", 
-      type: "cardio", 
-      difficulty: "advanced", 
-      calories: "400",
+      id: "5", 
+      title: "Upper Body Focus", 
+      duration: "50", 
+      type: "strength", 
+      difficulty: "intermediate", 
+      calories: "350",
       last_modified: new Date().toISOString(),
       exercises: []
     },
+    {
+      id: "6",
+      title: "Mobility Work",
+      duration: "25",
+      type: "flexibility",
+      difficulty: "beginner",
+      calories: "120",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    }
   ],
   Thursday: [
     { 
-      id: "5", 
-      title: "Swimming", 
+      id: "7", 
+      title: "Endurance Run", 
       duration: "40", 
       type: "cardio", 
       difficulty: "intermediate", 
@@ -71,21 +91,63 @@ const initialWorkouts: WeeklyWorkouts = {
       last_modified: new Date().toISOString(),
       exercises: []
     },
+    {
+      id: "8",
+      title: "Recovery Stretching",
+      duration: "20",
+      type: "flexibility",
+      difficulty: "beginner",
+      calories: "100",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    }
   ],
   Friday: [
     { 
-      id: "6", 
-      title: "Weight Training", 
-      duration: "50", 
+      id: "9", 
+      title: "Lower Body Power", 
+      duration: "55", 
       type: "strength", 
       difficulty: "advanced", 
-      calories: "500",
+      calories: "450",
       last_modified: new Date().toISOString(),
       exercises: []
     },
+    {
+      id: "10",
+      title: "Cool Down Yoga",
+      duration: "25",
+      type: "flexibility",
+      difficulty: "beginner",
+      calories: "120",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    }
   ],
-  Saturday: [],
-  Sunday: [],
+  Saturday: [
+    {
+      id: "11",
+      title: "Active Recovery",
+      duration: "45",
+      type: "cardio",
+      difficulty: "beginner",
+      calories: "250",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    }
+  ],
+  Sunday: [
+    {
+      id: "12",
+      title: "Mindful Movement",
+      duration: "40",
+      type: "flexibility",
+      difficulty: "beginner",
+      calories: "180",
+      last_modified: new Date().toISOString(),
+      exercises: []
+    }
+  ],
 };
 
 export function WeeklyBoard() {
