@@ -41,9 +41,28 @@ export class WorkoutService {
           .toLocaleString('en-US', { weekday: 'long' }) as keyof WeeklyWorkouts;
         
         if (groupedWorkouts[day]) {
-          const parsedExercises = typeof workout.exercises === 'string' 
-            ? JSON.parse(workout.exercises) 
-            : (Array.isArray(workout.exercises) ? workout.exercises : []) as Exercise[];
+          let parsedExercises: Exercise[] = [];
+          try {
+            const exercisesData = typeof workout.exercises === 'string' 
+              ? JSON.parse(workout.exercises) 
+              : workout.exercises;
+              
+            parsedExercises = (Array.isArray(exercisesData) ? exercisesData : [])
+              .map(exercise => ({
+                name: String(exercise.name || ''),
+                sets: String(exercise.sets || ''),
+                reps: String(exercise.reps || ''),
+                restPeriod: String(exercise.restPeriod || ''),
+                equipment: Array.isArray(exercise.equipment) ? exercise.equipment : undefined,
+                targetMuscles: Array.isArray(exercise.targetMuscles) ? exercise.targetMuscles : undefined,
+                notes: exercise.notes ? String(exercise.notes) : undefined,
+                weight: exercise.weight ? String(exercise.weight) : undefined,
+                rpe: exercise.rpe ? String(exercise.rpe) : undefined,
+              }));
+          } catch (e) {
+            console.error('Error parsing exercises:', e);
+            parsedExercises = [];
+          }
 
           groupedWorkouts[day].push({
             id: workout.id,
@@ -81,9 +100,27 @@ export class WorkoutService {
 
     if (error) throw error;
 
-    const parsedExercises = typeof data.exercises === 'string' 
-      ? JSON.parse(data.exercises) 
-      : (Array.isArray(data.exercises) ? data.exercises : []) as Exercise[];
+    let parsedExercises: Exercise[] = [];
+    try {
+      const exercisesData = typeof data.exercises === 'string' 
+        ? JSON.parse(data.exercises) 
+        : data.exercises;
+        
+      parsedExercises = (Array.isArray(exercisesData) ? exercisesData : [])
+        .map(exercise => ({
+          name: String(exercise.name || ''),
+          sets: String(exercise.sets || ''),
+          reps: String(exercise.reps || ''),
+          restPeriod: String(exercise.restPeriod || ''),
+          equipment: Array.isArray(exercise.equipment) ? exercise.equipment : undefined,
+          targetMuscles: Array.isArray(exercise.targetMuscles) ? exercise.targetMuscles : undefined,
+          notes: exercise.notes ? String(exercise.notes) : undefined,
+          weight: exercise.weight ? String(exercise.weight) : undefined,
+          rpe: exercise.rpe ? String(exercise.rpe) : undefined,
+        }));
+    } catch (e) {
+      console.error('Error parsing exercises:', e);
+    }
 
     return {
       id: data.id,
@@ -114,9 +151,27 @@ export class WorkoutService {
 
     if (error) throw error;
 
-    const parsedExercises = typeof data.exercises === 'string' 
-      ? JSON.parse(data.exercises) 
-      : (Array.isArray(data.exercises) ? data.exercises : []) as Exercise[];
+    let parsedExercises: Exercise[] = [];
+    try {
+      const exercisesData = typeof data.exercises === 'string' 
+        ? JSON.parse(data.exercises) 
+        : data.exercises;
+        
+      parsedExercises = (Array.isArray(exercisesData) ? exercisesData : [])
+        .map(exercise => ({
+          name: String(exercise.name || ''),
+          sets: String(exercise.sets || ''),
+          reps: String(exercise.reps || ''),
+          restPeriod: String(exercise.restPeriod || ''),
+          equipment: Array.isArray(exercise.equipment) ? exercise.equipment : undefined,
+          targetMuscles: Array.isArray(exercise.targetMuscles) ? exercise.targetMuscles : undefined,
+          notes: exercise.notes ? String(exercise.notes) : undefined,
+          weight: exercise.weight ? String(exercise.weight) : undefined,
+          rpe: exercise.rpe ? String(exercise.rpe) : undefined,
+        }));
+    } catch (e) {
+      console.error('Error parsing exercises:', e);
+    }
 
     return {
       id: data.id,
