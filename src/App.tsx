@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { WeeklyBoard } from './components/weekly-board/WeeklyBoard';
 import { Toaster } from './components/ui/toaster';
@@ -17,6 +18,9 @@ function App() {
           <Route path="/workout-gears" element={<WorkoutGears />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/products" element={<AdminDashboard />} />
+          <Route path="/admin/banners" element={<AdminDashboard />} />
+          <Route path="/admin/settings" element={<AdminDashboard />} />
         </Routes>
         <Toaster />
       </BrowserRouter>
