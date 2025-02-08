@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LayoutGrid, ShoppingBag, Images, TrendingUp } from 'lucide-react';
+import { LayoutGrid, ShoppingBag, Images, Settings, TrendingUp } from 'lucide-react';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
