@@ -88,22 +88,22 @@ export default function Banners() {
 
   return (
     <AdminLayout title="Promotional Banners">
-      <div className="space-y-6 p-4 md:p-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
           <div className="space-y-1">
-            <h2 className="text-xl md:text-2xl font-bold tracking-tight">Promotional Banners</h2>
-            <p className="text-sm md:text-base text-muted-foreground">
+            <h2 className="text-2xl font-bold tracking-tight">Promotional Banners</h2>
+            <p className="text-muted-foreground">
               Manage your promotional banners and campaigns
             </p>
           </div>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
-              <Button className="w-full md:w-auto">
+              <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Banner
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add New Banner</DialogTitle>
                 <DialogDescription>
@@ -135,7 +135,7 @@ export default function Banners() {
                     onChange={(e) => setNewBanner({ ...newBanner, image_url: e.target.value })}
                   />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="start_date">Start Date</Label>
                     <Input
@@ -166,11 +166,11 @@ export default function Banners() {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {isLoading ? (
             <p>Loading...</p>
           ) : banners?.map((banner) => (
-            <Card key={banner.id} className="overflow-hidden flex flex-col">
+            <Card key={banner.id} className="overflow-hidden">
               <div className="aspect-video relative">
                 <img
                   src={banner.image_url}
@@ -185,22 +185,22 @@ export default function Banners() {
                   </div>
                 )}
               </div>
-              <CardContent className="p-4 flex-1 flex flex-col">
-                <div className="space-y-2 flex-1">
-                  <h3 className="font-semibold text-lg">{banner.title}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{banner.description}</p>
-                  <div className="text-xs text-muted-foreground mt-2">
+              <CardContent className="p-4">
+                <div className="space-y-2">
+                  <h3 className="font-semibold">{banner.title}</h3>
+                  <p className="text-sm text-muted-foreground">{banner.description}</p>
+                  <div className="text-xs text-muted-foreground">
                     {new Date(banner.start_date).toLocaleDateString()} -{' '}
                     {new Date(banner.end_date).toLocaleDateString()}
                   </div>
-                  <div className="flex justify-end gap-2 pt-2 mt-auto">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="ghost" size="icon">
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon">
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
