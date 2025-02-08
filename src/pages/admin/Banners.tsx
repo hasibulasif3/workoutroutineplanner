@@ -177,7 +177,7 @@ export default function Banners() {
                   alt={banner.title}
                   className="object-cover w-full h-full"
                 />
-                {banner.active && (
+                {banner.is_active && (
                   <div className="absolute top-2 right-2">
                     <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
                       Active
