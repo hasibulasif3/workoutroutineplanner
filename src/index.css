@@ -135,11 +135,11 @@
 }
 
 .stats-bar {
-  @apply flex justify-around items-center p-4 mb-8 glass-card rounded-lg;
+  @apply p-4 mb-8;
 }
 
 .stats-item {
-  @apply flex flex-col items-center;
+  @apply flex flex-col items-center justify-center text-center;
 }
 
 .quick-action {
