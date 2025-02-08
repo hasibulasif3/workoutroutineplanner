@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -51,7 +50,7 @@ export default function Settings() {
         .single();
       
       if (error) throw error;
-      return data as AdminSettings;
+      return data;
     }
   });
 
@@ -69,7 +68,6 @@ export default function Settings() {
 
       if (error) throw error;
       
-      // Show success message
       console.log('Settings saved successfully');
     } catch (error) {
       console.error('Error saving settings:', error);

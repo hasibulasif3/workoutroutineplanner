@@ -24,9 +24,12 @@ interface Banner {
   title: string;
   description: string;
   image_url: string;
-  active: boolean;
+  message: string;
+  is_active: boolean;
   start_date: string;
   end_date: string;
+  type: string;
+  position: string;
 }
 
 export default function Banners() {
@@ -36,9 +39,12 @@ export default function Banners() {
     title: '',
     description: '',
     image_url: '',
-    active: true,
+    message: '',
+    is_active: true,
     start_date: '',
-    end_date: ''
+    end_date: '',
+    type: 'info',
+    position: 'top'
   });
 
   const { data: banners, isLoading, refetch } = useQuery({
@@ -50,7 +56,7 @@ export default function Banners() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Banner[];
+      return data;
     }
   });
 
@@ -67,9 +73,12 @@ export default function Banners() {
         title: '',
         description: '',
         image_url: '',
-        active: true,
+        message: '',
+        is_active: true,
         start_date: '',
-        end_date: ''
+        end_date: '',
+        type: 'info',
+        position: 'top'
       });
       refetch();
     } catch (error) {

@@ -33,6 +33,8 @@ interface Product {
   price: number;
   stock: number;
   created_at: string;
+  category: string;
+  affiliate_link: string;
 }
 
 export default function Products() {
@@ -43,7 +45,9 @@ export default function Products() {
     name: '',
     description: '',
     price: 0,
-    stock: 0
+    stock: 0,
+    category: 'general',
+    affiliate_link: '#'
   });
 
   const { data: products, isLoading, refetch } = useQuery({
@@ -55,7 +59,7 @@ export default function Products() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Product[];
+      return data;
     }
   });
 
@@ -73,7 +77,14 @@ export default function Products() {
       if (error) throw error;
       
       setShowAddDialog(false);
-      setNewProduct({ name: '', description: '', price: 0, stock: 0 });
+      setNewProduct({ 
+        name: '', 
+        description: '', 
+        price: 0, 
+        stock: 0,
+        category: 'general',
+        affiliate_link: '#'
+      });
       refetch();
     } catch (error) {
       console.error('Error adding product:', error);

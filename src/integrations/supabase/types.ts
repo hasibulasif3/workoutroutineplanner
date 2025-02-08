@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_settings: {
+        Row: {
+          contact_email: string
+          created_at: string
+          enable_notifications: boolean | null
+          id: string
+          maintenance_mode: boolean | null
+          site_name: string
+          theme: string | null
+          updated_at: string
+        }
+        Insert: {
+          contact_email: string
+          created_at?: string
+          enable_notifications?: boolean | null
+          id?: string
+          maintenance_mode?: boolean | null
+          site_name: string
+          theme?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string
+          created_at?: string
+          enable_notifications?: boolean | null
+          id?: string
+          maintenance_mode?: boolean | null
+          site_name?: string
+          theme?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string
@@ -183,6 +216,7 @@ export type Database = {
           price: number
           rating: number | null
           reviews_count: number | null
+          stock: number | null
           stock_status: number | null
           updated_at: string
         }
@@ -201,6 +235,7 @@ export type Database = {
           price: number
           rating?: number | null
           reviews_count?: number | null
+          stock?: number | null
           stock_status?: number | null
           updated_at?: string
         }
@@ -219,6 +254,7 @@ export type Database = {
           price?: number
           rating?: number | null
           reviews_count?: number | null
+          stock?: number | null
           stock_status?: number | null
           updated_at?: string
         }
@@ -236,39 +272,48 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          description: string | null
           end_date: string
           id: string
+          image_url: string | null
           is_active: boolean | null
           link_url: string | null
           message: string
           position: string | null
           start_date: string
+          title: string | null
           type: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          description?: string | null
           end_date: string
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           link_url?: string | null
           message: string
           position?: string | null
           start_date: string
+          title?: string | null
           type?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          description?: string | null
           end_date?: string
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           link_url?: string | null
           message?: string
           position?: string | null
           start_date?: string
+          title?: string | null
           type?: string
           updated_at?: string
         }
