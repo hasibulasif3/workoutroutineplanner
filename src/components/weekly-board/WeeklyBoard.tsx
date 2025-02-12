@@ -1,3 +1,4 @@
+
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState, useEffect } from "react";
@@ -197,7 +198,7 @@ export function WeeklyBoard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              Unfit Weekly Planner
+              Workout Routine Planner
             </motion.h1>
             
             <motion.p 
@@ -237,6 +238,11 @@ export function WeeklyBoard() {
               ) : null}
             </DragOverlay>
           </DndContext>
+
+          <footer className="py-6 text-center text-gray-400 mt-8">
+            <p className="mb-2">Workout Routine Planner, a Portfolio Product of Unfit.fit (formerly HealthyThako)</p>
+            <p>Contact: +8801886-102806</p>
+          </footer>
         </div>
       </DragProvider>
     </ErrorBoundary>
