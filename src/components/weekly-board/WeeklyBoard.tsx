@@ -215,7 +215,7 @@ export function WeeklyBoard() {
           </DndContext>
 
           <footer className="py-6 text-center text-gray-400 mt-8">
-            <p className="mb-2">Workout Routine Planner, a Portfolio Product of Unfit Inc.</p>
+            <p className="mb-2">Workout Routine Planner, Your Ultimate Weekly Workout & Exercise Planner for Seamless Calendar & Smartwatch Integrationa Portfolio Product of Unfit Inc.</p>
             <p>Support: info@workoutroutineplanner.fit, Contact: +8801886-102806</p>
           </footer>
         </div>
