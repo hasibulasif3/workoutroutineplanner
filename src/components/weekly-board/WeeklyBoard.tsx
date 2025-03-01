@@ -1,3 +1,4 @@
+
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState, useEffect } from "react";
@@ -102,9 +103,16 @@ export function WeeklyBoard() {
     setIsLoading(false);
   }, []);
 
+  // Save workouts to storage whenever they change
   useEffect(() => {
     if (!isLoading) {
-      storageService.saveWorkouts(workouts);
+      try {
+        storageService.saveWorkouts(workouts);
+        console.log("Workouts saved successfully:", workouts);
+      } catch (error) {
+        console.error("Error saving workouts:", error);
+        toast.error("Failed to save workout changes");
+      }
     }
   }, [workouts, isLoading]);
 
@@ -145,32 +153,39 @@ export function WeeklyBoard() {
     }
   };
 
-  const handleWorkoutCreate = (workoutData: Omit<Workout, 'id' | 'last_modified'>) => {
-    try {
-      const newWorkout: Workout = {
-        id: uuidv4(),
-        last_modified: new Date().toISOString(),
-        ...workoutData
-      };
-      setWorkouts(prev => {
-        const updatedWorkouts = {
-          ...prev,
-          Monday: [...prev.Monday, newWorkout]
+  const handleWorkoutCreate = async (workoutData: Omit<Workout, 'id' | 'last_modified'>) => {
+    return new Promise<void>((resolve, reject) => {
+      try {
+        // Create new workout with id and timestamp
+        const newWorkout: Workout = {
+          id: uuidv4(),
+          last_modified: new Date().toISOString(),
+          ...workoutData,
+          // Ensure exercises are included with a defensive copy
+          exercises: workoutData.exercises ? [...workoutData.exercises] : []
         };
-        storageService.saveWorkouts(updatedWorkouts);
-        return updatedWorkouts;
-      });
-      toast.success("New workout created!", {
-        description: `${newWorkout.title} added to Monday`,
-        duration: 4000
-      });
-    } catch (error) {
-      console.error("Error creating workout:", error);
-      toast.error("Failed to create workout", {
-        description: "There was an issue saving your workout. Please try again.",
-        duration: 4000
-      });
-    }
+
+        console.log("Creating new workout:", newWorkout);
+        
+        // Update state with the new workout
+        setWorkouts(prev => {
+          const updatedWorkouts = {
+            ...prev,
+            Monday: [...prev.Monday, newWorkout]
+          };
+          
+          // We don't need to manually save here as the useEffect will handle it
+          return updatedWorkouts;
+        });
+
+        // Log success and resolve the promise
+        console.log("Workout created successfully");
+        resolve();
+      } catch (error) {
+        console.error("Error in handleWorkoutCreate:", error);
+        reject(error);
+      }
+    });
   };
 
   const activeWorkout = activeId ? Object.values(workouts).flat().find(w => w.id === activeId) : null;

@@ -1,5 +1,6 @@
+
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -26,6 +27,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
   const [totalDuration, setTotalDuration] = useState(0);
   const [formProgress, setFormProgress] = useState(0);
   const [isAutosaving, setIsAutosaving] = useState(false);
+  const [formSubmissionError, setFormSubmissionError] = useState<string | null>(null);
 
   const form = useForm<WorkoutFormType>({
     resolver: zodResolver(workoutSchema),
@@ -128,10 +130,16 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
     }
 
     setIsSubmitting(true);
+    setFormSubmissionError(null);
     
     try {
-      await onWorkoutCreate(data);
+      // Ensure we're passing complete data including exercises
+      await onWorkoutCreate({
+        ...data,
+        exercises: [...data.exercises] // Create a copy to ensure it's not modified
+      });
       
+      // Clear form and close dialog only after successful submission
       form.reset();
       localStorage.removeItem('workout-form-state');
       setShowDialog(false);
@@ -143,6 +151,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       });
     } catch (error) {
       console.error("Workout creation error:", error);
+      setFormSubmissionError("Failed to create workout. Please try again.");
       toast.error("Failed to create workout", {
         description: "There was a problem saving your workout. Please try again.",
         duration: 4000
@@ -221,9 +230,17 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
         >
           <DialogHeader className="p-6 pb-0">
             <DialogTitle>Create New Workout</DialogTitle>
+            <DialogDescription>
+              Fill in the details below to create a new workout routine.
+            </DialogDescription>
           </DialogHeader>
           <ScrollArea className="h-full px-6 pb-6">
             <FormProgress />
+            {formSubmissionError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md">
+                {formSubmissionError}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-sm font-medium mb-4">Quick Templates</h3>
