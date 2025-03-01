@@ -9,6 +9,10 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import Products from './pages/admin/Products';
 import Banners from './pages/admin/Banners';
 import Settings from './pages/admin/Settings';
+import Contact from './pages/Contact';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
+import Refund from './pages/Refund';
 
 const queryClient = new QueryClient();
 
@@ -19,6 +23,10 @@ function App() {
         <Routes>
           <Route path="/" element={<WeeklyBoard />} />
           <Route path="/workout-gears" element={<WorkoutGears />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/refund" element={<Refund />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/products" element={<Products />} />

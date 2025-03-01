@@ -12,6 +12,8 @@ import { StatsBar } from "../StatsBar";
 import { ActionBar } from "../ActionBar";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { DragProvider } from "./DragContext";
+import { Layout } from "../layout/Layout";
+
 const initialWorkouts: WeeklyWorkouts = {
   Monday: [{
     id: "1",
@@ -85,11 +87,13 @@ const initialWorkouts: WeeklyWorkouts = {
     exercises: []
   }]
 };
+
 export function WeeklyBoard() {
   const [workouts, setWorkouts] = useState<WeeklyWorkouts>(initialWorkouts);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
   const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     const savedWorkouts = storageService.loadWorkouts();
     if (savedWorkouts) {
@@ -97,17 +101,20 @@ export function WeeklyBoard() {
     }
     setIsLoading(false);
   }, []);
+
   useEffect(() => {
     if (!isLoading) {
       storageService.saveWorkouts(workouts);
     }
   }, [workouts, isLoading]);
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id.toString());
     if (window.navigator.vibrate) {
       window.navigator.vibrate(50);
     }
   };
+
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
     const {
@@ -137,6 +144,7 @@ export function WeeklyBoard() {
       });
     }
   };
+
   const handleWorkoutCreate = (workoutData: Omit<Workout, 'id' | 'last_modified'>) => {
     try {
       const newWorkout: Workout = {
@@ -164,61 +172,65 @@ export function WeeklyBoard() {
       });
     }
   };
+
   const activeWorkout = activeId ? Object.values(workouts).flat().find(w => w.id === activeId) : null;
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>;
   }
-  return <ErrorBoundary>
-      <DragProvider>
-        <div className="p-8 animate-fade-in">
-          <div className="flex flex-col items-center mb-12">
-            <motion.h1 className="text-5xl font-bold title-gradient mb-4" initial={{
-            opacity: 0,
-            y: -20
-          }} animate={{
-            opacity: 1,
-            y: 0
-          }} transition={{
-            duration: 0.5
-          }}>
-              Workout Routine Planner
-            </motion.h1>
-            
-            <motion.p className="text-lg text-gray-400 mb-8" initial={{
-            opacity: 0
-          }} animate={{
-            opacity: 1
-          }} transition={{
-            delay: 0.2,
-            duration: 0.5
-          }}>
-              Plan your workouts, track your progress, achieve your goals
-            </motion.p>
-            
-            <StatsBar workouts={workouts} />
-            <ActionBar workouts={workouts} onWorkoutCreate={handleWorkoutCreate} />
-          </div>
 
-          <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
-            <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-              {Object.entries(workouts).map(([day, dayWorkouts]) => <SortableContext key={day} items={dayWorkouts.map(w => w.id)} strategy={verticalListSortingStrategy}>
-                  <DayColumn day={day} workouts={dayWorkouts} />
-                </SortableContext>)}
+  return (
+    <Layout>
+      <ErrorBoundary>
+        <DragProvider>
+          <div className="p-8 animate-fade-in">
+            <div className="flex flex-col items-center mb-12">
+              <motion.h1 className="text-5xl font-bold title-gradient mb-4" initial={{
+              opacity: 0,
+              y: -20
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.5
+            }}>
+                Workout Routine Planner
+              </motion.h1>
+              
+              <motion.p className="text-lg text-gray-400 mb-8" initial={{
+              opacity: 0
+            }} animate={{
+              opacity: 1
+            }} transition={{
+              delay: 0.2,
+              duration: 0.5
+            }}>
+                Plan your workouts, track your progress, achieve your goals
+              </motion.p>
+              
+              <StatsBar workouts={workouts} />
+              <ActionBar workouts={workouts} onWorkoutCreate={handleWorkoutCreate} />
             </div>
-            <DragOverlay>
-              {activeId && activeWorkout ? <div className="opacity-80 rotate-3 scale-105">
-                  <WorkoutCard {...activeWorkout} />
-                </div> : null}
-            </DragOverlay>
-          </DndContext>
 
-          <footer className="py-6 text-center text-gray-400 mt-8">
-            <p className="mb-2">Workout Routine Planner, Your Ultimate Weekly Workout & Exercise Planner for Seamless Calendar & Smartwatch Integrationa Portfolio Product of Unfit Inc.</p>
-            <p>Support: info@workoutroutineplanner.fit, Contact: +8801886-102806</p>
-          </footer>
-        </div>
-      </DragProvider>
-    </ErrorBoundary>;
+            <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+                {Object.entries(workouts).map(([day, dayWorkouts]) => (
+                  <SortableContext key={day} items={dayWorkouts.map(w => w.id)} strategy={verticalListSortingStrategy}>
+                    <DayColumn day={day} workouts={dayWorkouts} />
+                  </SortableContext>
+                ))}
+              </div>
+              <DragOverlay>
+                {activeId && activeWorkout ? <div className="opacity-80 rotate-3 scale-105">
+                    <WorkoutCard {...activeWorkout} />
+                  </div> : null}
+              </DragOverlay>
+            </DndContext>
+          </div>
+        </DragProvider>
+      </ErrorBoundary>
+    </Layout>
+  );
 }

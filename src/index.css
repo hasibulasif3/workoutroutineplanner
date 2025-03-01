@@ -49,6 +49,16 @@
   100% { transform: translateY(0px); }
 }
 
+.glass {
+  @apply backdrop-blur-md bg-white/10 border border-white/20 shadow-xl;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-header {
+  @apply backdrop-blur-md bg-background/50 border-b border-white/10;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
 .glass-card {
   @apply backdrop-blur-md bg-white/10 border border-white/20 shadow-xl;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
