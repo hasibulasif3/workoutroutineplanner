@@ -16,12 +16,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 
 interface CreateWorkoutDialogProps {
-  onWorkoutCreate: (workout: WorkoutFormType) => void;
+  onWorkoutCreate: (workout: WorkoutFormType) => Promise<void>;
 }
 
 export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previewData, setPreviewData] = useState<any>(null);
+  const [previewData, setPreviewData] = useState<WorkoutFormType | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
   const [totalDuration, setTotalDuration] = useState(0);
@@ -73,7 +73,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       try {
         const parsed = JSON.parse(savedState);
         form.reset(parsed);
-        setPreviewData({ id: "preview", ...parsed });
+        setPreviewData(parsed);
         if (parsed.exercises) {
           const duration = calculateTotalDuration(parsed.exercises);
           setTotalDuration(duration);
@@ -113,7 +113,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       }
       
       if (value.title) {
-        setPreviewData({ id: "preview", ...value });
+        setPreviewData({ ...value });
       }
     });
     
@@ -133,28 +133,26 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
     setFormSubmissionError(null);
     
     try {
-      // Ensure we're passing complete data including exercises
-      await onWorkoutCreate({
+      // Clone the data to ensure we're not modifying the original
+      const workoutData = {
         ...data,
-        exercises: [...data.exercises] // Create a copy to ensure it's not modified
-      });
+        exercises: [...data.exercises]
+      };
       
-      // Clear form and close dialog only after successful submission
+      // Call the parent's workout creation function
+      await onWorkoutCreate(workoutData);
+      
+      // Clear form and storage after successful creation
       form.reset();
       localStorage.removeItem('workout-form-state');
-      setShowDialog(false);
       setPreviewData(null);
+      setShowDialog(false);
       
-      toast.success("Workout created successfully!", {
-        description: "Your workout has been added to Monday's schedule.",
-        duration: 4000
-      });
     } catch (error) {
       console.error("Workout creation error:", error);
       setFormSubmissionError("Failed to create workout. Please try again.");
       toast.error("Failed to create workout", {
         description: "There was a problem saving your workout. Please try again.",
-        duration: 4000
       });
     } finally {
       setIsSubmitting(false);
@@ -165,7 +163,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
     const confirmed = window.confirm("Applying a template will reset your current form. Continue?");
     if (confirmed) {
       form.reset(template);
-      setPreviewData({ id: "preview", ...template });
+      setPreviewData(template);
       localStorage.setItem('workout-form-state', JSON.stringify(template));
       if (template.exercises) {
         const duration = calculateTotalDuration(template.exercises);
@@ -257,7 +255,16 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
                 {previewData && (
                   <div>
                     <h3 className="text-sm font-medium mb-4">Preview</h3>
-                    <WorkoutCard {...previewData} />
+                    <WorkoutCard 
+                      id="preview" 
+                      title={previewData.title}
+                      duration={previewData.duration}
+                      type={previewData.type}
+                      difficulty={previewData.difficulty}
+                      calories={previewData.calories}
+                      exercises={previewData.exercises}
+                      last_modified={new Date().toISOString()}
+                    />
                   </div>
                 )}
               </div>

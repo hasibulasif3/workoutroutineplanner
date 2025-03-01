@@ -96,11 +96,24 @@ export function WeeklyBoard() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const savedWorkouts = storageService.loadWorkouts();
-    if (savedWorkouts) {
-      setWorkouts(savedWorkouts);
-    }
-    setIsLoading(false);
+    const loadWorkouts = () => {
+      try {
+        const savedWorkouts = storageService.loadWorkouts();
+        if (savedWorkouts) {
+          console.log("Loaded workouts from storage:", savedWorkouts);
+          setWorkouts(savedWorkouts);
+        } else {
+          console.log("No saved workouts found, using initial data");
+        }
+      } catch (error) {
+        console.error("Error loading workouts:", error);
+        toast.error("Failed to load your workouts");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadWorkouts();
   }, []);
 
   // Save workouts to storage whenever they change
@@ -125,32 +138,41 @@ export function WeeklyBoard() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
-    const {
-      active,
-      over
-    } = event;
+    const { active, over } = event;
+    
     if (!over) return;
-    const activeDay = Object.entries(workouts).find(([day, items]) => items.find(item => item.id === active.id.toString()))?.[0];
+    
+    const activeDay = Object.entries(workouts).find(
+      ([day, items]) => items.find(item => item.id === active.id.toString())
+    )?.[0];
+    
     const overDay = over.id.toString();
-    if (activeDay === overDay) return;
-    if (activeDay) {
-      setWorkouts(prev => {
-        const workout = prev[activeDay].find(item => item.id === active.id.toString());
-        if (!workout) return prev;
-        const updatedWorkout: Workout = {
-          ...workout,
-          last_modified: new Date().toISOString()
-        };
-        const newWorkouts = {
-          ...prev,
-          [activeDay]: prev[activeDay].filter(item => item.id !== active.id.toString()),
-          [overDay]: [...prev[overDay], updatedWorkout]
-        };
-        dropSound.play().catch(() => {});
-        toast.success("Workout moved successfully!");
-        return newWorkouts;
+    
+    if (!activeDay || activeDay === overDay) return;
+    
+    setWorkouts(prev => {
+      const workout = prev[activeDay].find(item => item.id === active.id.toString());
+      if (!workout) return prev;
+      
+      const updatedWorkout: Workout = {
+        ...workout,
+        last_modified: new Date().toISOString()
+      };
+      
+      const newWorkouts = {
+        ...prev,
+        [activeDay]: prev[activeDay].filter(item => item.id !== active.id.toString()),
+        [overDay]: [...prev[overDay], updatedWorkout]
+      };
+      
+      // Play sound and show toast
+      dropSound.play().catch(err => console.error("Error playing sound:", err));
+      toast.success(`Workout moved to ${overDay}`, {
+        description: `"${workout.title}" has been moved successfully.`
       });
-    }
+      
+      return newWorkouts;
+    });
   };
 
   const handleWorkoutCreate = async (workoutData: Omit<Workout, 'id' | 'last_modified'>) => {
@@ -174,8 +196,13 @@ export function WeeklyBoard() {
             Monday: [...prev.Monday, newWorkout]
           };
           
-          // We don't need to manually save here as the useEffect will handle it
           return updatedWorkouts;
+        });
+
+        // Show success toast with animation
+        toast.success("Workout added to Monday", {
+          description: `"${newWorkout.title}" has been added to your schedule.`,
+          duration: 4000,
         });
 
         // Log success and resolve the promise
@@ -183,6 +210,9 @@ export function WeeklyBoard() {
         resolve();
       } catch (error) {
         console.error("Error in handleWorkoutCreate:", error);
+        toast.error("Failed to create workout", {
+          description: "There was a problem adding your workout. Please try again.",
+        });
         reject(error);
       }
     });
