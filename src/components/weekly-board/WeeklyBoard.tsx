@@ -1,4 +1,3 @@
-
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState, useEffect } from "react";
@@ -114,6 +113,12 @@ export function WeeklyBoard() {
     setIsLoading(false);
   }, []);
 
+  useEffect(() => {
+    if (!isLoading) {
+      storageService.saveWorkouts(workouts);
+    }
+  }, [workouts, isLoading]);
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id.toString());
     if (window.navigator.vibrate) {
@@ -159,21 +164,35 @@ export function WeeklyBoard() {
   };
 
   const handleWorkoutCreate = (workoutData: Omit<Workout, 'id' | 'last_modified'>) => {
-    const newWorkout: Workout = {
-      id: uuidv4(),
-      last_modified: new Date().toISOString(),
-      ...workoutData,
-      exercises: []
-    };
-    
-    setWorkouts(prev => ({
-      ...prev,
-      Monday: [...prev.Monday, newWorkout],
-    }));
-    
-    toast.success("New workout created!", {
-      description: `${newWorkout.title} added to Monday`,
-    });
+    try {
+      const newWorkout: Workout = {
+        id: uuidv4(),
+        last_modified: new Date().toISOString(),
+        ...workoutData
+      };
+      
+      setWorkouts(prev => {
+        const updatedWorkouts = {
+          ...prev,
+          Monday: [...prev.Monday, newWorkout],
+        };
+        
+        storageService.saveWorkouts(updatedWorkouts);
+        
+        return updatedWorkouts;
+      });
+      
+      toast.success("New workout created!", {
+        description: `${newWorkout.title} added to Monday`,
+        duration: 4000,
+      });
+    } catch (error) {
+      console.error("Error creating workout:", error);
+      toast.error("Failed to create workout", {
+        description: "There was an issue saving your workout. Please try again.",
+        duration: 4000,
+      });
+    }
   };
 
   const activeWorkout = activeId ? 

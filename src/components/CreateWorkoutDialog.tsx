@@ -12,6 +12,7 @@ import { TemplateList } from "./workout/TemplateList";
 import { workoutTemplates } from "./workout/templates";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 
 interface CreateWorkoutDialogProps {
   onWorkoutCreate: (workout: WorkoutFormType) => void;
@@ -23,6 +24,8 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
   const [showDialog, setShowDialog] = useState(false);
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
   const [totalDuration, setTotalDuration] = useState(0);
+  const [formProgress, setFormProgress] = useState(0);
+  const [isAutosaving, setIsAutosaving] = useState(false);
 
   const form = useForm<WorkoutFormType>({
     resolver: zodResolver(workoutSchema),
@@ -48,38 +51,75 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
     }, 0);
   }, []);
 
-  // Load saved form state
+  useEffect(() => {
+    const formValues = form.getValues();
+    const requiredFields = ['title', 'type', 'duration', 'difficulty', 'calories'];
+    const filledRequiredFields = requiredFields.filter(field => formValues[field] !== "");
+    
+    let progress = (filledRequiredFields.length / requiredFields.length) * 70;
+    
+    if (formValues.exercises && formValues.exercises.length > 0) {
+      progress += 30;
+    }
+    
+    setFormProgress(progress);
+  }, [form.watch()]);
+
   useEffect(() => {
     const savedState = localStorage.getItem('workout-form-state');
     if (savedState) {
-      const parsed = JSON.parse(savedState);
-      form.reset(parsed);
-      setPreviewData({ id: "preview", ...parsed });
-      if (parsed.exercises) {
-        const duration = calculateTotalDuration(parsed.exercises);
-        setTotalDuration(duration);
-        form.setValue('duration', String(Math.ceil(duration / 60)));
+      try {
+        const parsed = JSON.parse(savedState);
+        form.reset(parsed);
+        setPreviewData({ id: "preview", ...parsed });
+        if (parsed.exercises) {
+          const duration = calculateTotalDuration(parsed.exercises);
+          setTotalDuration(duration);
+          form.setValue('duration', String(Math.ceil(duration / 60)));
+        }
+      } catch (error) {
+        console.error('Error parsing saved form state:', error);
+        localStorage.removeItem('workout-form-state');
       }
     }
   }, []);
 
-  // Save form state on changes
   useEffect(() => {
+    const autoSaveTimeout = 1500; // 1.5 seconds
+    let timeoutId: NodeJS.Timeout;
+    
     const subscription = form.watch((value) => {
       if (Object.keys(form.formState.dirtyFields).length > 0) {
-        localStorage.setItem('workout-form-state', JSON.stringify(value));
+        setIsAutosaving(true);
+        
+        clearTimeout(timeoutId);
+        
+        timeoutId = setTimeout(() => {
+          try {
+            localStorage.setItem('workout-form-state', JSON.stringify(value));
+            setIsAutosaving(false);
+          } catch (error) {
+            console.error('Error autosaving form state:', error);
+          }
+        }, autoSaveTimeout);
       }
+      
       if (value.exercises) {
         const duration = calculateTotalDuration(value.exercises);
         setTotalDuration(duration);
         form.setValue('duration', String(Math.ceil(duration / 60)));
       }
+      
       if (value.title) {
         setPreviewData({ id: "preview", ...value });
       }
     });
-    return () => subscription.unsubscribe();
-  }, [form.watch]);
+    
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeoutId);
+    };
+  }, [form.watch, calculateTotalDuration]);
 
   const onSubmit = async (data: WorkoutFormType) => {
     if (!data.exercises || data.exercises.length === 0) {
@@ -88,15 +128,25 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
     }
 
     setIsSubmitting(true);
+    
     try {
       await onWorkoutCreate(data);
+      
       form.reset();
       localStorage.removeItem('workout-form-state');
       setShowDialog(false);
       setPreviewData(null);
-      toast.success("Workout created successfully!");
+      
+      toast.success("Workout created successfully!", {
+        description: "Your workout has been added to Monday's schedule.",
+        duration: 4000
+      });
     } catch (error) {
-      toast.error("Failed to create workout");
+      console.error("Workout creation error:", error);
+      toast.error("Failed to create workout", {
+        description: "There was a problem saving your workout. Please try again.",
+        duration: 4000
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -113,6 +163,10 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
         setTotalDuration(duration);
         form.setValue('duration', String(Math.ceil(duration / 60)));
       }
+      toast.success("Template applied", { 
+        description: `${template.title} template has been applied.`,
+        duration: 3000
+      });
     }
   };
 
@@ -129,6 +183,21 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       setShowDialog(false);
     }
   };
+
+  const FormProgress = () => (
+    <div className="space-y-2 mb-4">
+      <Progress value={formProgress} className="h-1" />
+      <div className="flex justify-between text-xs text-muted-foreground">
+        <span>Form completion: {Math.round(formProgress)}%</span>
+        {isAutosaving && (
+          <span className="flex items-center gap-1">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Autosaving...
+          </span>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -154,6 +223,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
             <DialogTitle>Create New Workout</DialogTitle>
           </DialogHeader>
           <ScrollArea className="h-full px-6 pb-6">
+            <FormProgress />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-sm font-medium mb-4">Quick Templates</h3>
@@ -165,6 +235,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
                   onSubmit={onSubmit}
                   isSubmitting={isSubmitting}
                   totalDuration={totalDuration}
+                  isAutosaving={isAutosaving}
                 />
                 {previewData && (
                   <div>

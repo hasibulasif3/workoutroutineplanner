@@ -1,3 +1,4 @@
+
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,9 +20,10 @@ interface WorkoutFormProps {
   onSubmit: (data: WorkoutFormType) => void;
   isSubmitting: boolean;
   totalDuration: number;
+  isAutosaving?: boolean;
 }
 
-export function WorkoutForm({ form, onSubmit, isSubmitting }: WorkoutFormProps) {
+export function WorkoutForm({ form, onSubmit, isSubmitting, totalDuration, isAutosaving }: WorkoutFormProps) {
   const [activeTab, setActiveTab] = useState("basic");
   const [isAddingExercise, setIsAddingExercise] = useState(false);
   
@@ -118,6 +120,42 @@ export function WorkoutForm({ form, onSubmit, isSubmitting }: WorkoutFormProps) 
                         <SelectItem value="advanced">Advanced</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage className="text-sm text-red-500" />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="duration"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Duration (min)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="30" 
+                        {...field} 
+                        disabled={form.watch("exercises")?.length > 0}
+                        title={form.watch("exercises")?.length > 0 ? "Duration is calculated from exercises" : ""}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-sm text-red-500" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="calories"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Calories</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="300" {...field} />
+                    </FormControl>
                     <FormMessage className="text-sm text-red-500" />
                   </FormItem>
                 )}
@@ -236,7 +274,10 @@ export function WorkoutForm({ form, onSubmit, isSubmitting }: WorkoutFormProps) 
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Creating Workout...
+            </div>
           ) : (
             "Create Workout"
           )}
