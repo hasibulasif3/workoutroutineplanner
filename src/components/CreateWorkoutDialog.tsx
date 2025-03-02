@@ -125,13 +125,8 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
   }, [form.watch, calculateTotalDuration]);
 
   const onSubmit = async (data: WorkoutFormType) => {
-    if (!data.exercises || data.exercises.length === 0) {
-      toast.error("Please add at least one exercise");
-      return;
-    }
-
-    // Validate required fields
-    if (!data.title) {
+    // Validate all required fields before submission
+    if (!data.title || data.title.trim() === "") {
       toast.error("Title is required");
       return;
     }
@@ -141,8 +136,13 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       return;
     }
 
-    if (!data.duration) {
+    if (!data.duration || data.duration.trim() === "") {
       toast.error("Duration is required");
+      return;
+    }
+
+    if (!data.exercises || data.exercises.length === 0) {
+      toast.error("Please add at least one exercise");
       return;
     }
 
@@ -152,19 +152,19 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
     try {
       console.log("Form data before submission:", data);
       
-      // Ensure all required fields are present and properly typed
+      // Create a properly typed WorkoutInput object
       const workoutData: WorkoutInput = {
-        title: data.title,                  // Required field
-        type: data.type,                    // Required field
-        duration: data.duration,            // Required field
-        difficulty: data.difficulty,        // Optional in WorkoutInput but required in form
-        calories: data.calories,            // Optional in WorkoutInput but required in form
-        notes: data.notes || "",            // Optional
+        title: data.title.trim(),
+        type: data.type,
+        duration: data.duration,
+        difficulty: data.difficulty,
+        calories: data.calories || "",
+        notes: data.notes || "",
         exercises: data.exercises.map(exercise => ({
-          name: exercise.name,              // Required
-          sets: exercise.sets,              // Required  
-          reps: exercise.reps,              // Required
-          restPeriod: exercise.restPeriod,  // Required
+          name: exercise.name,
+          sets: exercise.sets,
+          reps: exercise.reps,
+          restPeriod: exercise.restPeriod,
           equipment: exercise.equipment || [],
           targetMuscles: exercise.targetMuscles || [],
           notes: exercise.notes || "",

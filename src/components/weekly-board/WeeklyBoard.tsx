@@ -1,3 +1,4 @@
+
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState, useEffect } from "react";
@@ -173,41 +174,63 @@ export function WeeklyBoard() {
   };
 
   const handleWorkoutCreate = async (workoutData: WorkoutInput): Promise<void> => {
-    return new Promise<void>((resolve, reject) => {
-      try {
-        const newWorkout: Workout = {
-          id: uuidv4(),
-          last_modified: new Date().toISOString(),
-          ...workoutData,
-          exercises: workoutData.exercises ? [...workoutData.exercises] : []
-        };
-
-        console.log("Creating new workout:", newWorkout);
-        
-        setWorkouts(prev => {
-          const updatedWorkouts = {
-            ...prev,
-            Monday: [...prev.Monday, newWorkout]
-          };
-          
-          return updatedWorkouts;
+    console.log("handleWorkoutCreate called with data:", workoutData);
+    
+    try {
+      // Validate required fields
+      if (!workoutData.title || !workoutData.type || !workoutData.duration) {
+        console.error("Missing required workout fields:", 
+          !workoutData.title ? "title, " : "",
+          !workoutData.type ? "type, " : "",
+          !workoutData.duration ? "duration" : ""
+        );
+        toast.error("Invalid workout data", {
+          description: "Please ensure all required fields are filled out."
         });
-
-        toast.success("Workout added to Monday", {
-          description: `"${newWorkout.title}" has been added to your schedule.`,
-          duration: 4000,
-        });
-
-        console.log("Workout created successfully");
-        resolve();
-      } catch (error) {
-        console.error("Error in handleWorkoutCreate:", error);
-        toast.error("Failed to create workout", {
-          description: "There was a problem adding your workout. Please try again.",
-        });
-        reject(error);
+        return Promise.reject(new Error("Invalid workout data"));
       }
-    });
+      
+      // Create new workout with proper ID
+      const newWorkout: Workout = {
+        id: uuidv4(),
+        last_modified: new Date().toISOString(),
+        title: workoutData.title,
+        type: workoutData.type,
+        duration: workoutData.duration,
+        difficulty: workoutData.difficulty,
+        calories: workoutData.calories,
+        notes: workoutData.notes,
+        exercises: workoutData.exercises || []
+      };
+
+      console.log("Creating new workout:", newWorkout);
+      
+      // Update state with the new workout
+      setWorkouts(prev => {
+        console.log("Previous workouts state:", prev);
+        const updatedWorkouts = {
+          ...prev,
+          Monday: [...prev.Monday, newWorkout]
+        };
+        console.log("New workouts state:", updatedWorkouts);
+        return updatedWorkouts;
+      });
+
+      // Show success toast
+      toast.success("Workout added to Monday", {
+        description: `"${newWorkout.title}" has been added to your schedule.`,
+        duration: 4000,
+      });
+
+      console.log("Workout created successfully");
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error in handleWorkoutCreate:", error);
+      toast.error("Failed to create workout", {
+        description: "There was a problem adding your workout. Please try again.",
+      });
+      return Promise.reject(error);
+    }
   };
 
   const activeWorkout = activeId ? Object.values(workouts).flat().find(w => w.id === activeId) : null;
