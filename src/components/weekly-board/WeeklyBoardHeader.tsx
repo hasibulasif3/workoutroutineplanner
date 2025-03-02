@@ -1,38 +1,88 @@
-import { motion } from "framer-motion";
-import { StatsBar } from "../StatsBar";
-import { ActionBar } from "../ActionBar";
-import { WeeklyWorkouts } from "@/types/workout";
+
+import { Button } from "@/components/ui/button";
+import { RefreshCw, Filter, MoreHorizontal, PlusCircle } from "lucide-react";
+import { useState } from "react";
+import { WeeklyWorkouts, WorkoutInput } from "@/types/workout";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CreateWorkoutDialog } from "../CreateWorkoutDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface WeeklyBoardHeaderProps {
   workouts: WeeklyWorkouts;
-  onWorkoutCreate: (workout: any) => void;
+  onWorkoutCreate: (workout: WorkoutInput) => Promise<void>;
+  onFilterChange?: (filter: string) => void;
+  onRefresh?: () => void;
 }
 
-export function WeeklyBoardHeader({ workouts, onWorkoutCreate }: WeeklyBoardHeaderProps) {
+export function WeeklyBoardHeader({ 
+  workouts, 
+  onWorkoutCreate, 
+  onFilterChange, 
+  onRefresh 
+}: WeeklyBoardHeaderProps) {
+  const [activeFilter, setActiveFilter] = useState<string>('all');
+
+  const handleFilterChange = (filter: string) => {
+    setActiveFilter(filter);
+    if (onFilterChange) {
+      onFilterChange(filter);
+    }
+  };
+
   return (
-    <div className="flex flex-col items-center mb-6 md:mb-12 px-4">
-      <motion.h1 
-        className="text-3xl md:text-5xl font-bold title-gradient mb-2 md:mb-4 text-center"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        Workout Routine Planner
-      </motion.h1>
-      
-      <motion.p 
-        className="text-sm md:text-lg text-gray-400 mb-4 md:mb-8 text-center px-2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-      >
-        Plan your workouts, track your progress, achieve your goals
-      </motion.p>
-      
-      <div className="w-full max-w-[95vw] md:max-w-4xl">
-        <StatsBar workouts={workouts} />
-        <ActionBar workouts={workouts} onWorkoutCreate={onWorkoutCreate} />
+    <div className="flex justify-between items-center mb-4">
+      <div className="flex gap-2">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={onRefresh}
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Filter className="w-4 h-4 mr-2" />
+              Filter: {activeFilter}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => handleFilterChange('all')}>
+              All
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleFilterChange('strength')}>
+              Strength
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleFilterChange('cardio')}>
+              Cardio
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleFilterChange('flexibility')}>
+              Flexibility
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+      
+      <CreateWorkoutDialog onWorkoutCreate={onWorkoutCreate} />
+      
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm">
+            <MoreHorizontal className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem>Export Calendar</DropdownMenuItem>
+          <DropdownMenuItem>Print View</DropdownMenuItem>
+          <DropdownMenuItem>Settings</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

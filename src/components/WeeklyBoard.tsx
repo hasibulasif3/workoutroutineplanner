@@ -6,12 +6,13 @@ import { WorkoutCard } from "./WorkoutCard";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { WeeklyWorkouts, Workout } from "@/types/workout";
+import { WeeklyWorkouts, Workout, WorkoutInput } from "@/types/workout";
 import { storageService } from "@/services/storageService";
 import { StatsBar } from "./StatsBar";
 import { ActionBar } from "./ActionBar";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { DragProvider } from "./weekly-board/DragContext";
+import { Layout } from "./layout/Layout";
 
 const initialWorkouts: WeeklyWorkouts = {
   Monday: [
@@ -214,21 +215,41 @@ export function WeeklyBoard() {
     }
   };
 
-  const handleWorkoutCreate = (workoutData: Omit<Workout, 'id' | 'last_modified'>) => {
-    const newWorkout: Workout = {
-      id: uuidv4(),
-      last_modified: new Date().toISOString(),
-      ...workoutData,
-      exercises: []
-    };
-    
-    setWorkouts(prev => ({
-      ...prev,
-      Monday: [...prev.Monday, newWorkout],
-    }));
-    
-    toast.success("New workout created!", {
-      description: `${newWorkout.title} added to Monday`,
+  const handleWorkoutCreate = async (workoutData: WorkoutInput): Promise<void> => {
+    return new Promise<void>((resolve, reject) => {
+      try {
+        const newWorkout: Workout = {
+          id: uuidv4(),
+          last_modified: new Date().toISOString(),
+          ...workoutData,
+          exercises: workoutData.exercises ? [...workoutData.exercises] : []
+        };
+
+        console.log("Creating new workout:", newWorkout);
+        
+        setWorkouts(prev => {
+          const updatedWorkouts = {
+            ...prev,
+            Monday: [...prev.Monday, newWorkout]
+          };
+          
+          return updatedWorkouts;
+        });
+
+        toast.success("Workout added to Monday", {
+          description: `"${newWorkout.title}" has been added to your schedule.`,
+          duration: 4000,
+        });
+
+        console.log("Workout created successfully");
+        resolve();
+      } catch (error) {
+        console.error("Error in handleWorkoutCreate:", error);
+        toast.error("Failed to create workout", {
+          description: "There was a problem adding your workout. Please try again.",
+        });
+        reject(error);
+      }
     });
   };
 
@@ -299,4 +320,3 @@ export function WeeklyBoard() {
     </ErrorBoundary>
   );
 }
-

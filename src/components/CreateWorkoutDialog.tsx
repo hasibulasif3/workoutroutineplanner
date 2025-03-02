@@ -14,9 +14,10 @@ import { workoutTemplates } from "./workout/templates";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
+import { Exercise, WorkoutInput } from "@/types/workout";
 
 interface CreateWorkoutDialogProps {
-  onWorkoutCreate: (workout: WorkoutFormType) => Promise<void>;
+  onWorkoutCreate: (workout: WorkoutInput) => Promise<void>;
 }
 
 export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProps) {
@@ -134,9 +135,19 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
     
     try {
       // Clone the data to ensure we're not modifying the original
-      const workoutData = {
+      const workoutData: WorkoutInput = {
         ...data,
-        exercises: [...data.exercises]
+        exercises: data.exercises.map(exercise => ({
+          name: exercise.name,
+          sets: exercise.sets,
+          reps: exercise.reps,
+          restPeriod: exercise.restPeriod,
+          equipment: exercise.equipment,
+          targetMuscles: exercise.targetMuscles,
+          notes: exercise.notes,
+          weight: exercise.weight,
+          rpe: exercise.rpe
+        }))
       };
       
       // Call the parent's workout creation function
@@ -262,7 +273,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
                       type={previewData.type}
                       difficulty={previewData.difficulty}
                       calories={previewData.calories}
-                      exercises={previewData.exercises}
+                      exercises={previewData.exercises as Exercise[]}
                       last_modified={new Date().toISOString()}
                     />
                   </div>
