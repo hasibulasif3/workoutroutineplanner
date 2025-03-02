@@ -10,7 +10,8 @@ export const storageService = {
       const processedWorkouts = Object.entries(workouts).reduce((acc, [day, dayWorkouts]) => {
         acc[day] = dayWorkouts.map(workout => ({
           ...workout,
-          lastModified: workout.last_modified, // Ensure both properties exist for compatibility
+          // Ensure both properties exist for compatibility
+          lastModified: workout.last_modified,
           last_modified: workout.last_modified
         }));
         return acc;
@@ -52,12 +53,13 @@ export const storageService = {
             workout.id = `recovery-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
           }
           
-          // Normalize timestamp fields - prefer last_modified for app consistency
+          // Normalize timestamp fields - ensure both fields exist
           const timestamp = workout.last_modified || workout.lastModified || new Date().toISOString();
           
           return {
             ...workout,
             last_modified: timestamp,
+            lastModified: timestamp,
             // Also include an array of exercises if missing
             exercises: Array.isArray(workout.exercises) ? workout.exercises : []
           };

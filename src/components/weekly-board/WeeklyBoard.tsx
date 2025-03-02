@@ -1,4 +1,3 @@
-
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState, useEffect } from "react";
@@ -95,7 +94,6 @@ export function WeeklyBoard() {
   const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load workouts from storage on initial mount
   useEffect(() => {
     const loadWorkouts = () => {
       try {
@@ -117,7 +115,6 @@ export function WeeklyBoard() {
     loadWorkouts();
   }, []);
 
-  // Save workouts to storage whenever they change
   useEffect(() => {
     if (!isLoading) {
       try {
@@ -183,7 +180,6 @@ export function WeeklyBoard() {
     console.log("handleWorkoutCreate called with data:", workoutData);
     
     try {
-      // Validate required fields
       if (!workoutData.title || !workoutData.type || !workoutData.duration) {
         const missingFields = [
           !workoutData.title ? "title" : "",
@@ -198,7 +194,6 @@ export function WeeklyBoard() {
         return Promise.reject(new Error(`Missing required fields: ${missingFields}`));
       }
       
-      // Create new workout with proper ID and ensure all required fields
       const newWorkout: Workout = {
         id: uuidv4(),
         last_modified: new Date().toISOString(),
@@ -208,33 +203,23 @@ export function WeeklyBoard() {
         difficulty: workoutData.difficulty || "beginner",
         calories: workoutData.calories || "0",
         notes: workoutData.notes || "",
-        exercises: Array.isArray(workoutData.exercises) ? workoutData.exercises.map(ex => ({
-          name: ex.name,
-          sets: ex.sets,
-          reps: ex.reps,
-          restPeriod: ex.restPeriod,
-          equipment: ex.equipment || [],
-          targetMuscles: ex.targetMuscles || [],
-          notes: ex.notes || "",
-          weight: ex.weight || "",
-          rpe: ex.rpe || ""
-        })) : []
+        exercises: Array.isArray(workoutData.exercises) ? workoutData.exercises : []
       };
 
-      console.log("Creating new workout with data:", newWorkout);
+      console.log("Created new workout object:", newWorkout);
       
-      // Update state with the new workout - use a callback to ensure we're working with latest state
-      setWorkouts(prev => {
-        console.log("Previous workouts state:", prev);
+      setWorkouts(prevWorkouts => {
+        console.log("Current workouts state before update:", prevWorkouts);
+        
         const updatedWorkouts = {
-          ...prev,
-          Monday: [...(prev.Monday || []), newWorkout]
+          ...prevWorkouts,
+          Monday: [...prevWorkouts.Monday, newWorkout]
         };
-        console.log("New workouts state after adding workout:", updatedWorkouts);
+        
+        console.log("New workouts state after update:", updatedWorkouts);
         return updatedWorkouts;
       });
 
-      // Show success toast
       toast.success("Workout added to Monday", {
         description: `"${newWorkout.title}" has been added to your schedule.`,
         duration: 4000,
