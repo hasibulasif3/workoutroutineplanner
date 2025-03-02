@@ -125,6 +125,8 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
   }, [form.watch, calculateTotalDuration]);
 
   const onSubmit = async (data: WorkoutFormType) => {
+    console.log("Form onSubmit called with data:", data);
+    
     // Validate all required fields before submission
     if (!data.title || data.title.trim() === "") {
       toast.error("Title is required");
@@ -141,16 +143,11 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       return;
     }
 
-    if (!data.exercises || data.exercises.length === 0) {
-      toast.error("Please add at least one exercise");
-      return;
-    }
-
     setIsSubmitting(true);
     setFormSubmissionError(null);
     
     try {
-      console.log("Form data before submission:", data);
+      console.log("Preparing workout data for submission:", data);
       
       // Create a properly typed WorkoutInput object
       const workoutData: WorkoutInput = {
@@ -158,9 +155,9 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
         type: data.type,
         duration: data.duration,
         difficulty: data.difficulty,
-        calories: data.calories || "",
+        calories: data.calories || "0",
         notes: data.notes || "",
-        exercises: data.exercises.map(exercise => ({
+        exercises: Array.isArray(data.exercises) ? data.exercises.map(exercise => ({
           name: exercise.name,
           sets: exercise.sets,
           reps: exercise.reps,
@@ -170,21 +167,25 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
           notes: exercise.notes || "",
           weight: exercise.weight || "",
           rpe: exercise.rpe || ""
-        }))
+        })) : []
       };
       
-      console.log("Transformed workout data:", workoutData);
+      console.log("Calling onWorkoutCreate with transformed data:", workoutData);
       
       // Call the parent's workout creation function
       await onWorkoutCreate(workoutData);
       
-      console.log("Workout created successfully");
+      console.log("Workout creation completed successfully");
       
       // Clear form and storage after successful creation
       form.reset();
       localStorage.removeItem('workout-form-state');
       setPreviewData(null);
       setShowDialog(false);
+      
+      toast.success("Workout added successfully", {
+        description: `${workoutData.title} has been added to Monday`
+      });
       
     } catch (error) {
       console.error("Workout creation error:", error);

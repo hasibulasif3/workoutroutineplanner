@@ -5,17 +5,19 @@ export const storageService = {
   saveWorkouts: (workouts: WeeklyWorkouts) => {
     try {
       console.log('Attempting to save workouts to localStorage:', workouts);
-      // Convert last_modified to lastModified for storage consistency
+      
+      // Ensure the workouts have been properly formatted first - deep clone and transform
       const processedWorkouts = Object.entries(workouts).reduce((acc, [day, dayWorkouts]) => {
         acc[day] = dayWorkouts.map(workout => ({
           ...workout,
-          lastModified: workout.last_modified,
+          lastModified: workout.last_modified, // Ensure both properties exist for compatibility
+          last_modified: workout.last_modified
         }));
         return acc;
       }, {} as Record<string, any>);
       
       localStorage.setItem('workouts', JSON.stringify(processedWorkouts));
-      console.log('Workouts saved to localStorage with processed format:', processedWorkouts);
+      console.log('Workouts saved to localStorage successfully:', processedWorkouts);
       return true;
     } catch (error) {
       console.error('Error saving workouts to localStorage:', error);
@@ -32,17 +34,39 @@ export const storageService = {
       }
       
       const parsedData = JSON.parse(data);
+      console.log('Raw workouts loaded from localStorage:', parsedData);
       
-      // Convert lastModified back to last_modified for consistency with app
+      // Process the data to ensure all workouts have both last_modified and lastModified
+      // This handles backward compatibility with any format saved previously
       const processedWorkouts = Object.entries(parsedData).reduce((acc, [day, dayWorkouts]) => {
-        acc[day] = (dayWorkouts as any[]).map(workout => ({
-          ...workout,
-          last_modified: workout.lastModified || workout.last_modified || new Date().toISOString(),
-        }));
+        if (!Array.isArray(dayWorkouts)) {
+          console.warn(`Unexpected format for day ${day}, expected array but got:`, dayWorkouts);
+          acc[day] = []; // Default to empty array if invalid data
+          return acc;
+        }
+        
+        acc[day] = (dayWorkouts as any[]).map(workout => {
+          // Ensure the workout has a valid ID
+          if (!workout.id) {
+            console.warn('Found workout without ID, generating one');
+            workout.id = `recovery-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+          }
+          
+          // Normalize timestamp fields - prefer last_modified for app consistency
+          const timestamp = workout.last_modified || workout.lastModified || new Date().toISOString();
+          
+          return {
+            ...workout,
+            last_modified: timestamp,
+            // Also include an array of exercises if missing
+            exercises: Array.isArray(workout.exercises) ? workout.exercises : []
+          };
+        });
+        
         return acc;
       }, {} as WeeklyWorkouts);
       
-      console.log('Workouts loaded from localStorage with normalized format:', processedWorkouts);
+      console.log('Processed workouts for application use:', processedWorkouts);
       return processedWorkouts;
     } catch (error) {
       console.error('Error loading workouts from localStorage:', error);

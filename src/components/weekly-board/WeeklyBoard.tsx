@@ -95,6 +95,7 @@ export function WeeklyBoard() {
   const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
   const [isLoading, setIsLoading] = useState(true);
 
+  // Load workouts from storage on initial mount
   useEffect(() => {
     const loadWorkouts = () => {
       try {
@@ -116,11 +117,16 @@ export function WeeklyBoard() {
     loadWorkouts();
   }, []);
 
+  // Save workouts to storage whenever they change
   useEffect(() => {
     if (!isLoading) {
       try {
-        storageService.saveWorkouts(workouts);
-        console.log("Workouts saved successfully:", workouts);
+        const saveResult = storageService.saveWorkouts(workouts);
+        if (saveResult) {
+          console.log("Workouts saved successfully:", workouts);
+        } else {
+          console.error("Failed to save workouts");
+        }
       } catch (error) {
         console.error("Error saving workouts:", error);
         toast.error("Failed to save workout changes");
@@ -217,12 +223,12 @@ export function WeeklyBoard() {
 
       console.log("Creating new workout with data:", newWorkout);
       
-      // Update state with the new workout
+      // Update state with the new workout - use a callback to ensure we're working with latest state
       setWorkouts(prev => {
         console.log("Previous workouts state:", prev);
         const updatedWorkouts = {
           ...prev,
-          Monday: [...prev.Monday, newWorkout]
+          Monday: [...(prev.Monday || []), newWorkout]
         };
         console.log("New workouts state after adding workout:", updatedWorkouts);
         return updatedWorkouts;
