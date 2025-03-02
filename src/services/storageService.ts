@@ -1,14 +1,21 @@
 
-// This is just a placeholder - I believe this file is in the read-only files, but I'm adding this check
-// since it's part of the core flow we're fixing. If it's not editable, we'll have to work with what we have.
-
 import { WeeklyWorkouts } from "@/types/workout";
 
 export const storageService = {
   saveWorkouts: (workouts: WeeklyWorkouts) => {
     try {
-      localStorage.setItem('workouts', JSON.stringify(workouts));
-      console.log('Workouts saved to localStorage:', workouts);
+      console.log('Attempting to save workouts to localStorage:', workouts);
+      // Convert last_modified to lastModified for storage consistency
+      const processedWorkouts = Object.entries(workouts).reduce((acc, [day, dayWorkouts]) => {
+        acc[day] = dayWorkouts.map(workout => ({
+          ...workout,
+          lastModified: workout.last_modified,
+        }));
+        return acc;
+      }, {} as Record<string, any>);
+      
+      localStorage.setItem('workouts', JSON.stringify(processedWorkouts));
+      console.log('Workouts saved to localStorage with processed format:', processedWorkouts);
       return true;
     } catch (error) {
       console.error('Error saving workouts to localStorage:', error);
@@ -24,9 +31,19 @@ export const storageService = {
         return null;
       }
       
-      const parsedData = JSON.parse(data) as WeeklyWorkouts;
-      console.log('Workouts loaded from localStorage:', parsedData);
-      return parsedData;
+      const parsedData = JSON.parse(data);
+      
+      // Convert lastModified back to last_modified for consistency with app
+      const processedWorkouts = Object.entries(parsedData).reduce((acc, [day, dayWorkouts]) => {
+        acc[day] = (dayWorkouts as any[]).map(workout => ({
+          ...workout,
+          last_modified: workout.lastModified || workout.last_modified || new Date().toISOString(),
+        }));
+        return acc;
+      }, {} as WeeklyWorkouts);
+      
+      console.log('Workouts loaded from localStorage with normalized format:', processedWorkouts);
+      return processedWorkouts;
     } catch (error) {
       console.error('Error loading workouts from localStorage:', error);
       return null;

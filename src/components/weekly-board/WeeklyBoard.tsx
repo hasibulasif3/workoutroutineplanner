@@ -179,31 +179,43 @@ export function WeeklyBoard() {
     try {
       // Validate required fields
       if (!workoutData.title || !workoutData.type || !workoutData.duration) {
-        console.error("Missing required workout fields:", 
-          !workoutData.title ? "title, " : "",
-          !workoutData.type ? "type, " : "",
+        const missingFields = [
+          !workoutData.title ? "title" : "",
+          !workoutData.type ? "type" : "",
           !workoutData.duration ? "duration" : ""
-        );
+        ].filter(Boolean).join(", ");
+        
+        console.error(`Missing required workout fields: ${missingFields}`);
         toast.error("Invalid workout data", {
           description: "Please ensure all required fields are filled out."
         });
-        return Promise.reject(new Error("Invalid workout data"));
+        return Promise.reject(new Error(`Missing required fields: ${missingFields}`));
       }
       
-      // Create new workout with proper ID
+      // Create new workout with proper ID and ensure all required fields
       const newWorkout: Workout = {
         id: uuidv4(),
         last_modified: new Date().toISOString(),
         title: workoutData.title,
         type: workoutData.type,
         duration: workoutData.duration,
-        difficulty: workoutData.difficulty,
-        calories: workoutData.calories,
-        notes: workoutData.notes,
-        exercises: workoutData.exercises || []
+        difficulty: workoutData.difficulty || "beginner",
+        calories: workoutData.calories || "0",
+        notes: workoutData.notes || "",
+        exercises: Array.isArray(workoutData.exercises) ? workoutData.exercises.map(ex => ({
+          name: ex.name,
+          sets: ex.sets,
+          reps: ex.reps,
+          restPeriod: ex.restPeriod,
+          equipment: ex.equipment || [],
+          targetMuscles: ex.targetMuscles || [],
+          notes: ex.notes || "",
+          weight: ex.weight || "",
+          rpe: ex.rpe || ""
+        })) : []
       };
 
-      console.log("Creating new workout:", newWorkout);
+      console.log("Creating new workout with data:", newWorkout);
       
       // Update state with the new workout
       setWorkouts(prev => {
@@ -212,7 +224,7 @@ export function WeeklyBoard() {
           ...prev,
           Monday: [...prev.Monday, newWorkout]
         };
-        console.log("New workouts state:", updatedWorkouts);
+        console.log("New workouts state after adding workout:", updatedWorkouts);
         return updatedWorkouts;
       });
 
