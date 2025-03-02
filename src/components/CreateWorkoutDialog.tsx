@@ -130,10 +130,28 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       return;
     }
 
+    // Validate required fields
+    if (!data.title) {
+      toast.error("Title is required");
+      return;
+    }
+
+    if (!data.type) {
+      toast.error("Type is required");
+      return;
+    }
+
+    if (!data.duration) {
+      toast.error("Duration is required");
+      return;
+    }
+
     setIsSubmitting(true);
     setFormSubmissionError(null);
     
     try {
+      console.log("Form data before submission:", data);
+      
       // Ensure all required fields are present and properly typed
       const workoutData: WorkoutInput = {
         title: data.title,                  // Required field
@@ -141,7 +159,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
         duration: data.duration,            // Required field
         difficulty: data.difficulty,        // Optional in WorkoutInput but required in form
         calories: data.calories,            // Optional in WorkoutInput but required in form
-        notes: data.notes,                  // Optional
+        notes: data.notes || "",            // Optional
         exercises: data.exercises.map(exercise => ({
           name: exercise.name,              // Required
           sets: exercise.sets,              // Required  
@@ -155,8 +173,12 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
         }))
       };
       
+      console.log("Transformed workout data:", workoutData);
+      
       // Call the parent's workout creation function
       await onWorkoutCreate(workoutData);
+      
+      console.log("Workout created successfully");
       
       // Clear form and storage after successful creation
       form.reset();

@@ -1,3 +1,4 @@
+
 export type WorkoutDifficulty = "beginner" | "intermediate" | "advanced";
 export type WorkoutType = "strength" | "cardio" | "flexibility";
 export type SyncStatus = "synced" | "pending" | "conflict" | "error";
@@ -33,7 +34,7 @@ export interface WorkoutInput {
   difficulty?: WorkoutDifficulty;
   calories?: string;
   notes?: string;
-  exercises?: Exercise[];
+  exercises: Exercise[];
 }
 
 export type WeeklyWorkouts = {
