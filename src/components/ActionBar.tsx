@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Download, RefreshCw, Mail, FileJson, FileText, Dumbbell } from "lucide-react";
 import { CreateWorkoutDialog } from "./CreateWorkoutDialog";
 import { toast } from "sonner";
-import { WeeklyWorkouts } from "@/types/workout";
+import { WeeklyWorkouts, WorkoutInput } from "@/types/workout";
 import { Link } from "react-router-dom";
 import {
   Dialog,
@@ -27,7 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface ActionBarProps {
   workouts: WeeklyWorkouts;
-  onWorkoutCreate: (workout: any) => void;
+  onWorkoutCreate: (workout: WorkoutInput) => Promise<void>;
 }
 
 export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
@@ -70,7 +70,6 @@ export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
 
       setIsLoading(true);
 
-      // Validate email addresses
       const validatedData = emailSchema.parse(emailRecipients);
       const toEmails = validateEmails(validatedData.to);
       const ccEmails = validatedData.cc ? validateEmails(validatedData.cc) : [];

@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { Exercise } from "@/types/workout";
 
 interface WorkoutCardProps {
   id: string;
@@ -33,6 +34,8 @@ interface WorkoutCardProps {
   calories?: string;
   isFirst?: boolean;
   isLast?: boolean;
+  exercises?: Exercise[];
+  last_modified?: string;
 }
 
 const typeColors = {
@@ -61,7 +64,8 @@ export function WorkoutCard({
   difficulty, 
   calories,
   isFirst,
-  isLast 
+  isLast,
+  exercises 
 }: WorkoutCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const {

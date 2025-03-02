@@ -1,4 +1,3 @@
-
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState, useEffect } from "react";
@@ -7,7 +6,7 @@ import { WorkoutCard } from "../WorkoutCard";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { WeeklyWorkouts, Workout } from "@/types/workout";
+import { WeeklyWorkouts, Workout, WorkoutInput } from "@/types/workout";
 import { storageService } from "@/services/storageService";
 import { StatsBar } from "../StatsBar";
 import { ActionBar } from "../ActionBar";
@@ -116,7 +115,6 @@ export function WeeklyBoard() {
     loadWorkouts();
   }, []);
 
-  // Save workouts to storage whenever they change
   useEffect(() => {
     if (!isLoading) {
       try {
@@ -165,7 +163,6 @@ export function WeeklyBoard() {
         [overDay]: [...prev[overDay], updatedWorkout]
       };
       
-      // Play sound and show toast
       dropSound.play().catch(err => console.error("Error playing sound:", err));
       toast.success(`Workout moved to ${overDay}`, {
         description: `"${workout.title}" has been moved successfully.`
@@ -175,21 +172,18 @@ export function WeeklyBoard() {
     });
   };
 
-  const handleWorkoutCreate = async (workoutData: Omit<Workout, 'id' | 'last_modified'>) => {
+  const handleWorkoutCreate = async (workoutData: WorkoutInput): Promise<void> => {
     return new Promise<void>((resolve, reject) => {
       try {
-        // Create new workout with id and timestamp
         const newWorkout: Workout = {
           id: uuidv4(),
           last_modified: new Date().toISOString(),
           ...workoutData,
-          // Ensure exercises are included with a defensive copy
           exercises: workoutData.exercises ? [...workoutData.exercises] : []
         };
 
         console.log("Creating new workout:", newWorkout);
         
-        // Update state with the new workout
         setWorkouts(prev => {
           const updatedWorkouts = {
             ...prev,
@@ -199,13 +193,11 @@ export function WeeklyBoard() {
           return updatedWorkouts;
         });
 
-        // Show success toast with animation
         toast.success("Workout added to Monday", {
           description: `"${newWorkout.title}" has been added to your schedule.`,
           duration: 4000,
         });
 
-        // Log success and resolve the promise
         console.log("Workout created successfully");
         resolve();
       } catch (error) {
