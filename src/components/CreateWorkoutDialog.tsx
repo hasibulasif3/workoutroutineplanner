@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,6 +28,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
   const [formProgress, setFormProgress] = useState(0);
   const [isAutosaving, setIsAutosaving] = useState(false);
   const [formSubmissionError, setFormSubmissionError] = useState<string | null>(null);
+  const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
 
   const form = useForm<WorkoutFormType>({
     resolver: zodResolver(workoutSchema),
@@ -145,6 +145,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
 
     setIsSubmitting(true);
     setFormSubmissionError(null);
+    setSubmissionStatus('submitting');
     
     try {
       console.log("Preparing workout data for submission:", data);
@@ -172,10 +173,11 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       
       console.log("Calling onWorkoutCreate with transformed data:", workoutData);
       
-      // Call the parent's workout creation function
+      // Call the parent's workout creation function and wait for it to complete
       await onWorkoutCreate(workoutData);
       
       console.log("Workout creation completed successfully");
+      setSubmissionStatus('success');
       
       // Clear form and storage after successful creation
       form.reset();
@@ -189,7 +191,8 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       
     } catch (error) {
       console.error("Workout creation error:", error);
-      setFormSubmissionError("Failed to create workout. Please try again.");
+      setFormSubmissionError(error instanceof Error ? error.message : "Failed to create workout. Please try again.");
+      setSubmissionStatus('error');
       toast.error("Failed to create workout", {
         description: "There was a problem saving your workout. Please try again.",
       });
@@ -257,10 +260,18 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
         <DialogContent 
           className="sm:max-w-[800px] h-[90vh] p-0"
           onInteractOutside={(e) => {
+            if (submissionStatus === 'submitting') {
+              e.preventDefault();
+              return;
+            }
             e.preventDefault();
             handleClose();
           }}
           onEscapeKeyDown={(e) => {
+            if (submissionStatus === 'submitting') {
+              e.preventDefault();
+              return;
+            }
             e.preventDefault();
             handleClose();
           }}
@@ -273,7 +284,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
           </DialogHeader>
           <ScrollArea className="h-full px-6 pb-6">
             <FormProgress />
-            {formSubmissionError && (
+            {submissionStatus === 'error' && formSubmissionError && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md">
                 {formSubmissionError}
               </div>

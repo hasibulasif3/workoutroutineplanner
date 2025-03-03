@@ -1,6 +1,7 @@
+
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DayColumn } from "../DayColumn";
 import { WorkoutCard } from "../WorkoutCard";
 import { v4 as uuidv4 } from "uuid";
@@ -115,21 +116,26 @@ export function WeeklyBoard() {
     loadWorkouts();
   }, []);
 
+  // Save workouts to storage whenever they change
+  const saveWorkoutsToStorage = useCallback((currentWorkouts: WeeklyWorkouts) => {
+    try {
+      const saveResult = storageService.saveWorkouts(currentWorkouts);
+      if (saveResult) {
+        console.log("Workouts saved successfully:", currentWorkouts);
+      } else {
+        console.error("Failed to save workouts");
+      }
+    } catch (error) {
+      console.error("Error saving workouts:", error);
+      toast.error("Failed to save workout changes");
+    }
+  }, []);
+
   useEffect(() => {
     if (!isLoading) {
-      try {
-        const saveResult = storageService.saveWorkouts(workouts);
-        if (saveResult) {
-          console.log("Workouts saved successfully:", workouts);
-        } else {
-          console.error("Failed to save workouts");
-        }
-      } catch (error) {
-        console.error("Error saving workouts:", error);
-        toast.error("Failed to save workout changes");
-      }
+      saveWorkoutsToStorage(workouts);
     }
-  }, [workouts, isLoading]);
+  }, [workouts, isLoading, saveWorkoutsToStorage]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id.toString());
@@ -179,61 +185,70 @@ export function WeeklyBoard() {
   const handleWorkoutCreate = async (workoutData: WorkoutInput): Promise<void> => {
     console.log("handleWorkoutCreate called with data:", workoutData);
     
-    try {
-      if (!workoutData.title || !workoutData.type || !workoutData.duration) {
-        const missingFields = [
-          !workoutData.title ? "title" : "",
-          !workoutData.type ? "type" : "",
-          !workoutData.duration ? "duration" : ""
-        ].filter(Boolean).join(", ");
+    return new Promise<void>((resolve, reject) => {
+      try {
+        if (!workoutData.title || !workoutData.type || !workoutData.duration) {
+          const missingFields = [
+            !workoutData.title ? "title" : "",
+            !workoutData.type ? "type" : "",
+            !workoutData.duration ? "duration" : ""
+          ].filter(Boolean).join(", ");
+          
+          console.error(`Missing required workout fields: ${missingFields}`);
+          toast.error("Invalid workout data", {
+            description: "Please ensure all required fields are filled out."
+          });
+          return reject(new Error(`Missing required fields: ${missingFields}`));
+        }
         
-        console.error(`Missing required workout fields: ${missingFields}`);
-        toast.error("Invalid workout data", {
-          description: "Please ensure all required fields are filled out."
-        });
-        return Promise.reject(new Error(`Missing required fields: ${missingFields}`));
-      }
-      
-      const newWorkout: Workout = {
-        id: uuidv4(),
-        last_modified: new Date().toISOString(),
-        title: workoutData.title,
-        type: workoutData.type,
-        duration: workoutData.duration,
-        difficulty: workoutData.difficulty || "beginner",
-        calories: workoutData.calories || "0",
-        notes: workoutData.notes || "",
-        exercises: Array.isArray(workoutData.exercises) ? workoutData.exercises : []
-      };
-
-      console.log("Created new workout object:", newWorkout);
-      
-      setWorkouts(prevWorkouts => {
-        console.log("Current workouts state before update:", prevWorkouts);
-        
-        const updatedWorkouts = {
-          ...prevWorkouts,
-          Monday: [...prevWorkouts.Monday, newWorkout]
+        const newWorkout: Workout = {
+          id: uuidv4(),
+          last_modified: new Date().toISOString(),
+          title: workoutData.title,
+          type: workoutData.type,
+          duration: workoutData.duration,
+          difficulty: workoutData.difficulty || "beginner",
+          calories: workoutData.calories || "0",
+          notes: workoutData.notes || "",
+          exercises: Array.isArray(workoutData.exercises) ? [...workoutData.exercises] : []
         };
+
+        console.log("Created new workout object:", newWorkout);
         
-        console.log("New workouts state after update:", updatedWorkouts);
-        return updatedWorkouts;
-      });
+        // Update the state with the new workout using a callback function
+        setWorkouts(prevWorkouts => {
+          // Create a new workouts object to avoid mutation
+          const updatedWorkouts = {
+            ...prevWorkouts,
+            Monday: [...prevWorkouts.Monday, newWorkout]
+          };
+          
+          console.log("New workouts state after update:", updatedWorkouts);
+          
+          // Save immediately to ensure data persistence
+          setTimeout(() => {
+            saveWorkoutsToStorage(updatedWorkouts);
+          }, 0);
+          
+          return updatedWorkouts;
+        });
 
-      toast.success("Workout added to Monday", {
-        description: `"${newWorkout.title}" has been added to your schedule.`,
-        duration: 4000,
-      });
+        // Show success notification after state update
+        toast.success("Workout added to Monday", {
+          description: `"${newWorkout.title}" has been added to your schedule.`,
+          duration: 4000,
+        });
 
-      console.log("Workout created successfully");
-      return Promise.resolve();
-    } catch (error) {
-      console.error("Error in handleWorkoutCreate:", error);
-      toast.error("Failed to create workout", {
-        description: "There was a problem adding your workout. Please try again.",
-      });
-      return Promise.reject(error);
-    }
+        console.log("Workout created successfully");
+        resolve();
+      } catch (error) {
+        console.error("Error in handleWorkoutCreate:", error);
+        toast.error("Failed to create workout", {
+          description: "There was a problem adding your workout. Please try again.",
+        });
+        reject(error);
+      }
+    });
   };
 
   const activeWorkout = activeId ? Object.values(workouts).flat().find(w => w.id === activeId) : null;
