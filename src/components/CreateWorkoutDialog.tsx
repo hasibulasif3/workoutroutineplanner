@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,6 +30,8 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
   const [isAutosaving, setIsAutosaving] = useState(false);
   const [formSubmissionError, setFormSubmissionError] = useState<string | null>(null);
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  // New state to track if the workout was actually added
+  const [workoutAddedSuccessfully, setWorkoutAddedSuccessfully] = useState(false);
 
   const form = useForm<WorkoutFormType>({
     resolver: zodResolver(workoutSchema),
@@ -127,25 +130,38 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
   const onSubmit = async (data: WorkoutFormType) => {
     console.log("Form onSubmit called with data:", data);
     
-    // Validate all required fields before submission
+    // Pre-submission validation
+    const validationIssues = [];
+    
     if (!data.title || data.title.trim() === "") {
-      toast.error("Title is required");
-      return;
+      validationIssues.push("Title is required");
     }
 
     if (!data.type) {
-      toast.error("Type is required");
-      return;
+      validationIssues.push("Type is required");
     }
 
     if (!data.duration || data.duration.trim() === "") {
-      toast.error("Duration is required");
+      validationIssues.push("Duration is required");
+    }
+    
+    if (!Array.isArray(data.exercises) || data.exercises.length === 0) {
+      validationIssues.push("At least one exercise is required");
+    }
+    
+    if (validationIssues.length > 0) {
+      const errorMessage = validationIssues.join(", ");
+      toast.error("Validation Failed", {
+        description: errorMessage
+      });
+      setFormSubmissionError(errorMessage);
       return;
     }
 
     setIsSubmitting(true);
     setFormSubmissionError(null);
     setSubmissionStatus('submitting');
+    setWorkoutAddedSuccessfully(false);
     
     try {
       console.log("Preparing workout data for submission:", data);
@@ -178,21 +194,21 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       
       console.log("Workout creation completed successfully");
       setSubmissionStatus('success');
+      setWorkoutAddedSuccessfully(true);
       
-      // Clear form and storage after successful creation
+      // Reset form and clear storage on success
       form.reset();
       localStorage.removeItem('workout-form-state');
       setPreviewData(null);
-      setShowDialog(false);
       
-      toast.success("Workout added successfully", {
-        description: `${workoutData.title} has been added to Monday`
-      });
+      // Close dialog only after all operations are complete
+      setShowDialog(false);
       
     } catch (error) {
       console.error("Workout creation error:", error);
       setFormSubmissionError(error instanceof Error ? error.message : "Failed to create workout. Please try again.");
       setSubmissionStatus('error');
+      setWorkoutAddedSuccessfully(false);
       toast.error("Failed to create workout", {
         description: "There was a problem saving your workout. Please try again.",
       });
@@ -220,6 +236,18 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
   };
 
   const handleClose = () => {
+    // If submitting, don't allow close
+    if (submissionStatus === 'submitting') {
+      return;
+    }
+    
+    // If form has been successfully submitted, allow immediate close
+    if (workoutAddedSuccessfully) {
+      setShowDialog(false);
+      return;
+    }
+    
+    // Check if form has unsaved changes
     const formValues = form.getValues();
     const hasValues = Object.values(formValues).some(value => {
       if (Array.isArray(value)) return value.length > 0;

@@ -6,14 +6,21 @@ export const storageService = {
     try {
       console.log('Attempting to save workouts to localStorage:', workouts);
       
-      // Ensure the workouts have been properly formatted first - deep clone and transform
+      // Ensure the workouts have been properly formatted first - deep clone and normalize
       const processedWorkouts = Object.entries(workouts).reduce((acc, [day, dayWorkouts]) => {
-        acc[day] = dayWorkouts.map(workout => ({
-          ...workout,
-          // Ensure both properties exist for compatibility
-          lastModified: workout.last_modified,
-          last_modified: workout.last_modified
-        }));
+        acc[day] = dayWorkouts.map(workout => {
+          // Ensure timestamp is consistently applied
+          const timestamp = workout.last_modified || new Date().toISOString();
+          
+          return {
+            ...workout,
+            // Always set both properties for backwards compatibility
+            lastModified: timestamp,
+            last_modified: timestamp,
+            // Ensure exercises is always an array
+            exercises: Array.isArray(workout.exercises) ? workout.exercises : []
+          };
+        });
         return acc;
       }, {} as Record<string, any>);
       
@@ -37,8 +44,7 @@ export const storageService = {
       const parsedData = JSON.parse(data);
       console.log('Raw workouts loaded from localStorage:', parsedData);
       
-      // Process the data to ensure all workouts have both last_modified and lastModified
-      // This handles backward compatibility with any format saved previously
+      // Process the data to ensure all workouts have consistent structure
       const processedWorkouts = Object.entries(parsedData).reduce((acc, [day, dayWorkouts]) => {
         if (!Array.isArray(dayWorkouts)) {
           console.warn(`Unexpected format for day ${day}, expected array but got:`, dayWorkouts);
@@ -53,13 +59,17 @@ export const storageService = {
             workout.id = `recovery-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
           }
           
-          // Normalize timestamp fields - ensure both fields exist
+          // Normalize timestamp fields - ensure both fields exist with the same value
           const timestamp = workout.last_modified || workout.lastModified || new Date().toISOString();
           
           return {
             ...workout,
             last_modified: timestamp,
             lastModified: timestamp,
+            // Ensure these fields exist
+            title: workout.title || "Unknown Workout",
+            duration: workout.duration || "0",
+            type: workout.type || "strength",
             // Also include an array of exercises if missing
             exercises: Array.isArray(workout.exercises) ? workout.exercises : []
           };
