@@ -84,3 +84,9 @@ export interface TransactionStatus {
   data?: any;
   error?: Error | string;
 }
+
+export interface StorageResult<T> {
+  success: boolean;
+  data?: T;
+  error?: Error | string;
+}

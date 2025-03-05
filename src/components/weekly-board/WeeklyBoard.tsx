@@ -1,3 +1,4 @@
+
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -16,77 +17,13 @@ import { Layout } from "../layout/Layout";
 import { TransactionStatus } from "./types";
 
 const initialWorkouts: WeeklyWorkouts = {
-  Monday: [{
-    id: "1",
-    title: "Push-ups",
-    duration: "15",
-    type: "strength",
-    difficulty: "intermediate",
-    calories: "150",
-    last_modified: new Date().toISOString(),
-    exercises: []
-  }, {
-    id: "2",
-    title: "HIIT",
-    duration: "25",
-    type: "cardio",
-    difficulty: "advanced",
-    calories: "400",
-    last_modified: new Date().toISOString(),
-    exercises: []
-  }],
-  Tuesday: [{
-    id: "3",
-    title: "Yoga",
-    duration: "45",
-    type: "flexibility",
-    difficulty: "beginner",
-    calories: "200",
-    last_modified: new Date().toISOString(),
-    exercises: []
-  }],
+  Monday: [],
+  Tuesday: [],
   Wednesday: [],
-  // Rest Day
-  Thursday: [{
-    id: "4",
-    title: "Swimming",
-    duration: "40",
-    type: "cardio",
-    difficulty: "advanced",
-    calories: "450",
-    last_modified: new Date().toISOString(),
-    exercises: []
-  }],
-  Friday: [{
-    id: "5",
-    title: "Weight Training",
-    duration: "50",
-    type: "strength",
-    difficulty: "advanced",
-    calories: "500",
-    last_modified: new Date().toISOString(),
-    exercises: []
-  }],
-  Saturday: [{
-    id: "6",
-    title: "Morning Run",
-    duration: "30",
-    type: "cardio",
-    difficulty: "beginner",
-    calories: "300",
-    last_modified: new Date().toISOString(),
-    exercises: []
-  }],
-  Sunday: [{
-    id: "7",
-    title: "Dynamic Stretching",
-    duration: "25",
-    type: "flexibility",
-    difficulty: "beginner",
-    calories: "150",
-    last_modified: new Date().toISOString(),
-    exercises: []
-  }]
+  Thursday: [],
+  Friday: [],
+  Saturday: [],
+  Sunday: []
 };
 
 export function WeeklyBoard() {
@@ -97,6 +34,7 @@ export function WeeklyBoard() {
   const [isCreatingWorkout, setIsCreatingWorkout] = useState(false);
   const [transactions, setTransactions] = useState<TransactionStatus[]>([]);
   
+  // Ref to track if component is mounted (prevents state updates after unmount)
   const workoutsRef = useRef<WeeklyWorkouts>(initialWorkouts);
 
   useEffect(() => {
@@ -132,21 +70,21 @@ export function WeeklyBoard() {
         });
 
         setIsLoading(true);
-        const { success, data: savedWorkouts, error } = await storageService.loadWorkouts();
+        const result = await storageService.loadWorkouts();
         
-        if (success && savedWorkouts) {
-          console.log("[WeeklyBoard] Loaded workouts from storage:", savedWorkouts);
-          setWorkouts(savedWorkouts);
+        if (result.success && result.data) {
+          console.log("[WeeklyBoard] Loaded workouts from storage:", result.data);
+          setWorkouts(result.data);
           updateTransaction(loadTransactionId, { 
             status: 'success', 
-            data: { workoutCount: Object.values(savedWorkouts).flat().length }
+            data: { workoutCount: Object.values(result.data).flat().length }
           });
         } else {
           console.log("[WeeklyBoard] No saved workouts found, using initial data");
-          if (error) {
+          if (result.error) {
             updateTransaction(loadTransactionId, { 
               status: 'error', 
-              error
+              error: result.error
             });
           } else {
             updateTransaction(loadTransactionId, { status: 'success' });
@@ -350,11 +288,13 @@ export function WeeklyBoard() {
               Monday: [...prevWorkouts.Monday, newWorkout]
             };
             
+            // Immediately save the updated workouts
             saveWorkoutsToStorage(updatedWorkouts, createTransactionId)
               .then(successful => {
                 if (successful) {
                   console.log("[WeeklyBoard] Workout saved to storage successfully");
                   
+                  // Verify the workout exists in the state
                   const exists = verifyWorkoutExists(newWorkout.id);
                   if (exists) {
                     toast.success("Workout added to Monday", {

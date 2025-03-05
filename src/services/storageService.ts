@@ -1,11 +1,6 @@
 
 import { WeeklyWorkouts, Workout } from "@/types/workout";
-
-interface StorageResult<T> {
-  success: boolean;
-  data?: T;
-  error?: Error;
-}
+import { StorageResult } from "@/components/weekly-board/types";
 
 export const storageService = {
   saveWorkouts: async (workouts: WeeklyWorkouts): Promise<StorageResult<boolean>> => {
