@@ -36,6 +36,8 @@ export interface WorkoutRelation {
   targetWorkoutId: string;
   type: 'dependency' | 'related' | 'sequence';
   priority?: 'low' | 'medium' | 'high';
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface WorkoutTag {
@@ -76,7 +78,7 @@ export interface DragContextType {
 
 export interface TransactionStatus {
   id: string;
-  type: 'create' | 'move' | 'delete' | 'update' | 'load';
+  type: 'create' | 'move' | 'delete' | 'update' | 'load' | 'save' | 'sync' | 'import' | 'export';
   status: 'pending' | 'success' | 'error';
   timestamp: Date;
   data?: any;

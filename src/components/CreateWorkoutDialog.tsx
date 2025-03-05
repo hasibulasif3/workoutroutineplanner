@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { WorkoutCard } from "./WorkoutCard";
 import { workoutSchema, WorkoutFormType } from "./workout/types";
 import { WorkoutForm } from "./workout/WorkoutForm";
@@ -31,6 +31,9 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
   const [isAutosaving, setIsAutosaving] = useState(false);
   const [formSubmissionError, setFormSubmissionError] = useState<string | null>(null);
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  
+  // Ref to track if component is mounted (prevents state updates after unmount)
+  const isMountedRef = useRef(true);
 
   const form = useForm<WorkoutFormType>({
     resolver: zodResolver(workoutSchema),
@@ -48,15 +51,30 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
     },
   });
 
+  // Clean up mounted ref on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const calculateTotalDuration = useCallback((exercises) => {
+    if (!Array.isArray(exercises)) return 0;
+    
     return exercises.reduce((total, exercise) => {
-      const setTime = (Number(exercise.sets) * Number(exercise.reps) * 3); // 3s per rep
-      const restTime = Number(exercise.restPeriod) * (Number(exercise.sets) - 1);
+      const sets = Number(exercise.sets) || 0;
+      const reps = Number(exercise.reps) || 0;
+      const restPeriod = Number(exercise.restPeriod) || 0;
+      
+      const setTime = (sets * reps * 3); // 3s per rep
+      const restTime = restPeriod * (sets - 1);
       return total + setTime + restTime;
     }, 0);
   }, []);
 
   useEffect(() => {
+    if (!isMountedRef.current) return;
+    
     const formValues = form.getValues();
     const requiredFields = ['title', 'type', 'duration', 'difficulty', 'calories'];
     const filledRequiredFields = requiredFields.filter(field => formValues[field] !== "");
@@ -72,6 +90,8 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
 
   // Load saved form state
   useEffect(() => {
+    if (!isMountedRef.current) return;
+    
     const savedState = localStorage.getItem('workout-form-state');
     if (savedState) {
       try {
@@ -92,22 +112,31 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
 
   // Autosave form state
   useEffect(() => {
+    if (!isMountedRef.current) return;
+    
     const autoSaveTimeout = 1500; // 1.5 seconds
     let timeoutId: NodeJS.Timeout;
     
     const subscription = form.watch((value) => {
+      if (!isMountedRef.current) return;
+      
       if (Object.keys(form.formState.dirtyFields).length > 0) {
         setIsAutosaving(true);
         
         clearTimeout(timeoutId);
         
         timeoutId = setTimeout(() => {
+          if (!isMountedRef.current) return;
+          
           try {
             localStorage.setItem('workout-form-state', JSON.stringify(value));
             console.log('[CreateWorkoutDialog] Form state autosaved successfully');
             setIsAutosaving(false);
           } catch (error) {
             console.error('[CreateWorkoutDialog] Error autosaving form state:', error);
+            if (isMountedRef.current) {
+              setIsAutosaving(false);
+            }
           }
         }, autoSaveTimeout);
       }
@@ -129,10 +158,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
     };
   }, [form.watch, calculateTotalDuration]);
 
-  const onSubmit = async (data: WorkoutFormType) => {
-    console.log("[CreateWorkoutDialog] Form onSubmit called with data:", data);
-    
-    // Pre-submission validation
+  const validateFormData = (data: WorkoutFormType): string[] => {
     const validationIssues = [];
     
     if (!data.title || data.title.trim() === "") {
@@ -151,6 +177,17 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
       validationIssues.push("At least one exercise is required");
     }
     
+    return validationIssues;
+  };
+
+  const onSubmit = async (data: WorkoutFormType) => {
+    if (!isMountedRef.current) return;
+    
+    console.log("[CreateWorkoutDialog] Form onSubmit called with data:", data);
+    
+    // Pre-submission validation
+    const validationIssues = validateFormData(data);
+    
     if (validationIssues.length > 0) {
       const errorMessage = validationIssues.join(", ");
       console.error("[CreateWorkoutDialog] Validation failed:", errorMessage);
@@ -158,6 +195,11 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
         description: errorMessage
       });
       setFormSubmissionError(errorMessage);
+      return;
+    }
+
+    if (isSubmitting || isCreatingWorkout) {
+      console.warn("[CreateWorkoutDialog] Submission already in progress");
       return;
     }
 
@@ -194,6 +236,8 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
       // Call the parent's workout creation function and wait for it to complete
       await onWorkoutCreate(workoutData);
       
+      if (!isMountedRef.current) return;
+      
       console.log("[CreateWorkoutDialog] Workout creation completed successfully");
       setSubmissionStatus('success');
       
@@ -206,6 +250,8 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
       setShowDialog(false);
       
     } catch (error) {
+      if (!isMountedRef.current) return;
+      
       console.error("[CreateWorkoutDialog] Workout creation error:", error);
       setFormSubmissionError(error instanceof Error ? error.message : "Failed to create workout. Please try again.");
       setSubmissionStatus('error');
@@ -213,7 +259,9 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
         description: "There was a problem saving your workout. Please try again.",
       });
     } finally {
-      setIsSubmitting(false);
+      if (isMountedRef.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -284,6 +332,11 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
           <Button 
             className="gap-2 animate-fade-in hover:scale-105 transition-transform" 
             disabled={isCreatingWorkout || isSubmitting}
+            onClick={() => {
+              setSubmissionStatus('idle');
+              setFormSubmissionError(null);
+              setShowDialog(true);
+            }}
           >
             {isCreatingWorkout ? (
               <>
@@ -356,9 +409,9 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
                     <h3 className="text-sm font-medium mb-4">Preview</h3>
                     <WorkoutCard 
                       id="preview" 
-                      title={previewData.title}
-                      duration={previewData.duration}
-                      type={previewData.type}
+                      title={previewData.title || "New Workout"}
+                      duration={previewData.duration || "0"}
+                      type={previewData.type || "strength"}
                       difficulty={previewData.difficulty}
                       calories={previewData.calories}
                       exercises={previewData.exercises as Exercise[]}

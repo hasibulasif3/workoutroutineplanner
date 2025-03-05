@@ -4,16 +4,18 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Loader2, Plus, X } from "lucide-react";
-import { UseFormReturn, useForm } from "react-hook-form";
+import { UseFormReturn } from "react-hook-form";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ExerciseForm } from "./ExerciseForm";
-import { Exercise, WorkoutFormType, muscleGroups, equipmentList } from "./types";
+import { Exercise, WorkoutFormType } from "./types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 interface WorkoutFormProps {
   form: UseFormReturn<WorkoutFormType>;
@@ -43,19 +45,63 @@ export function WorkoutForm({ form, onSubmit, isSubmitting, totalDuration, isAut
 
   const handleExerciseSubmit = (exercise: Exercise) => {
     const currentExercises = form.getValues("exercises") || [];
+    
+    // Check for duplicate exercise names
+    const isDuplicate = currentExercises.some(
+      ex => ex.name.toLowerCase() === exercise.name.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      toast.error("Exercise exists", {
+        description: "An exercise with this name already exists."
+      });
+      return;
+    }
+    
     form.setValue("exercises", [...currentExercises, exercise]);
     setIsAddingExercise(false);
     exerciseForm.reset();
+    
+    // If duration is calculated from exercises, update it
+    if (form.getValues("exercises").length > 0) {
+      const calculatedDuration = Math.ceil(totalDuration / 60);
+      if (calculatedDuration > 0) {
+        form.setValue("duration", String(calculatedDuration));
+      }
+    }
+    
+    toast.success("Exercise added", {
+      description: `${exercise.name} has been added to your workout.`
+    });
   };
 
   const removeExercise = (index: number) => {
     const currentExercises = form.getValues("exercises") || [];
+    const exerciseName = currentExercises[index]?.name || "Exercise";
+    
     form.setValue("exercises", currentExercises.filter((_, i) => i !== index));
+    
+    toast.success("Exercise removed", {
+      description: `${exerciseName} has been removed from your workout.`
+    });
+  };
+
+  const handleFormSubmit = (data: WorkoutFormType) => {
+    // Ensure we have at least one exercise
+    if (!data.exercises || data.exercises.length === 0) {
+      toast.error("No exercises", {
+        description: "Please add at least one exercise to your workout."
+      });
+      setActiveTab("exercises");
+      return;
+    }
+    
+    onSubmit(data);
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
@@ -186,6 +232,7 @@ export function WorkoutForm({ form, onSubmit, isSubmitting, totalDuration, isAut
                     form={exerciseForm}
                     onSubmit={handleExerciseSubmit}
                     onCancel={() => setIsAddingExercise(false)}
+                    existingExercises={form.getValues("exercises") || []}
                   />
                 </DialogContent>
               </Dialog>
@@ -193,37 +240,38 @@ export function WorkoutForm({ form, onSubmit, isSubmitting, totalDuration, isAut
 
             <ScrollArea className="h-[300px] rounded-md border p-4">
               <div className="space-y-2">
-                {form.watch("exercises")?.length === 0 && (
+                {!form.watch("exercises") || form.watch("exercises").length === 0 ? (
                   <div className="text-center text-muted-foreground py-8">
                     No exercises added. Click "Add Exercise" to start building your workout.
                   </div>
-                )}
-                
-                {form.watch("exercises")?.map((exercise, index) => (
-                  <Card key={index} className="p-4">
-                    <CardContent className="p-0">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <h4 className="font-medium">{exercise.name}</h4>
-                          <div className="flex gap-2 text-sm text-muted-foreground">
-                            <span>{exercise.sets} sets</span>
-                            <span>×</span>
-                            <span>{exercise.reps} reps</span>
-                            <span>|</span>
-                            <span>{exercise.restPeriod}s rest</span>
+                ) : (
+                  form.watch("exercises").map((exercise, index) => (
+                    <Card key={index} className="p-4">
+                      <CardContent className="p-0">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <h4 className="font-medium">{exercise.name}</h4>
+                            <div className="flex gap-2 text-sm text-muted-foreground">
+                              <span>{exercise.sets} sets</span>
+                              <span>×</span>
+                              <span>{exercise.reps} reps</span>
+                              <span>|</span>
+                              <span>{exercise.restPeriod}s rest</span>
+                            </div>
                           </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeExercise(index)}
+                            type="button"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeExercise(index)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
             </ScrollArea>
           </TabsContent>
