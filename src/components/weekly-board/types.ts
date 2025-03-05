@@ -1,3 +1,4 @@
+
 import { Workout } from "@/types/workout";
 
 export interface DragState {
@@ -71,4 +72,13 @@ export interface DragContextType {
   touchStartHandler: (e: TouchEvent) => void;
   touchMoveHandler: (e: TouchEvent) => void;
   cleanup: () => void;
+}
+
+export interface TransactionStatus {
+  id: string;
+  type: 'create' | 'move' | 'delete' | 'update' | 'load';
+  status: 'pending' | 'success' | 'error';
+  timestamp: Date;
+  data?: any;
+  error?: Error | string;
 }

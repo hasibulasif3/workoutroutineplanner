@@ -1,9 +1,15 @@
 
-import { WeeklyWorkouts } from "@/types/workout";
+import { WeeklyWorkouts, Workout } from "@/types/workout";
+
+interface StorageResult<T> {
+  success: boolean;
+  data?: T;
+  error?: Error;
+}
 
 export const storageService = {
-  saveWorkouts: (workouts: WeeklyWorkouts): Promise<boolean> => {
-    return new Promise((resolve, reject) => {
+  saveWorkouts: async (workouts: WeeklyWorkouts): Promise<StorageResult<boolean>> => {
+    return new Promise((resolve) => {
       try {
         console.log('[StorageService] Saving workouts:', workouts);
         
@@ -27,21 +33,24 @@ export const storageService = {
         
         localStorage.setItem('workouts', JSON.stringify(processedWorkouts));
         console.log('[StorageService] Workouts saved successfully:', processedWorkouts);
-        resolve(true);
+        resolve({ success: true });
       } catch (error) {
         console.error('[StorageService] Error saving workouts:', error);
-        reject(new Error(`Failed to save workouts: ${error instanceof Error ? error.message : String(error)}`));
+        resolve({ 
+          success: false, 
+          error: error instanceof Error ? error : new Error(`Failed to save workouts: ${String(error)}`) 
+        });
       }
     });
   },
 
-  loadWorkouts: (): Promise<WeeklyWorkouts | null> => {
-    return new Promise((resolve, reject) => {
+  loadWorkouts: async (): Promise<StorageResult<WeeklyWorkouts | null>> => {
+    return new Promise((resolve) => {
       try {
         const data = localStorage.getItem('workouts');
         if (!data) {
           console.log('[StorageService] No workouts found in localStorage');
-          resolve(null);
+          resolve({ success: true, data: null });
           return;
         }
         
@@ -83,23 +92,40 @@ export const storageService = {
         }, {} as WeeklyWorkouts);
         
         console.log('[StorageService] Processed workouts for application use:', processedWorkouts);
-        resolve(processedWorkouts);
+        resolve({ success: true, data: processedWorkouts });
       } catch (error) {
         console.error('[StorageService] Error loading workouts from localStorage:', error);
-        reject(new Error(`Failed to load workouts: ${error instanceof Error ? error.message : String(error)}`));
+        resolve({ 
+          success: false, 
+          error: error instanceof Error ? error : new Error(`Failed to load workouts: ${String(error)}`) 
+        });
       }
     });
   },
 
-  clearWorkouts: (): Promise<boolean> => {
-    return new Promise((resolve, reject) => {
+  verifyWorkoutExists: (workouts: WeeklyWorkouts, workoutId: string): boolean => {
+    for (const day in workouts) {
+      if (workouts[day].some(workout => workout.id === workoutId)) {
+        console.log(`[StorageService] Verified workout ${workoutId} exists in ${day}`);
+        return true;
+      }
+    }
+    console.warn(`[StorageService] Workout ${workoutId} not found in any day`);
+    return false;
+  },
+
+  clearWorkouts: async (): Promise<StorageResult<boolean>> => {
+    return new Promise((resolve) => {
       try {
         localStorage.removeItem('workouts');
         console.log('[StorageService] Workouts cleared successfully');
-        resolve(true);
+        resolve({ success: true });
       } catch (error) {
         console.error('[StorageService] Error clearing workouts:', error);
-        reject(new Error(`Failed to clear workouts: ${error instanceof Error ? error.message : String(error)}`));
+        resolve({ 
+          success: false, 
+          error: error instanceof Error ? error : new Error(`Failed to clear workouts: ${String(error)}`) 
+        });
       }
     });
   }

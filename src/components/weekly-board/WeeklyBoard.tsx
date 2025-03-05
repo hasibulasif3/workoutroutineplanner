@@ -1,3 +1,4 @@
+
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -13,6 +14,7 @@ import { ActionBar } from "../ActionBar";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { DragProvider } from "./DragContext";
 import { Layout } from "../layout/Layout";
+import { TransactionStatus } from "./types";
 
 const initialWorkouts: WeeklyWorkouts = {
   Monday: [{
@@ -94,14 +96,8 @@ export function WeeklyBoard() {
   const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingWorkout, setIsCreatingWorkout] = useState(false);
+  const [transactions, setTransactions] = useState<TransactionStatus[]>([]);
   
-  const [lastOperationStatus, setLastOperationStatus] = useState<{
-    type: 'create' | 'move' | 'delete' | 'none';
-    status: 'pending' | 'success' | 'error';
-    workout?: Workout;
-    message?: string;
-  }>({ type: 'none', status: 'success' });
-
   const workoutsRef = useRef<WeeklyWorkouts>(initialWorkouts);
 
   useEffect(() => {
@@ -109,16 +105,55 @@ export function WeeklyBoard() {
     console.log('[WeeklyBoard] Workouts state updated:', workouts);
   }, [workouts]);
 
+  // Add transaction tracking
+  const addTransaction = useCallback((transaction: Omit<TransactionStatus, 'timestamp'>) => {
+    const fullTransaction = {
+      ...transaction,
+      timestamp: new Date()
+    };
+    console.log('[WeeklyBoard] New transaction:', fullTransaction);
+    setTransactions(prev => [...prev, fullTransaction]);
+    return fullTransaction;
+  }, []);
+
+  // Update transaction status
+  const updateTransaction = useCallback((id: string, updates: Partial<TransactionStatus>) => {
+    console.log(`[WeeklyBoard] Updating transaction ${id}:`, updates);
+    setTransactions(prev => 
+      prev.map(t => t.id === id ? { ...t, ...updates, timestamp: new Date() } : t)
+    );
+  }, []);
+
   useEffect(() => {
     const loadWorkouts = async () => {
       try {
+        const loadTransactionId = uuidv4();
+        addTransaction({
+          id: loadTransactionId,
+          type: 'load',
+          status: 'pending'
+        });
+
         setIsLoading(true);
-        const savedWorkouts = await storageService.loadWorkouts();
-        if (savedWorkouts) {
+        const { success, data: savedWorkouts, error } = await storageService.loadWorkouts();
+        
+        if (success && savedWorkouts) {
           console.log("[WeeklyBoard] Loaded workouts from storage:", savedWorkouts);
           setWorkouts(savedWorkouts);
+          updateTransaction(loadTransactionId, { 
+            status: 'success', 
+            data: { workoutCount: Object.values(savedWorkouts).flat().length }
+          });
         } else {
           console.log("[WeeklyBoard] No saved workouts found, using initial data");
+          if (error) {
+            updateTransaction(loadTransactionId, { 
+              status: 'error', 
+              error
+            });
+          } else {
+            updateTransaction(loadTransactionId, { status: 'success' });
+          }
         }
       } catch (error) {
         console.error("[WeeklyBoard] Error loading workouts:", error);
@@ -131,22 +166,43 @@ export function WeeklyBoard() {
     };
 
     loadWorkouts();
-  }, []);
+  }, [addTransaction, updateTransaction]);
 
-  const saveWorkoutsToStorage = useCallback(async (currentWorkouts: WeeklyWorkouts) => {
+  const saveWorkoutsToStorage = useCallback(async (currentWorkouts: WeeklyWorkouts, transactionId?: string) => {
     try {
       console.log("[WeeklyBoard] Saving workouts to storage:", currentWorkouts);
-      const saveResult = await storageService.saveWorkouts(currentWorkouts);
-      console.log("[WeeklyBoard] Save result:", saveResult);
-      return saveResult;
+      const { success, error } = await storageService.saveWorkouts(currentWorkouts);
+      
+      if (success) {
+        console.log("[WeeklyBoard] Workouts saved successfully");
+        if (transactionId) {
+          updateTransaction(transactionId, { status: 'success' });
+        }
+        return true;
+      } else {
+        console.error("[WeeklyBoard] Failed to save workouts:", error);
+        if (transactionId) {
+          updateTransaction(transactionId, { 
+            status: 'error', 
+            error: error || 'Unknown error saving workouts'
+          });
+        }
+        return false;
+      }
     } catch (error) {
       console.error("[WeeklyBoard] Error saving workouts:", error);
       toast.error("Failed to save workout changes", {
         description: "There was a problem saving your workout data."
       });
+      if (transactionId) {
+        updateTransaction(transactionId, { 
+          status: 'error', 
+          error: error instanceof Error ? error : String(error)
+        });
+      }
       return false;
     }
-  }, []);
+  }, [updateTransaction]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -156,17 +212,7 @@ export function WeeklyBoard() {
 
   const verifyWorkoutExists = useCallback((id: string): boolean => {
     const currentWorkouts = workoutsRef.current;
-    
-    for (const day in currentWorkouts) {
-      const found = currentWorkouts[day].some(workout => workout.id === id);
-      if (found) {
-        console.log(`[WeeklyBoard] Workout ${id} found in ${day}`);
-        return true;
-      }
-    }
-    
-    console.warn(`[WeeklyBoard] Workout ${id} not found in any day`);
-    return false;
+    return storageService.verifyWorkoutExists(currentWorkouts, id);
   }, []);
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -182,50 +228,86 @@ export function WeeklyBoard() {
     
     if (!over) return;
     
-    const activeDay = Object.entries(workouts).find(
-      ([day, items]) => items.find(item => item.id === active.id.toString())
-    )?.[0];
+    const moveTransactionId = uuidv4();
     
-    const overDay = over.id.toString();
-    
-    if (!activeDay || activeDay === overDay) return;
-    
-    setWorkouts(prev => {
-      const workout = prev[activeDay].find(item => item.id === active.id.toString());
-      if (!workout) return prev;
+    try {
+      const activeDay = Object.entries(workouts).find(
+        ([day, items]) => items.find(item => item.id === active.id.toString())
+      )?.[0];
       
-      const updatedWorkout: Workout = {
-        ...workout,
-        last_modified: new Date().toISOString()
-      };
+      const overDay = over.id.toString();
       
-      const newWorkouts = {
-        ...prev,
-        [activeDay]: prev[activeDay].filter(item => item.id !== active.id.toString()),
-        [overDay]: [...prev[overDay], updatedWorkout]
-      };
+      if (!activeDay || activeDay === overDay) return;
       
-      setLastOperationStatus({
+      addTransaction({
+        id: moveTransactionId,
         type: 'move',
         status: 'pending',
-        workout: updatedWorkout
+        data: { from: activeDay, to: overDay, workoutId: active.id.toString() }
       });
       
-      dropSound.play().catch(err => console.error("Error playing sound:", err));
-      
-      toast.success(`Workout moved to ${overDay}`, {
-        description: `"${workout.title}" has been moved successfully.`
+      setWorkouts(prev => {
+        const workout = prev[activeDay].find(item => item.id === active.id.toString());
+        if (!workout) {
+          updateTransaction(moveTransactionId, { 
+            status: 'error', 
+            error: `Workout with id ${active.id} not found in ${activeDay}`
+          });
+          return prev;
+        }
+        
+        const updatedWorkout: Workout = {
+          ...workout,
+          last_modified: new Date().toISOString()
+        };
+        
+        const newWorkouts = {
+          ...prev,
+          [activeDay]: prev[activeDay].filter(item => item.id !== active.id.toString()),
+          [overDay]: [...prev[overDay], updatedWorkout]
+        };
+        
+        // Save the updated state to storage
+        saveWorkoutsToStorage(newWorkouts, moveTransactionId)
+          .then(success => {
+            if (success) {
+              dropSound.play().catch(err => console.error("Error playing sound:", err));
+              
+              toast.success(`Workout moved to ${overDay}`, {
+                description: `"${workout.title}" has been moved successfully.`
+              });
+            }
+          });
+        
+        return newWorkouts;
+      });
+    } catch (error) {
+      console.error("[WeeklyBoard] Error in handleDragEnd:", error);
+      updateTransaction(moveTransactionId, { 
+        status: 'error', 
+        error: error instanceof Error ? error : String(error)
       });
       
-      return newWorkouts;
-    });
+      toast.error("Failed to move workout", {
+        description: "There was a problem updating your workout position."
+      });
+    }
   };
 
   const handleWorkoutCreate = async (workoutData: WorkoutInput): Promise<void> => {
     console.log("[WeeklyBoard] handleWorkoutCreate called with data:", workoutData);
     
+    const createTransactionId = uuidv4();
+    
     try {
       setIsCreatingWorkout(true);
+      
+      addTransaction({
+        id: createTransactionId,
+        type: 'create',
+        status: 'pending',
+        data: { workoutData }
+      });
       
       if (!workoutData.title?.trim() || !workoutData.type || !workoutData.duration) {
         const missingFields = [
@@ -236,10 +318,9 @@ export function WeeklyBoard() {
         
         console.error(`[WeeklyBoard] Missing required workout fields: ${missingFields}`);
         
-        setLastOperationStatus({
-          type: 'create',
+        updateTransaction(createTransactionId, {
           status: 'error',
-          message: `Missing required fields: ${missingFields}`
+          error: `Missing required fields: ${missingFields}`
         });
         
         toast.error("Invalid workout data", {
@@ -264,14 +345,9 @@ export function WeeklyBoard() {
 
       console.log("[WeeklyBoard] Created new workout object:", newWorkout);
       
-      setLastOperationStatus({
-        type: 'create',
-        status: 'pending',
-        workout: newWorkout
-      });
-      
       return new Promise<void>((resolve, reject) => {
         try {
+          // Atomic update of workouts state
           setWorkouts(prevWorkouts => {
             console.log("[WeeklyBoard] Updating workouts state with new workout");
             const updatedWorkouts = {
@@ -279,72 +355,52 @@ export function WeeklyBoard() {
               Monday: [...prevWorkouts.Monday, newWorkout]
             };
             
-            saveWorkoutsToStorage(updatedWorkouts)
+            // Try to save to storage immediately after state update
+            saveWorkoutsToStorage(updatedWorkouts, createTransactionId)
               .then(successful => {
                 if (successful) {
-                  console.log("[WeeklyBoard] Workout saved to storage successfully after state update");
+                  console.log("[WeeklyBoard] Workout saved to storage successfully");
                   
-                  setTimeout(() => {
-                    const exists = verifyWorkoutExists(newWorkout.id);
-                    if (exists) {
-                      setLastOperationStatus({
-                        type: 'create',
-                        status: 'success',
-                        workout: newWorkout
-                      });
-                      
-                      toast.success("Workout added to Monday", {
-                        description: `"${newWorkout.title}" has been added to your schedule.`
-                      });
-                    } else {
-                      setLastOperationStatus({
-                        type: 'create',
-                        status: 'error',
-                        workout: newWorkout,
-                        message: "Workout failed to appear in state after creation"
-                      });
-                      
-                      toast.error("Failed to add workout", {
-                        description: "There was a problem adding your workout. Please try again."
-                      });
-                      reject(new Error("Workout failed to appear in state after creation"));
-                    }
-                  }, 100);
+                  // Verify the workout appears in the state
+                  const exists = verifyWorkoutExists(newWorkout.id);
+                  if (exists) {
+                    toast.success("Workout added to Monday", {
+                      description: `"${newWorkout.title}" has been added to your schedule.`
+                    });
+                    resolve();
+                  } else {
+                    const errorMsg = "Workout failed to appear in state after creation";
+                    console.error(`[WeeklyBoard] ${errorMsg}`);
+                    updateTransaction(createTransactionId, {
+                      status: 'error',
+                      error: errorMsg
+                    });
+                    
+                    toast.error("Failed to add workout", {
+                      description: "There was a problem adding your workout. Please try again."
+                    });
+                    reject(new Error(errorMsg));
+                  }
                 } else {
                   console.error("[WeeklyBoard] Failed to save workout to storage");
-                  setLastOperationStatus({
-                    type: 'create',
+                  updateTransaction(createTransactionId, {
                     status: 'error',
-                    workout: newWorkout,
-                    message: "Failed to save workout to storage"
+                    error: "Failed to save workout to storage"
                   });
                   reject(new Error("Failed to save workout to storage"));
                 }
               })
-              .catch(error => {
-                console.error("[WeeklyBoard] Error saving workout:", error);
-                setLastOperationStatus({
-                  type: 'create',
-                  status: 'error',
-                  workout: newWorkout,
-                  message: error instanceof Error ? error.message : String(error)
-                });
-                reject(error);
-              })
               .finally(() => {
                 setIsCreatingWorkout(false);
-                resolve();
               });
               
             return updatedWorkouts;
           });
         } catch (error) {
           console.error("[WeeklyBoard] Error in workout creation transaction:", error);
-          setLastOperationStatus({
-            type: 'create',
+          updateTransaction(createTransactionId, {
             status: 'error',
-            workout: newWorkout,
-            message: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error : String(error)
           });
           setIsCreatingWorkout(false);
           reject(error);
@@ -352,6 +408,10 @@ export function WeeklyBoard() {
       });
     } catch (error) {
       console.error("[WeeklyBoard] Error in handleWorkoutCreate:", error);
+      updateTransaction(createTransactionId, {
+        status: 'error',
+        error: error instanceof Error ? error : String(error)
+      });
       setIsCreatingWorkout(false);
       throw error;
     }
