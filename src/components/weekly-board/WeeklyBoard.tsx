@@ -1,4 +1,3 @@
-
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -94,27 +93,38 @@ export function WeeklyBoard() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
   const [isLoading, setIsLoading] = useState(true);
-  // Add a ref to track the latest workouts state
+  const [isCreatingWorkout, setIsCreatingWorkout] = useState(false);
+  
+  const [lastOperationStatus, setLastOperationStatus] = useState<{
+    type: 'create' | 'move' | 'delete' | 'none';
+    status: 'pending' | 'success' | 'error';
+    workout?: Workout;
+    message?: string;
+  }>({ type: 'none', status: 'success' });
+
   const workoutsRef = useRef<WeeklyWorkouts>(initialWorkouts);
 
-  // Update the ref whenever workouts state changes
   useEffect(() => {
     workoutsRef.current = workouts;
+    console.log('[WeeklyBoard] Workouts state updated:', workouts);
   }, [workouts]);
 
   useEffect(() => {
-    const loadWorkouts = () => {
+    const loadWorkouts = async () => {
       try {
-        const savedWorkouts = storageService.loadWorkouts();
+        setIsLoading(true);
+        const savedWorkouts = await storageService.loadWorkouts();
         if (savedWorkouts) {
-          console.log("Loaded workouts from storage:", savedWorkouts);
+          console.log("[WeeklyBoard] Loaded workouts from storage:", savedWorkouts);
           setWorkouts(savedWorkouts);
         } else {
-          console.log("No saved workouts found, using initial data");
+          console.log("[WeeklyBoard] No saved workouts found, using initial data");
         }
       } catch (error) {
-        console.error("Error loading workouts:", error);
-        toast.error("Failed to load your workouts");
+        console.error("[WeeklyBoard] Error loading workouts:", error);
+        toast.error("Failed to load your workouts", {
+          description: "There was a problem loading your workout data."
+        });
       } finally {
         setIsLoading(false);
       }
@@ -123,21 +133,17 @@ export function WeeklyBoard() {
     loadWorkouts();
   }, []);
 
-  // Save workouts to storage whenever they change
-  const saveWorkoutsToStorage = useCallback((currentWorkouts: WeeklyWorkouts) => {
+  const saveWorkoutsToStorage = useCallback(async (currentWorkouts: WeeklyWorkouts) => {
     try {
-      console.log("Saving workouts to storage:", currentWorkouts);
-      const saveResult = storageService.saveWorkouts(currentWorkouts);
-      if (saveResult) {
-        console.log("Workouts saved successfully:", currentWorkouts);
-        return true;
-      } else {
-        console.error("Failed to save workouts");
-        return false;
-      }
+      console.log("[WeeklyBoard] Saving workouts to storage:", currentWorkouts);
+      const saveResult = await storageService.saveWorkouts(currentWorkouts);
+      console.log("[WeeklyBoard] Save result:", saveResult);
+      return saveResult;
     } catch (error) {
-      console.error("Error saving workouts:", error);
-      toast.error("Failed to save workout changes");
+      console.error("[WeeklyBoard] Error saving workouts:", error);
+      toast.error("Failed to save workout changes", {
+        description: "There was a problem saving your workout data."
+      });
       return false;
     }
   }, []);
@@ -147,6 +153,21 @@ export function WeeklyBoard() {
       saveWorkoutsToStorage(workouts);
     }
   }, [workouts, isLoading, saveWorkoutsToStorage]);
+
+  const verifyWorkoutExists = useCallback((id: string): boolean => {
+    const currentWorkouts = workoutsRef.current;
+    
+    for (const day in currentWorkouts) {
+      const found = currentWorkouts[day].some(workout => workout.id === id);
+      if (found) {
+        console.log(`[WeeklyBoard] Workout ${id} found in ${day}`);
+        return true;
+      }
+    }
+    
+    console.warn(`[WeeklyBoard] Workout ${id} not found in any day`);
+    return false;
+  }, []);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id.toString());
@@ -184,7 +205,14 @@ export function WeeklyBoard() {
         [overDay]: [...prev[overDay], updatedWorkout]
       };
       
+      setLastOperationStatus({
+        type: 'move',
+        status: 'pending',
+        workout: updatedWorkout
+      });
+      
       dropSound.play().catch(err => console.error("Error playing sound:", err));
+      
       toast.success(`Workout moved to ${overDay}`, {
         description: `"${workout.title}" has been moved successfully.`
       });
@@ -194,95 +222,139 @@ export function WeeklyBoard() {
   };
 
   const handleWorkoutCreate = async (workoutData: WorkoutInput): Promise<void> => {
-    console.log("handleWorkoutCreate called with data:", workoutData);
+    console.log("[WeeklyBoard] handleWorkoutCreate called with data:", workoutData);
     
-    return new Promise<void>((resolve, reject) => {
-      try {
-        // Validate required fields
-        if (!workoutData.title?.trim() || !workoutData.type || !workoutData.duration) {
-          const missingFields = [
-            !workoutData.title?.trim() ? "title" : "",
-            !workoutData.type ? "type" : "",
-            !workoutData.duration ? "duration" : ""
-          ].filter(Boolean).join(", ");
-          
-          console.error(`Missing required workout fields: ${missingFields}`);
-          toast.error("Invalid workout data", {
-            description: "Please ensure all required fields are filled out."
-          });
-          return reject(new Error(`Missing required fields: ${missingFields}`));
-        }
+    try {
+      setIsCreatingWorkout(true);
+      
+      if (!workoutData.title?.trim() || !workoutData.type || !workoutData.duration) {
+        const missingFields = [
+          !workoutData.title?.trim() ? "title" : "",
+          !workoutData.type ? "type" : "",
+          !workoutData.duration ? "duration" : ""
+        ].filter(Boolean).join(", ");
         
-        // Create new workout with proper ID and timestamp
-        const newWorkout: Workout = {
-          id: uuidv4(),
-          last_modified: new Date().toISOString(),
-          title: workoutData.title.trim(),
-          type: workoutData.type,
-          duration: workoutData.duration,
-          difficulty: workoutData.difficulty || "beginner",
-          calories: workoutData.calories || "0",
-          notes: workoutData.notes || "",
-          exercises: Array.isArray(workoutData.exercises) ? [...workoutData.exercises] : []
-        };
-
-        console.log("Created new workout object:", newWorkout);
+        console.error(`[WeeklyBoard] Missing required workout fields: ${missingFields}`);
         
-        // Update the state with the new workout using a callback function
-        setWorkouts(prevWorkouts => {
-          // Create a new workouts object to avoid mutation
-          const updatedWorkouts = {
-            ...prevWorkouts,
-            Monday: [...prevWorkouts.Monday, newWorkout]
-          };
-          
-          console.log("New workouts state after update:", updatedWorkouts);
-          
-          // Save immediately to ensure data persistence
-          // Use a setTimeout to ensure this runs after state update is processed
-          setTimeout(() => {
-            const saveSuccess = saveWorkoutsToStorage(updatedWorkouts);
-            if (saveSuccess) {
-              console.log("Workout saved to storage successfully");
-            } else {
-              console.error("Failed to save workout to storage");
-              // Don't reject here as the state update did succeed
-            }
-          }, 0);
-          
-          return updatedWorkouts;
+        setLastOperationStatus({
+          type: 'create',
+          status: 'error',
+          message: `Missing required fields: ${missingFields}`
         });
-
-        // Use a setTimeout to ensure we resolve after the state has been updated
-        setTimeout(() => {
-          // Access the latest workouts state via the ref
-          const currentWorkouts = workoutsRef.current;
-          
-          // Verify the workout was actually added
-          const workoutWasAdded = currentWorkouts.Monday.some(w => w.title === newWorkout.title);
-          
-          if (workoutWasAdded) {
-            console.log("Workout successfully added to state");
-            // Show success notification after state update verification
-            toast.success("Workout added to Monday", {
-              description: `"${newWorkout.title}" has been added to your schedule.`,
-              duration: 4000,
-            });
-            resolve();
-          } else {
-            console.error("Workout was not added to state");
-            reject(new Error("Failed to add workout to state"));
-          }
-        }, 100); // Small delay to ensure state update has happened
-
-      } catch (error) {
-        console.error("Error in handleWorkoutCreate:", error);
-        toast.error("Failed to create workout", {
-          description: "There was a problem adding your workout. Please try again.",
+        
+        toast.error("Invalid workout data", {
+          description: "Please ensure all required fields are filled out."
         });
-        reject(error);
+        
+        throw new Error(`Missing required fields: ${missingFields}`);
       }
-    });
+      
+      const timestamp = new Date().toISOString();
+      const newWorkout: Workout = {
+        id: uuidv4(),
+        last_modified: timestamp,
+        title: workoutData.title.trim(),
+        type: workoutData.type,
+        duration: workoutData.duration,
+        difficulty: workoutData.difficulty || "beginner",
+        calories: workoutData.calories || "0",
+        notes: workoutData.notes || "",
+        exercises: Array.isArray(workoutData.exercises) ? [...workoutData.exercises] : []
+      };
+
+      console.log("[WeeklyBoard] Created new workout object:", newWorkout);
+      
+      setLastOperationStatus({
+        type: 'create',
+        status: 'pending',
+        workout: newWorkout
+      });
+      
+      return new Promise<void>((resolve, reject) => {
+        try {
+          setWorkouts(prevWorkouts => {
+            console.log("[WeeklyBoard] Updating workouts state with new workout");
+            const updatedWorkouts = {
+              ...prevWorkouts,
+              Monday: [...prevWorkouts.Monday, newWorkout]
+            };
+            
+            saveWorkoutsToStorage(updatedWorkouts)
+              .then(successful => {
+                if (successful) {
+                  console.log("[WeeklyBoard] Workout saved to storage successfully after state update");
+                  
+                  setTimeout(() => {
+                    const exists = verifyWorkoutExists(newWorkout.id);
+                    if (exists) {
+                      setLastOperationStatus({
+                        type: 'create',
+                        status: 'success',
+                        workout: newWorkout
+                      });
+                      
+                      toast.success("Workout added to Monday", {
+                        description: `"${newWorkout.title}" has been added to your schedule.`
+                      });
+                    } else {
+                      setLastOperationStatus({
+                        type: 'create',
+                        status: 'error',
+                        workout: newWorkout,
+                        message: "Workout failed to appear in state after creation"
+                      });
+                      
+                      toast.error("Failed to add workout", {
+                        description: "There was a problem adding your workout. Please try again."
+                      });
+                      reject(new Error("Workout failed to appear in state after creation"));
+                    }
+                  }, 100);
+                } else {
+                  console.error("[WeeklyBoard] Failed to save workout to storage");
+                  setLastOperationStatus({
+                    type: 'create',
+                    status: 'error',
+                    workout: newWorkout,
+                    message: "Failed to save workout to storage"
+                  });
+                  reject(new Error("Failed to save workout to storage"));
+                }
+              })
+              .catch(error => {
+                console.error("[WeeklyBoard] Error saving workout:", error);
+                setLastOperationStatus({
+                  type: 'create',
+                  status: 'error',
+                  workout: newWorkout,
+                  message: error instanceof Error ? error.message : String(error)
+                });
+                reject(error);
+              })
+              .finally(() => {
+                setIsCreatingWorkout(false);
+                resolve();
+              });
+              
+            return updatedWorkouts;
+          });
+        } catch (error) {
+          console.error("[WeeklyBoard] Error in workout creation transaction:", error);
+          setLastOperationStatus({
+            type: 'create',
+            status: 'error',
+            workout: newWorkout,
+            message: error instanceof Error ? error.message : String(error)
+          });
+          setIsCreatingWorkout(false);
+          reject(error);
+        }
+      });
+    } catch (error) {
+      console.error("[WeeklyBoard] Error in handleWorkoutCreate:", error);
+      setIsCreatingWorkout(false);
+      throw error;
+    }
   };
 
   const activeWorkout = activeId ? Object.values(workouts).flat().find(w => w.id === activeId) : null;
@@ -323,7 +395,11 @@ export function WeeklyBoard() {
               </motion.p>
               
               <StatsBar workouts={workouts} />
-              <ActionBar workouts={workouts} onWorkoutCreate={handleWorkoutCreate} />
+              <ActionBar 
+                workouts={workouts} 
+                onWorkoutCreate={handleWorkoutCreate}
+                isCreatingWorkout={isCreatingWorkout}
+              />
             </div>
 
             <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>

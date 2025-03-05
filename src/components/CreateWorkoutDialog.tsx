@@ -18,9 +18,10 @@ import { Exercise, WorkoutInput } from "@/types/workout";
 
 interface CreateWorkoutDialogProps {
   onWorkoutCreate: (workout: WorkoutInput) => Promise<void>;
+  isCreatingWorkout?: boolean;
 }
 
-export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProps) {
+export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false }: CreateWorkoutDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewData, setPreviewData] = useState<WorkoutFormType | null>(null);
   const [showDialog, setShowDialog] = useState(false);
@@ -30,8 +31,6 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
   const [isAutosaving, setIsAutosaving] = useState(false);
   const [formSubmissionError, setFormSubmissionError] = useState<string | null>(null);
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
-  // New state to track if the workout was actually added
-  const [workoutAddedSuccessfully, setWorkoutAddedSuccessfully] = useState(false);
 
   const form = useForm<WorkoutFormType>({
     resolver: zodResolver(workoutSchema),
@@ -71,6 +70,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
     setFormProgress(progress);
   }, [form.watch()]);
 
+  // Load saved form state
   useEffect(() => {
     const savedState = localStorage.getItem('workout-form-state');
     if (savedState) {
@@ -84,12 +84,13 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
           form.setValue('duration', String(Math.ceil(duration / 60)));
         }
       } catch (error) {
-        console.error('Error parsing saved form state:', error);
+        console.error('[CreateWorkoutDialog] Error parsing saved form state:', error);
         localStorage.removeItem('workout-form-state');
       }
     }
   }, []);
 
+  // Autosave form state
   useEffect(() => {
     const autoSaveTimeout = 1500; // 1.5 seconds
     let timeoutId: NodeJS.Timeout;
@@ -103,9 +104,10 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
         timeoutId = setTimeout(() => {
           try {
             localStorage.setItem('workout-form-state', JSON.stringify(value));
+            console.log('[CreateWorkoutDialog] Form state autosaved successfully');
             setIsAutosaving(false);
           } catch (error) {
-            console.error('Error autosaving form state:', error);
+            console.error('[CreateWorkoutDialog] Error autosaving form state:', error);
           }
         }, autoSaveTimeout);
       }
@@ -128,7 +130,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
   }, [form.watch, calculateTotalDuration]);
 
   const onSubmit = async (data: WorkoutFormType) => {
-    console.log("Form onSubmit called with data:", data);
+    console.log("[CreateWorkoutDialog] Form onSubmit called with data:", data);
     
     // Pre-submission validation
     const validationIssues = [];
@@ -151,6 +153,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
     
     if (validationIssues.length > 0) {
       const errorMessage = validationIssues.join(", ");
+      console.error("[CreateWorkoutDialog] Validation failed:", errorMessage);
       toast.error("Validation Failed", {
         description: errorMessage
       });
@@ -161,10 +164,9 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
     setIsSubmitting(true);
     setFormSubmissionError(null);
     setSubmissionStatus('submitting');
-    setWorkoutAddedSuccessfully(false);
     
     try {
-      console.log("Preparing workout data for submission:", data);
+      console.log("[CreateWorkoutDialog] Preparing workout data for submission:", data);
       
       // Create a properly typed WorkoutInput object
       const workoutData: WorkoutInput = {
@@ -187,14 +189,13 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
         })) : []
       };
       
-      console.log("Calling onWorkoutCreate with transformed data:", workoutData);
+      console.log("[CreateWorkoutDialog] Calling onWorkoutCreate with transformed data:", workoutData);
       
       // Call the parent's workout creation function and wait for it to complete
       await onWorkoutCreate(workoutData);
       
-      console.log("Workout creation completed successfully");
+      console.log("[CreateWorkoutDialog] Workout creation completed successfully");
       setSubmissionStatus('success');
-      setWorkoutAddedSuccessfully(true);
       
       // Reset form and clear storage on success
       form.reset();
@@ -205,10 +206,9 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
       setShowDialog(false);
       
     } catch (error) {
-      console.error("Workout creation error:", error);
+      console.error("[CreateWorkoutDialog] Workout creation error:", error);
       setFormSubmissionError(error instanceof Error ? error.message : "Failed to create workout. Please try again.");
       setSubmissionStatus('error');
-      setWorkoutAddedSuccessfully(false);
       toast.error("Failed to create workout", {
         description: "There was a problem saving your workout. Please try again.",
       });
@@ -237,12 +237,13 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
 
   const handleClose = () => {
     // If submitting, don't allow close
-    if (submissionStatus === 'submitting') {
+    if (submissionStatus === 'submitting' || isCreatingWorkout) {
+      console.log("[CreateWorkoutDialog] Cannot close dialog while submitting or creating workout");
       return;
     }
     
     // If form has been successfully submitted, allow immediate close
-    if (workoutAddedSuccessfully) {
+    if (submissionStatus === 'success') {
       setShowDialog(false);
       return;
     }
@@ -280,15 +281,27 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
     <>
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogTrigger asChild>
-          <Button className="gap-2 animate-fade-in hover:scale-105 transition-transform">
-            <Plus size={16} />
-            Add Workout
+          <Button 
+            className="gap-2 animate-fade-in hover:scale-105 transition-transform" 
+            disabled={isCreatingWorkout || isSubmitting}
+          >
+            {isCreatingWorkout ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <Plus size={16} />
+                Add Workout
+              </>
+            )}
           </Button>
         </DialogTrigger>
         <DialogContent 
           className="sm:max-w-[800px] h-[90vh] p-0"
           onInteractOutside={(e) => {
-            if (submissionStatus === 'submitting') {
+            if (submissionStatus === 'submitting' || isCreatingWorkout) {
               e.preventDefault();
               return;
             }
@@ -296,7 +309,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
             handleClose();
           }}
           onEscapeKeyDown={(e) => {
-            if (submissionStatus === 'submitting') {
+            if (submissionStatus === 'submitting' || isCreatingWorkout) {
               e.preventDefault();
               return;
             }
@@ -317,6 +330,14 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
                 {formSubmissionError}
               </div>
             )}
+            
+            {isCreatingWorkout && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-600 rounded-md flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Creating your workout, please wait...
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-sm font-medium mb-4">Quick Templates</h3>
@@ -326,7 +347,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate }: CreateWorkoutDialogProp
                 <WorkoutForm
                   form={form}
                   onSubmit={onSubmit}
-                  isSubmitting={isSubmitting}
+                  isSubmitting={isSubmitting || isCreatingWorkout}
                   totalDuration={totalDuration}
                   isAutosaving={isAutosaving}
                 />

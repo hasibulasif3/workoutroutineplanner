@@ -59,7 +59,12 @@ export function WorkoutForm({ form, onSubmit, isSubmitting, totalDuration, isAut
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
-            <TabsTrigger value="exercises">Exercises</TabsTrigger>
+            <TabsTrigger value="exercises">
+              Exercises 
+              {form.watch("exercises")?.length > 0 && 
+                <Badge variant="secondary" className="ml-2">{form.watch("exercises")?.length}</Badge>
+              }
+            </TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
 
@@ -188,6 +193,12 @@ export function WorkoutForm({ form, onSubmit, isSubmitting, totalDuration, isAut
 
             <ScrollArea className="h-[300px] rounded-md border p-4">
               <div className="space-y-2">
+                {form.watch("exercises")?.length === 0 && (
+                  <div className="text-center text-muted-foreground py-8">
+                    No exercises added. Click "Add Exercise" to start building your workout.
+                  </div>
+                )}
+                
                 {form.watch("exercises")?.map((exercise, index) => (
                   <Card key={index} className="p-4">
                     <CardContent className="p-0">
