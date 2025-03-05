@@ -28,9 +28,10 @@ import { supabase } from "@/integrations/supabase/client";
 interface ActionBarProps {
   workouts: WeeklyWorkouts;
   onWorkoutCreate: (workout: WorkoutInput) => Promise<void>;
+  isCreatingWorkout?: boolean; // Added the missing prop
 }
 
-export function ActionBar({ workouts, onWorkoutCreate }: ActionBarProps) {
+export function ActionBar({ workouts, onWorkoutCreate, isCreatingWorkout }: ActionBarProps) {
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);

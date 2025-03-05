@@ -1,3 +1,4 @@
+
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState, useEffect } from "react";
@@ -156,13 +157,24 @@ export function WeeklyBoard() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreatingWorkout, setIsCreatingWorkout] = useState(false);
 
   useEffect(() => {
-    const savedWorkouts = storageService.loadWorkouts();
-    if (savedWorkouts) {
-      setWorkouts(savedWorkouts);
-    }
-    setIsLoading(false);
+    const loadSavedWorkouts = async () => {
+      setIsLoading(true);
+      try {
+        const savedWorkouts = await storageService.loadWorkouts();
+        if (savedWorkouts) {
+          setWorkouts(savedWorkouts);
+        }
+      } catch (error) {
+        console.error("Error loading workouts:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadSavedWorkouts();
   }, []);
 
   useEffect(() => {
@@ -218,6 +230,7 @@ export function WeeklyBoard() {
   const handleWorkoutCreate = async (workoutData: WorkoutInput): Promise<void> => {
     return new Promise<void>((resolve, reject) => {
       try {
+        setIsCreatingWorkout(true);
         const newWorkout: Workout = {
           id: uuidv4(),
           last_modified: new Date().toISOString(),
@@ -249,6 +262,8 @@ export function WeeklyBoard() {
           description: "There was a problem adding your workout. Please try again.",
         });
         reject(error);
+      } finally {
+        setIsCreatingWorkout(false);
       }
     });
   };
@@ -288,7 +303,11 @@ export function WeeklyBoard() {
             </motion.p>
             
             <StatsBar workouts={workouts} />
-            <ActionBar workouts={workouts} onWorkoutCreate={handleWorkoutCreate} />
+            <ActionBar 
+              workouts={workouts} 
+              onWorkoutCreate={handleWorkoutCreate} 
+              isCreatingWorkout={isCreatingWorkout}
+            />
           </div>
 
           <DndContext 
