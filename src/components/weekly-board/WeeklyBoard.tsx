@@ -1,4 +1,3 @@
-
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -105,7 +104,6 @@ export function WeeklyBoard() {
     console.log('[WeeklyBoard] Workouts state updated:', workouts);
   }, [workouts]);
 
-  // Add transaction tracking
   const addTransaction = useCallback((transaction: Omit<TransactionStatus, 'timestamp'>) => {
     const fullTransaction = {
       ...transaction,
@@ -116,7 +114,6 @@ export function WeeklyBoard() {
     return fullTransaction;
   }, []);
 
-  // Update transaction status
   const updateTransaction = useCallback((id: string, updates: Partial<TransactionStatus>) => {
     console.log(`[WeeklyBoard] Updating transaction ${id}:`, updates);
     setTransactions(prev => 
@@ -267,7 +264,6 @@ export function WeeklyBoard() {
           [overDay]: [...prev[overDay], updatedWorkout]
         };
         
-        // Save the updated state to storage
         saveWorkoutsToStorage(newWorkouts, moveTransactionId)
           .then(success => {
             if (success) {
@@ -347,7 +343,6 @@ export function WeeklyBoard() {
       
       return new Promise<void>((resolve, reject) => {
         try {
-          // Atomic update of workouts state
           setWorkouts(prevWorkouts => {
             console.log("[WeeklyBoard] Updating workouts state with new workout");
             const updatedWorkouts = {
@@ -355,13 +350,11 @@ export function WeeklyBoard() {
               Monday: [...prevWorkouts.Monday, newWorkout]
             };
             
-            // Try to save to storage immediately after state update
             saveWorkoutsToStorage(updatedWorkouts, createTransactionId)
               .then(successful => {
                 if (successful) {
                   console.log("[WeeklyBoard] Workout saved to storage successfully");
                   
-                  // Verify the workout appears in the state
                   const exists = verifyWorkoutExists(newWorkout.id);
                   if (exists) {
                     toast.success("Workout added to Monday", {
