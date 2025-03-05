@@ -163,9 +163,11 @@ export function WeeklyBoard() {
     const loadSavedWorkouts = async () => {
       setIsLoading(true);
       try {
-        const savedWorkouts = await storageService.loadWorkouts();
-        if (savedWorkouts) {
-          setWorkouts(savedWorkouts);
+        const result = await storageService.loadWorkouts();
+        if (result.success && result.data) {
+          setWorkouts(result.data);
+        } else if (result.error) {
+          console.error("Error loading workouts:", result.error);
         }
       } catch (error) {
         console.error("Error loading workouts:", error);
