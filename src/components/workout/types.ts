@@ -1,6 +1,6 @@
 
 import { z } from "zod";
-import { Exercise, WorkoutDifficulty, WorkoutType } from "@/types/workout";
+import { Exercise as ExerciseType, WorkoutDifficulty, WorkoutType } from "@/types/workout";
 
 export const exerciseSchema = z.object({
   name: z.string().min(1, "Exercise name is required"),
@@ -30,3 +30,62 @@ export const workoutSchema = z.object({
 export type WorkoutFormType = z.infer<typeof workoutSchema>;
 
 export type Exercise = z.infer<typeof exerciseSchema>;
+
+// List of equipment options for exercises
+export const equipmentList = [
+  "Dumbbells",
+  "Barbell",
+  "Kettlebell",
+  "Resistance Bands",
+  "Bodyweight",
+  "Machine",
+  "Cable",
+  "Bench",
+  "Pull-up Bar",
+  "Box",
+  "Medicine Ball",
+  "TRX",
+  "Yoga Mat",
+  "Foam Roller",
+  "Smith Machine",
+  "Battle Ropes",
+  "Exercise Ball"
+];
+
+// List of muscle groups for targeting exercises
+export const muscleGroups = [
+  "Chest",
+  "Back",
+  "Shoulders",
+  "Biceps",
+  "Triceps",
+  "Forearms",
+  "Quadriceps",
+  "Hamstrings",
+  "Calves",
+  "Glutes",
+  "Abs",
+  "Core",
+  "Full Body",
+  "Upper Body",
+  "Lower Body"
+];
+
+// Template type for workout templates
+export interface WorkoutTemplate {
+  id: string;
+  title: string;
+  type: WorkoutType;
+  duration: string;
+  difficulty: WorkoutDifficulty;
+  category: string;
+  target: string;
+  description?: string;
+  exercises: Exercise[];
+  warmupDuration?: string;
+  cooldownDuration?: string;
+  restBetweenExercises?: string;
+  calories?: string;
+  notes?: string;
+  image?: string;
+}
