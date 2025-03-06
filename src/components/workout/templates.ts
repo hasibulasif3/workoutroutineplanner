@@ -2,12 +2,14 @@ import { WorkoutTemplate } from "./types";
 
 export const workoutTemplates: WorkoutTemplate[] = [
   {
+    id: "1",
     title: "HIIT Interval Training",
     type: "cardio",
     category: "High Intensity",
     duration: "30",
     difficulty: "advanced",
     calories: "400",
+    target: "Fat Loss",
     intensity: "high",
     spaceRequired: "moderate",
     equipment: ["Timer", "Mat"],
@@ -23,7 +25,8 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Start with shorter intervals",
       "Focus on form over speed",
       "Stay hydrated"
-    ]
+    ],
+    exercises: []
   },
   {
     title: "Upper Body Focus",

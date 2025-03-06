@@ -1,6 +1,9 @@
 
 import { z } from "zod";
-import { Exercise as ExerciseType, WorkoutDifficulty, WorkoutType } from "@/types/workout";
+import { WorkoutDifficulty, WorkoutType } from "@/types/workout";
+
+// Rename this to prevent conflict with the Exercise import
+export type ExerciseType = import("@/types/workout").Exercise;
 
 export const exerciseSchema = z.object({
   name: z.string().min(1, "Exercise name is required"),
@@ -88,4 +91,13 @@ export interface WorkoutTemplate {
   calories?: string;
   notes?: string;
   image?: string;
+  // Additional properties needed for templates
+  intensity?: string;
+  spaceRequired?: string;
+  equipment?: string[];
+  targetMuscles?: string[];
+  frequency?: string;
+  benefits?: string[];
+  tips?: string[];
+  alternatives?: string[];
 }
