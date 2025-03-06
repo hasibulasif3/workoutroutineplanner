@@ -29,7 +29,7 @@ const initialWorkouts: WeeklyWorkouts = {
 export function WeeklyBoard() {
   const [workouts, setWorkouts] = useState<WeeklyWorkouts>(initialWorkouts);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [dropSound] = useState(() => new Audio("/src/assets/drop-sound.mp3"));
+  const [dropSound] = useState(() => new Audio("/assets/drop-sound.mp3"));
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingWorkout, setIsCreatingWorkout] = useState(false);
   const [transactions, setTransactions] = useState<TransactionStatus[]>([]);
@@ -84,7 +84,6 @@ export function WeeklyBoard() {
           if (result.error) {
             updateTransaction(loadTransactionId, { 
               status: 'error', 
-              // Store the error directly without trying to access message
               error: result.error
             });
           } else {
@@ -120,8 +119,7 @@ export function WeeklyBoard() {
         if (transactionId) {
           updateTransaction(transactionId, { 
             status: 'error', 
-            // Store the error directly
-            error: error || 'Unknown error saving workouts'
+            error: error
           });
         }
         return false;
@@ -134,8 +132,7 @@ export function WeeklyBoard() {
       if (transactionId) {
         updateTransaction(transactionId, { 
           status: 'error', 
-          // Store the error directly
-          error: error instanceof Error ? error : String(error)
+          error: error
         });
       }
       return false;
@@ -222,7 +219,7 @@ export function WeeklyBoard() {
       console.error("[WeeklyBoard] Error in handleDragEnd:", error);
       updateTransaction(moveTransactionId, { 
         status: 'error', 
-        error: error instanceof Error ? error : String(error)
+        error: error
       });
       
       toast.error("Failed to move workout", {
@@ -336,7 +333,7 @@ export function WeeklyBoard() {
           console.error("[WeeklyBoard] Error in workout creation transaction:", error);
           updateTransaction(createTransactionId, {
             status: 'error',
-            error: error instanceof Error ? error : String(error)
+            error: error
           });
           setIsCreatingWorkout(false);
           reject(error);
@@ -346,7 +343,7 @@ export function WeeklyBoard() {
       console.error("[WeeklyBoard] Error in handleWorkoutCreate:", error);
       updateTransaction(createTransactionId, {
         status: 'error',
-        error: error instanceof Error ? error : String(error)
+        error: error
       });
       setIsCreatingWorkout(false);
       throw error;

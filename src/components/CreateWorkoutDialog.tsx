@@ -253,7 +253,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
       if (!isMountedRef.current) return;
       
       console.error("[CreateWorkoutDialog] Workout creation error:", error);
-      setFormSubmissionError(error instanceof Error ? error.message : "Failed to create workout. Please try again.");
+      setFormSubmissionError(error instanceof Error ? error.message : String(error));
       setSubmissionStatus('error');
       toast.error("Failed to create workout", {
         description: "There was a problem saving your workout. Please try again.",
