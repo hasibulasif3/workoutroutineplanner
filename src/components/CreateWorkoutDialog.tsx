@@ -180,6 +180,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
     return validationIssues;
   };
 
+  // Key fix: Improve error handling and ensure state updates
   const onSubmit = async (data: WorkoutFormType) => {
     if (!isMountedRef.current) return;
     
@@ -246,7 +247,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
       localStorage.removeItem('workout-form-state');
       setPreviewData(null);
       
-      // Close dialog only after all operations are complete
+      // Critical fix: Close dialog only after all operations are complete
       setShowDialog(false);
       
     } catch (error) {

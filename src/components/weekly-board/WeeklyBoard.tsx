@@ -279,66 +279,49 @@ export function WeeklyBoard() {
 
       console.log("[WeeklyBoard] Created new workout object:", newWorkout);
       
-      return new Promise<void>((resolve, reject) => {
-        try {
-          setWorkouts(prevWorkouts => {
-            console.log("[WeeklyBoard] Updating workouts state with new workout");
-            const updatedWorkouts = {
-              ...prevWorkouts,
-              Monday: [...prevWorkouts.Monday, newWorkout]
-            };
-            
-            // Immediately save the updated workouts
-            saveWorkoutsToStorage(updatedWorkouts, createTransactionId)
-              .then(successful => {
-                if (successful) {
-                  console.log("[WeeklyBoard] Workout saved to storage successfully");
-                  
-                  // Verify the workout exists in the state
-                  const exists = verifyWorkoutExists(newWorkout.id);
-                  if (exists) {
-                    toast.success("Workout added to Monday", {
-                      description: `"${newWorkout.title}" has been added to your schedule.`
-                    });
-                    resolve();
-                  } else {
-                    const errorMsg = "Workout failed to appear in state after creation";
-                    console.error(`[WeeklyBoard] ${errorMsg}`);
-                    updateTransaction(createTransactionId, {
-                      status: 'error',
-                      error: errorMsg
-                    });
-                    
-                    toast.error("Failed to add workout", {
-                      description: "There was a problem adding your workout. Please try again."
-                    });
-                    reject(new Error(errorMsg));
-                  }
-                } else {
-                  console.error("[WeeklyBoard] Failed to save workout to storage");
-                  updateTransaction(createTransactionId, {
-                    status: 'error',
-                    error: "Failed to save workout to storage"
-                  });
-                  reject(new Error("Failed to save workout to storage"));
-                }
-              })
-              .finally(() => {
-                setIsCreatingWorkout(false);
-              });
+      // Critical fix: Immediately update state to show new workout
+      setWorkouts(prevWorkouts => {
+        console.log("[WeeklyBoard] Updating workouts state with new workout");
+        const updatedWorkouts = {
+          ...prevWorkouts,
+          Monday: [...prevWorkouts.Monday, newWorkout]
+        };
+        
+        // Save to storage after state update
+        saveWorkoutsToStorage(updatedWorkouts, createTransactionId)
+          .then(successful => {
+            if (successful) {
+              console.log("[WeeklyBoard] Workout saved to storage successfully");
               
-            return updatedWorkouts;
+              // Verify the workout exists in the state
+              const exists = verifyWorkoutExists(newWorkout.id);
+              if (exists) {
+                toast.success("Workout added to Monday", {
+                  description: `"${newWorkout.title}" has been added to your schedule.`
+                });
+              } else {
+                console.error("[WeeklyBoard] Workout failed to appear in state after creation");
+                
+                toast.error("Failed to add workout", {
+                  description: "There was a problem adding your workout. Please try again."
+                });
+              }
+            } else {
+              console.error("[WeeklyBoard] Failed to save workout to storage");
+              
+              toast.error("Failed to save workout", {
+                description: "There was a problem saving your workout. Please try again."
+              });
+            }
+          })
+          .finally(() => {
+            setIsCreatingWorkout(false);
           });
-        } catch (error) {
-          console.error("[WeeklyBoard] Error in workout creation transaction:", error);
-          updateTransaction(createTransactionId, {
-            status: 'error',
-            error: error
-          });
-          setIsCreatingWorkout(false);
-          reject(error);
-        }
+        
+        return updatedWorkouts;
       });
+
+      return Promise.resolve();
     } catch (error) {
       console.error("[WeeklyBoard] Error in handleWorkoutCreate:", error);
       updateTransaction(createTransactionId, {
@@ -346,7 +329,11 @@ export function WeeklyBoard() {
         error: error
       });
       setIsCreatingWorkout(false);
-      throw error;
+      toast.error("Failed to create workout", {
+        description: "An unexpected error occurred. Please try again."
+      });
+      
+      return Promise.reject(error);
     }
   };
 

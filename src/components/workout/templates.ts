@@ -1,436 +1,440 @@
-import { WorkoutTemplate } from "./types";
+
+import { Exercise, WorkoutTemplate } from "./types";
+import { v4 as uuidv4 } from "uuid";
+
+// Default exercise sets for templates
+const strengthExercises: Exercise[] = [
+  {
+    name: "Push-ups",
+    sets: "3",
+    reps: "10",
+    restPeriod: "60",
+    equipment: ["Bodyweight"],
+    targetMuscles: ["Chest", "Shoulders", "Triceps"],
+    notes: "Keep body straight, lower until chest nearly touches ground"
+  },
+  {
+    name: "Squats",
+    sets: "3",
+    reps: "12",
+    restPeriod: "60",
+    equipment: ["Bodyweight"],
+    targetMuscles: ["Quadriceps", "Hamstrings", "Glutes"],
+    notes: "Keep weight in heels, maintain neutral spine"
+  },
+  {
+    name: "Dumbbell Rows",
+    sets: "3",
+    reps: "10",
+    restPeriod: "60",
+    equipment: ["Dumbbells"],
+    targetMuscles: ["Back", "Biceps"],
+    notes: "Keep back flat, pull dumbbell to hip"
+  }
+];
+
+const cardioExercises: Exercise[] = [
+  {
+    name: "Jumping Jacks",
+    sets: "3",
+    reps: "30",
+    restPeriod: "30",
+    equipment: ["Bodyweight"],
+    targetMuscles: ["Full Body"],
+    notes: "Maintain rhythm, keep core engaged"
+  },
+  {
+    name: "High Knees",
+    sets: "3",
+    reps: "40",
+    restPeriod: "30",
+    equipment: ["Bodyweight"],
+    targetMuscles: ["Core", "Quadriceps"],
+    notes: "Bring knees up to hip level, maintain quick pace"
+  },
+  {
+    name: "Mountain Climbers",
+    sets: "3",
+    reps: "30",
+    restPeriod: "30",
+    equipment: ["Bodyweight"],
+    targetMuscles: ["Core", "Shoulders"],
+    notes: "Keep hips down, alternate knees to chest quickly"
+  }
+];
+
+const flexibilityExercises: Exercise[] = [
+  {
+    name: "Hamstring Stretch",
+    sets: "3",
+    reps: "1",
+    restPeriod: "0",
+    equipment: ["Bodyweight", "Yoga Mat"],
+    targetMuscles: ["Hamstrings"],
+    notes: "Hold for 30 seconds, no bouncing"
+  },
+  {
+    name: "Cobra Pose",
+    sets: "3",
+    reps: "1",
+    restPeriod: "0",
+    equipment: ["Yoga Mat"],
+    targetMuscles: ["Back", "Abs"],
+    notes: "Lift chest while keeping hips on ground, hold for 20 seconds"
+  },
+  {
+    name: "Butterfly Stretch",
+    sets: "3",
+    reps: "1",
+    restPeriod: "0",
+    equipment: ["Yoga Mat"],
+    targetMuscles: ["Hip Flexors", "Glutes"],
+    notes: "Press knees down gently, hold for 30 seconds"
+  }
+];
+
+// Helper function to create template IDs
+const createTemplateId = () => uuidv4();
 
 export const workoutTemplates: WorkoutTemplate[] = [
   {
-    title: "HIIT Interval Training",
-    type: "cardio",
-    category: "High Intensity",
-    duration: "30",
-    difficulty: "advanced",
-    calories: "400",
-    intensity: "high",
-    spaceRequired: "moderate",
-    equipment: ["Timer", "Mat"],
-    targetMuscles: ["Full Body"],
-    frequency: "2-3 times per week",
-    description: "High-intensity interval training alternating between intense bursts of activity and fixed periods of less-intense activity or rest.",
-    benefits: [
-      "Improves cardiovascular fitness",
-      "Increases metabolism",
-      "Burns calories efficiently"
-    ],
-    tips: [
-      "Start with shorter intervals",
-      "Focus on form over speed",
-      "Stay hydrated"
-    ]
-  },
-  {
-    title: "Upper Body Focus",
+    id: createTemplateId(),
+    title: "Beginner Strength Training",
     type: "strength",
-    category: "Strength Training",
-    duration: "45",
-    difficulty: "intermediate",
-    calories: "320",
-    intensity: "medium",
-    spaceRequired: "minimal",
-    equipment: ["Dumbbells", "Resistance Bands"],
-    targetMuscles: ["Chest", "Shoulders", "Arms", "Upper Back"],
-    frequency: "2 times per week",
-    description: "Comprehensive upper body workout targeting all major muscle groups.",
-    benefits: [
-      "Builds upper body strength",
-      "Improves posture",
-      "Enhances functional fitness"
-    ],
-    alternatives: [
-      "Bodyweight exercises",
-      "Resistance band only",
-      "Machine alternatives"
-    ]
+    category: "Beginner Friendly",
+    target: "Full Body",
+    duration: "30",
+    difficulty: "beginner",
+    calories: "250",
+    intensity: "Low",
+    spaceRequired: "Small",
+    equipment: ["Dumbbells", "Bodyweight"],
+    targetMuscles: ["Chest", "Back", "Legs", "Core"],
+    frequency: "2-3 times per week",
+    description: "A simple strength routine perfect for beginners focusing on the main muscle groups.",
+    benefits: ["Builds basic strength", "Improves posture", "Increases metabolism"],
+    tips: ["Focus on form over weight", "Rest 1-2 days between sessions", "Increase weight gradually"],
+    exercises: strengthExercises,
+    notes: "Great starter workout for building strength foundations."
   },
   {
-    title: "Cycling Session",
+    id: createTemplateId(),
+    title: "HIIT Cardio Blast",
     type: "cardio",
-    category: "Cardio Training",
-    duration: "45",
-    difficulty: "intermediate",
-    calories: "350",
-    intensity: "medium",
-    spaceRequired: "minimal",
-    equipment: ["Bicycle"],
-    targetMuscles: ["Legs", "Core"],
-    frequency: "3 times per week",
-    description: "A steady cycling session to improve endurance and cardiovascular health.",
-    benefits: [
-      "Enhances leg strength",
-      "Improves cardiovascular fitness",
-      "Burns calories effectively"
-    ],
-    tips: [
-      "Maintain a steady pace",
-      "Adjust the seat height for comfort",
-      "Stay hydrated"
-    ]
-  },
-  {
-    title: "Swimming Workout",
-    type: "cardio",
-    category: "Cardio Training",
-    duration: "40",
+    category: "Fat Burning",
+    target: "Cardiovascular",
+    duration: "20",
     difficulty: "intermediate",
     calories: "300",
-    intensity: "medium",
-    spaceRequired: "spacious",
-    equipment: ["Swimsuit", "Goggles"],
-    targetMuscles: ["Full Body"],
+    intensity: "High",
+    spaceRequired: "Small",
+    equipment: ["Bodyweight"],
+    targetMuscles: ["Heart", "Lungs", "Full Body"],
     frequency: "2-3 times per week",
-    description: "A full-body workout that improves strength and endurance through swimming.",
-    benefits: [
-      "Low-impact exercise",
-      "Improves flexibility",
-      "Builds endurance"
-    ],
-    tips: [
-      "Focus on your breathing technique",
-      "Vary your strokes for a full workout",
-      "Warm up before swimming"
-    ]
+    description: "High-intensity interval training to maximize calorie burn in minimal time.",
+    benefits: ["Burns fat efficiently", "Improves cardiovascular health", "Boosts metabolism after workout"],
+    tips: ["Push hard during work intervals", "Take full rest periods", "Modify exercises as needed"],
+    exercises: cardioExercises,
+    notes: "This workout is great for burning calories in a short amount of time."
   },
   {
-    title: "Jump Rope Circuit",
+    id: createTemplateId(),
+    title: "Tabata Training",
     type: "cardio",
-    category: "Cardio Training",
+    category: "Fat Burning",
+    target: "Cardiovascular",
     duration: "20",
-    difficulty: "beginner",
+    difficulty: "intermediate",
     calories: "250",
-    intensity: "low",
-    spaceRequired: "minimal",
-    equipment: ["Jump Rope"],
-    targetMuscles: ["Legs", "Core"],
-    frequency: "3-4 times per week",
-    description: "A quick and effective cardio workout using a jump rope.",
-    benefits: [
-      "Improves coordination",
-      "Burns calories quickly",
-      "Enhances cardiovascular fitness"
-    ],
-    tips: [
-      "Start with short intervals",
-      "Focus on your form",
-      "Use a proper jump rope"
-    ]
+    intensity: "Very High",
+    spaceRequired: "Small",
+    equipment: ["Bodyweight", "Timer"],
+    targetMuscles: ["Full Body"],
+    frequency: "2 times per week",
+    description: "20 seconds of all-out effort followed by 10 seconds of rest, repeated 8 times per exercise.",
+    benefits: ["Extremely time-efficient", "Improves both aerobic and anaerobic fitness", "Continues burning calories after workout"],
+    tips: ["Go all-out during work periods", "Keep strict timing", "Quality over quantity of reps"],
+    exercises: cardioExercises,
+    notes: "One of the most efficient workouts for improving conditioning."
   },
   {
-    title: "Stair Climbing",
+    id: createTemplateId(),
+    title: "Morning Energizer",
     type: "cardio",
-    category: "Cardio Training",
-    duration: "25",
-    difficulty: "intermediate",
-    calories: "280",
-    intensity: "medium",
-    spaceRequired: "minimal",
-    equipment: ["Stairs"],
-    targetMuscles: ["Legs", "Glutes"],
-    frequency: "2-3 times per week",
-    description: "A workout that utilizes stairs for an effective cardio session.",
-    benefits: [
-      "Strengthens lower body",
-      "Improves cardiovascular health",
-      "Burns calories efficiently"
-    ],
-    tips: [
-      "Maintain a steady pace",
-      "Use handrails if needed",
-      "Cool down after your workout"
-    ]
-  },
-  {
-    title: "Bodyweight Circuit",
-    type: "strength",
-    category: "Strength Training",
-    duration: "40",
-    difficulty: "beginner",
-    calories: "280",
-    intensity: "medium",
-    spaceRequired: "minimal",
-    equipment: ["None"],
-    targetMuscles: ["Full Body"],
-    frequency: "3 times per week",
-    description: "A circuit workout using bodyweight exercises to build strength.",
-    benefits: [
-      "Improves overall strength",
-      "Can be done anywhere",
-      "Enhances functional fitness"
-    ],
-    tips: [
-      "Focus on form over quantity",
-      "Incorporate rest periods",
-      "Gradually increase intensity"
-    ]
-  },
-  {
-    title: "Resistance Band Workout",
-    type: "strength",
-    category: "Strength Training",
-    duration: "35",
-    difficulty: "intermediate",
-    calories: "250",
-    intensity: "medium",
-    spaceRequired: "minimal",
-    equipment: ["Resistance Bands"],
-    targetMuscles: ["Full Body"],
-    frequency: "2-3 times per week",
-    description: "A workout using resistance bands to build strength and flexibility.",
-    benefits: [
-      "Versatile and portable",
-      "Targets multiple muscle groups",
-      "Improves flexibility"
-    ],
-    tips: [
-      "Choose the right resistance level",
-      "Focus on controlled movements",
-      "Incorporate a variety of exercises"
-    ]
-  },
-  {
-    title: "Dynamic Stretching",
-    type: "flexibility",
-    category: "Flexibility Training",
-    duration: "25",
+    category: "Energy Boosting",
+    target: "Full Body",
+    duration: "15",
     difficulty: "beginner",
     calories: "150",
-    intensity: "low",
-    spaceRequired: "minimal",
-    equipment: ["None"],
+    intensity: "Moderate",
+    spaceRequired: "Small",
+    equipment: ["Bodyweight"],
     targetMuscles: ["Full Body"],
     frequency: "Daily",
-    description: "A series of dynamic stretches to improve flexibility and mobility.",
-    benefits: [
-      "Prepares muscles for activity",
-      "Reduces risk of injury",
-      "Improves range of motion"
-    ],
-    tips: [
-      "Incorporate into warm-up routines",
-      "Focus on major muscle groups",
-      "Avoid bouncing movements"
-    ]
+    description: "A quick morning routine to get your blood flowing and energy levels up for the day.",
+    benefits: ["Kickstarts metabolism", "Improves mood", "Increases alertness"],
+    tips: ["Do it right after waking up", "No equipment needed", "Can be done in pajamas!"],
+    exercises: cardioExercises,
+    notes: "Perfect for starting your day with a boost of energy."
   },
   {
-    title: "Pilates Flow",
-    type: "flexibility",
-    category: "Flexibility Training",
-    duration: "45",
+    id: createTemplateId(),
+    title: "Lunch Break Express",
+    type: "cardio",
+    category: "Quick Workouts",
+    target: "Cardiovascular",
+    duration: "15",
     difficulty: "intermediate",
     calories: "200",
-    intensity: "medium",
-    spaceRequired: "spacious",
-    equipment: ["Mat"],
-    targetMuscles: ["Core", "Legs"],
-    frequency: "2-3 times per week",
-    description: "A Pilates workout focusing on core strength and flexibility.",
-    benefits: [
-      "Improves core strength",
-      "Enhances flexibility",
-      "Promotes body awareness"
-    ],
-    tips: [
-      "Focus on controlled movements",
-      "Breathe deeply throughout",
-      "Maintain proper alignment"
-    ]
-  },
-  {
-    title: "Mobility Work",
-    type: "flexibility",
-    category: "Flexibility Training",
-    duration: "30",
-    difficulty: "beginner",
-    calories: "180",
-    intensity: "low",
-    spaceRequired: "minimal",
-    equipment: ["None"],
+    intensity: "Moderate to High",
+    spaceRequired: "Small",
+    equipment: ["Bodyweight"],
     targetMuscles: ["Full Body"],
-    frequency: "Daily",
-    description: "A series of mobility exercises to improve joint health and flexibility.",
-    benefits: [
-      "Enhances joint mobility",
-      "Reduces stiffness",
-      "Improves overall movement quality"
-    ],
-    tips: [
-      "Incorporate into daily routines",
-      "Focus on areas of tightness",
-      "Use slow and controlled movements"
-    ]
+    frequency: "3-5 times per week",
+    description: "Fast-paced workout that fits perfectly into a busy lunch break.",
+    benefits: ["Beats afternoon slump", "Fits into busy schedule", "No shower required if modified"],
+    tips: ["Have a light lunch after", "Keep a change of clothes at work", "Focus on no-sweat options if needed"],
+    exercises: cardioExercises,
+    notes: "Great for busy professionals who need a midday energy boost."
   },
   {
-    title: "Recovery Session",
-    type: "flexibility",
-    category: "Flexibility Training",
-    duration: "40",
-    difficulty: "beginner",
-    calories: "160",
-    intensity: "low",
-    spaceRequired: "minimal",
-    equipment: ["None"],
-    targetMuscles: ["Full Body"],
-    frequency: "As needed",
-    description: "A gentle session focused on recovery and relaxation.",
-    benefits: [
-      "Promotes relaxation",
-      "Reduces muscle soreness",
-      "Improves flexibility"
-    ],
-    tips: [
-      "Incorporate deep breathing",
-      "Focus on areas of tension",
-      "Use gentle stretches"
-    ]
-  },
-  {
-    title: "Balance Training",
-    type: "flexibility",
-    category: "Flexibility Training",
-    duration: "35",
-    difficulty: "intermediate",
-    calories: "190",
-    intensity: "medium",
-    spaceRequired: "minimal",
-    equipment: ["None"],
-    targetMuscles: ["Legs", "Core"],
-    frequency: "2 times per week",
-    description: "Exercises focused on improving balance and stability.",
-    benefits: [
-      "Enhances coordination",
-      "Improves core strength",
-      "Reduces risk of falls"
-    ],
-    tips: [
-      "Incorporate into daily routines",
-      "Use a stable surface for support",
-      "Gradually increase difficulty"
-    ]
-  },
-  {
-    title: "High-Intensity Cardio",
-    type: "cardio",
-    category: "High Intensity",
-    duration: "35",
-    difficulty: "advanced",
-    calories: "450",
-    intensity: "high",
-    spaceRequired: "minimal",
-    equipment: ["None"],
-    targetMuscles: ["Full Body"],
-    frequency: "2-3 times per week",
-    description: "A high-intensity cardio workout to boost endurance and burn calories.",
-    benefits: [
-      "Improves cardiovascular fitness",
-      "Burns calories quickly",
-      "Enhances stamina"
-    ],
-    tips: [
-      "Incorporate intervals for intensity",
-      "Stay hydrated",
-      "Cool down after workouts"
-    ]
-  },
-  {
-    title: "Endurance Building",
-    type: "cardio",
-    category: "Endurance Training",
-    duration: "60",
-    difficulty: "advanced",
-    calories: "500",
-    intensity: "high",
-    spaceRequired: "spacious",
-    equipment: ["None"],
-    targetMuscles: ["Full Body"],
-    frequency: "3-4 times per week",
-    description: "A workout designed to build endurance through sustained activity.",
-    benefits: [
-      "Enhances cardiovascular endurance",
-      "Improves overall fitness",
-      "Burns calories effectively"
-    ],
-    tips: [
-      "Maintain a steady pace",
-      "Incorporate rest periods",
-      "Gradually increase duration"
-    ]
-  },
-  {
-    title: "Weight Loss Focus",
+    id: createTemplateId(),
+    title: "Bodyweight Basics",
     type: "strength",
-    category: "Weight Loss",
-    duration: "45",
-    difficulty: "intermediate",
-    calories: "400",
-    intensity: "medium",
-    spaceRequired: "minimal",
-    equipment: ["Dumbbells"],
-    targetMuscles: ["Full Body"],
+    category: "No Equipment",
+    target: "Full Body",
+    duration: "25",
+    difficulty: "beginner",
+    calories: "200",
+    intensity: "Low to Moderate",
+    spaceRequired: "Small",
+    equipment: ["Bodyweight"],
+    targetMuscles: ["Chest", "Back", "Legs", "Core"],
     frequency: "3 times per week",
-    description: "A strength training workout focused on weight loss and toning.",
-    benefits: [
-      "Burns calories",
-      "Builds lean muscle",
-      "Improves metabolism"
-    ],
-    tips: [
-      "Incorporate compound movements",
-      "Focus on form",
-      "Stay consistent"
-    ]
+    description: "Build strength using just your bodyweight with these fundamental exercises.",
+    benefits: ["No equipment needed", "Can be done anywhere", "Builds functional strength"],
+    tips: ["Focus on form", "Increase reps as you get stronger", "Add variations to increase difficulty"],
+    exercises: strengthExercises,
+    notes: "The perfect routine for when you have no access to gym equipment."
   },
   {
-    title: "Muscle Gain",
+    id: createTemplateId(),
+    title: "Dumbbell Full Body",
     type: "strength",
-    category: "Strength Training",
-    duration: "50",
-    difficulty: "advanced",
+    category: "Strength Building",
+    target: "Full Body",
+    duration: "40",
+    difficulty: "intermediate",
     calories: "350",
-    intensity: "high",
-    spaceRequired: "minimal",
-    equipment: ["Weights"],
-    targetMuscles: ["Full Body"],
-    frequency: "3-4 times per week",
-    description: "A workout designed to build muscle mass and strength.",
-    benefits: [
-      "Increases muscle size",
-      "Improves strength",
-      "Enhances overall fitness"
-    ],
-    tips: [
-      "Focus on progressive overload",
-      "Incorporate rest days",
-      "Stay hydrated"
-    ]
+    intensity: "Moderate",
+    spaceRequired: "Small",
+    equipment: ["Dumbbells", "Bench"],
+    targetMuscles: ["Chest", "Back", "Shoulders", "Arms", "Legs"],
+    frequency: "3 times per week",
+    description: "Complete strength workout using just a pair of dumbbells to target all major muscle groups.",
+    benefits: ["Minimal equipment required", "Balanced muscle development", "Improved functional strength"],
+    tips: ["Choose appropriate weight", "Rest 60-90 seconds between sets", "Increase weight gradually"],
+    exercises: strengthExercises,
+    notes: "Effective full-body strength training with minimal equipment."
   },
   {
-    title: "Active Recovery",
+    id: createTemplateId(),
+    title: "Basic Stretching Routine",
     type: "flexibility",
     category: "Recovery",
-    duration: "30",
+    target: "Full Body",
+    duration: "15",
     difficulty: "beginner",
-    calories: "150",
-    intensity: "low",
-    spaceRequired: "minimal",
-    equipment: ["None"],
+    calories: "50",
+    intensity: "Low",
+    spaceRequired: "Small",
+    equipment: ["Yoga Mat"],
     targetMuscles: ["Full Body"],
-    frequency: "As needed",
-    description: "A gentle session focused on recovery and mobility.",
-    benefits: [
-      "Promotes recovery",
-      "Reduces muscle soreness",
-      "Improves flexibility"
-    ],
-    tips: [
-      "Incorporate light movements",
-      "Focus on breathing",
-      "Stay relaxed"
-    ]
+    frequency: "Daily",
+    description: "Simple stretching routine to improve flexibility and reduce muscle tension.",
+    benefits: ["Reduces muscle soreness", "Improves range of motion", "Helps prevent injuries"],
+    tips: ["Hold each stretch 20-30 seconds", "Breathe deeply", "No bouncing"],
+    exercises: flexibilityExercises,
+    notes: "Great for post-workout recovery or as a standalone session."
   },
+  {
+    id: createTemplateId(),
+    title: "Yoga Flow",
+    type: "flexibility",
+    category: "Mind-Body",
+    target: "Full Body",
+    duration: "30",
+    difficulty: "intermediate",
+    calories: "150",
+    intensity: "Low to Moderate",
+    spaceRequired: "Medium",
+    equipment: ["Yoga Mat"],
+    targetMuscles: ["Core", "Back", "Legs", "Arms"],
+    frequency: "2-4 times per week",
+    description: "Flowing yoga sequence combining strength, flexibility, and mindfulness.",
+    benefits: ["Improves flexibility", "Reduces stress", "Enhances balance"],
+    tips: ["Focus on breath", "Move slowly between poses", "Modify poses as needed"],
+    exercises: flexibilityExercises,
+    notes: "Great for improving both mental and physical wellbeing."
+  },
+  {
+    id: createTemplateId(),
+    title: "Morning Stretch",
+    type: "flexibility",
+    category: "Energy Boosting",
+    target: "Full Body",
+    duration: "10",
+    difficulty: "beginner",
+    calories: "40",
+    intensity: "Low",
+    spaceRequired: "Small",
+    equipment: ["Yoga Mat"],
+    targetMuscles: ["Back", "Shoulders", "Hamstrings"],
+    frequency: "Daily",
+    description: "Quick morning stretching routine to wake up your body and prepare for the day.",
+    benefits: ["Increases blood flow", "Reduces morning stiffness", "Improves alertness"],
+    tips: ["Do right after waking up", "Focus on gentle movements", "Breathe deeply"],
+    exercises: flexibilityExercises,
+    notes: "A gentle way to start your day and prepare your body for activity."
+  },
+  {
+    id: createTemplateId(),
+    title: "Office Break Stretches",
+    type: "flexibility",
+    category: "Workplace",
+    target: "Upper Body",
+    duration: "5",
+    difficulty: "beginner",
+    calories: "20",
+    intensity: "Very Low",
+    spaceRequired: "Very Small",
+    equipment: ["Chair"],
+    targetMuscles: ["Neck", "Shoulders", "Wrists", "Back"],
+    frequency: "Multiple times daily",
+    description: "Quick desk-friendly stretches to relieve tension from sitting.",
+    benefits: ["Reduces workplace strain", "Improves posture", "Prevents stiffness"],
+    tips: ["Can be done right at your desk", "Set reminders to stretch hourly", "Focus on problem areas"],
+    exercises: flexibilityExercises,
+    notes: "Perfect for office workers to prevent pain from prolonged sitting."
+  },
+  {
+    id: createTemplateId(),
+    title: "Evening Relaxation",
+    type: "flexibility",
+    category: "Recovery",
+    target: "Full Body",
+    duration: "20",
+    difficulty: "intermediate",
+    calories: "80",
+    intensity: "Low",
+    spaceRequired: "Medium",
+    equipment: ["Yoga Mat", "Pillow"],
+    targetMuscles: ["Full Body"],
+    frequency: "Daily",
+    description: "Gentle stretching routine to release tension and prepare your body for sleep.",
+    benefits: ["Improves sleep quality", "Reduces stress", "Releases daily tension"],
+    tips: ["Dim lights while performing", "Focus on deep breathing", "Hold stretches longer"],
+    exercises: flexibilityExercises,
+    notes: "Helps transition your body from activity to rest for better sleep."
+  },
+  {
+    id: createTemplateId(),
+    title: "Sprint Intervals",
+    type: "cardio",
+    category: "Performance",
+    target: "Lower Body",
+    duration: "25",
+    difficulty: "advanced",
+    calories: "400",
+    intensity: "Very High",
+    spaceRequired: "Large",
+    equipment: ["Timer", "Track or Open Space"],
+    targetMuscles: ["Legs", "Glutes", "Core"],
+    frequency: "1-2 times per week",
+    description: "High-intensity sprint training to build speed, power and cardiovascular fitness.",
+    benefits: ["Increases explosive power", "Burns fat efficiently", "Improves running economy"],
+    tips: ["Warm up thoroughly", "Start with fewer intervals", "Full recovery between sprints"],
+    exercises: cardioExercises,
+    notes: "Extremely effective for improving cardiovascular fitness and burning fat."
+  },
+  {
+    id: createTemplateId(),
+    title: "Stair Workout",
+    type: "cardio",
+    category: "Fat Burning",
+    target: "Lower Body",
+    duration: "30",
+    difficulty: "advanced",
+    calories: "350",
+    intensity: "High",
+    spaceRequired: "Staircase",
+    equipment: ["Stairs", "Timer"],
+    targetMuscles: ["Quads", "Glutes", "Calves", "Core"],
+    frequency: "2 times per week",
+    description: "Challenging stair-based cardio routine that builds leg strength and cardiovascular endurance.",
+    benefits: ["Builds leg strength", "Improves cardiovascular fitness", "Burns calories efficiently"],
+    tips: ["Watch your footing", "Use handrails for safety", "Start with shorter intervals"],
+    exercises: cardioExercises,
+    notes: "A challenging workout that requires minimal equipment but delivers maximum results."
+  },
+  {
+    id: createTemplateId(),
+    title: "Kettlebell Circuit",
+    type: "strength",
+    category: "Strength Building",
+    target: "Full Body",
+    duration: "35",
+    difficulty: "intermediate",
+    calories: "300",
+    intensity: "Moderate to High",
+    spaceRequired: "Medium",
+    equipment: ["Kettlebell"],
+    targetMuscles: ["Full Body"],
+    frequency: "3 times per week",
+    description: "Dynamic kettlebell exercises combined in a circuit to build strength and conditioning.",
+    benefits: ["Combines strength and cardio", "Improves core stability", "Builds functional strength"],
+    tips: ["Master technique before increasing weight", "Focus on hip hinge movements", "Keep core engaged"],
+    exercises: strengthExercises,
+    notes: "Effective for building overall strength, power, and endurance."
+  },
+  {
+    id: createTemplateId(),
+    title: "Power Lifting Basics",
+    type: "strength",
+    category: "Strength Building",
+    target: "Full Body",
+    duration: "60",
+    difficulty: "advanced",
+    calories: "450",
+    intensity: "High",
+    spaceRequired: "Gym",
+    equipment: ["Barbell", "Bench", "Squat Rack"],
+    targetMuscles: ["Chest", "Back", "Legs"],
+    frequency: "3-4 times per week",
+    description: "Foundational powerlifting routine focusing on the big three: squat, bench press, and deadlift.",
+    benefits: ["Maximizes strength gains", "Builds dense muscle", "Improves bone density"],
+    tips: ["Focus on perfect form", "Progressive overload", "Allow adequate recovery"],
+    exercises: strengthExercises,
+    notes: "Classic strength training approach for serious strength development."
+  },
+  {
+    id: createTemplateId(),
+    title: "Pilates Fundamentals",
+    type: "flexibility",
+    category: "Core Strength",
+    target: "Core",
+    duration: "40",
+    difficulty: "beginner",
+    calories: "200",
+    intensity: "Low to Moderate",
+    spaceRequired: "Medium",
+    equipment: ["Yoga Mat"],
+    targetMuscles: ["Core", "Back", "Glutes"],
+    frequency: "2-3 times per week",
+    description: "Introduction to core Pilates movements focusing on control, precision, and core stability.",
+    benefits: ["Improves core strength", "Enhances posture", "Develops body awareness"],
+    tips: ["Focus on controlled movements", "Engage core continuously", "Quality over quantity"],
+    exercises: flexibilityExercises,
+    notes: "Excellent for developing core strength and improving posture."
+  }
 ];
