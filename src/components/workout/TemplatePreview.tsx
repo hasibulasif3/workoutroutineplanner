@@ -1,8 +1,7 @@
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, Dumbbell, Target, Flame, Zap } from "lucide-react";
+import { Dumbbell, Clock, Flame, Target, Box, RefreshCcw } from "lucide-react";
 import { WorkoutTemplate } from "./types";
 
 interface TemplatePreviewProps {
@@ -11,108 +10,93 @@ interface TemplatePreviewProps {
 
 export function TemplatePreview({ template }: TemplatePreviewProps) {
   return (
-    <Card className="h-full overflow-hidden">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle>{template.title}</CardTitle>
-            <CardDescription>{template.description}</CardDescription>
-          </div>
-          <Badge variant={template.difficulty === "beginner" ? "secondary" : template.difficulty === "intermediate" ? "default" : "destructive"}>
-            {template.difficulty}
+    <Card className="bg-background/50 backdrop-blur-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <span>{template.title}</span>
+          <Badge variant="outline" className="ml-auto">
+            {template.type}
           </Badge>
-        </div>
+        </CardTitle>
       </CardHeader>
-      <CardContent className="pb-4 pt-0">
-        <ScrollArea className="h-[300px] pr-4">
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-              <div className="flex items-center">
-                <Clock className="mr-1 h-4 w-4" />
-                {template.duration} min
-              </div>
-              <div className="flex items-center">
-                <Flame className="mr-1 h-4 w-4" />
-                {template.calories} cal
-              </div>
-              <div className="flex items-center">
-                <Zap className="mr-1 h-4 w-4" />
-                {template.intensity}
-              </div>
-              {template.frequency && (
-                <div className="flex items-center">
-                  <Target className="mr-1 h-4 w-4" />
-                  {template.frequency}
-                </div>
-              )}
-            </div>
-
-            {template.equipment && template.equipment.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium mb-1">Equipment</h4>
-                <div className="flex flex-wrap gap-1">
-                  {template.equipment.map((item) => (
-                    <Badge key={item} variant="outline" className="text-xs">
-                      {item}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {template.targetMuscles && template.targetMuscles.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium mb-1">Target Muscles</h4>
-                <div className="flex flex-wrap gap-1">
-                  {template.targetMuscles.map((muscle) => (
-                    <Badge key={muscle} variant="secondary" className="text-xs">
-                      {muscle}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {template.benefits && template.benefits.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium mb-1">Benefits</h4>
-                <ul className="text-sm space-y-1 list-disc pl-4">
-                  {template.benefits.map((benefit, i) => (
-                    <li key={i}>{benefit}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {template.tips && template.tips.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium mb-1">Tips</h4>
-                <ul className="text-sm space-y-1 list-disc pl-4">
-                  {template.tips.map((tip, i) => (
-                    <li key={i}>{tip}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {template.exercises && template.exercises.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium mb-1">Exercises</h4>
-                <ul className="space-y-2">
-                  {template.exercises.map((exercise, index) => (
-                    <li key={index} className="border rounded p-2 text-sm">
-                      <div className="font-medium">{exercise.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {exercise.sets} sets × {exercise.reps} reps
-                        {exercise.restPeriod ? ` • ${exercise.restPeriod}s rest` : ""}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-muted-foreground" />
+            <span>{template.duration} min</span>
           </div>
-        </ScrollArea>
+          <div className="flex items-center gap-2">
+            <Flame className="w-4 h-4 text-muted-foreground" />
+            <span>{template.calories} cal</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4 text-muted-foreground" />
+            <span className="capitalize">{template.difficulty}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <RefreshCcw className="w-4 h-4 text-muted-foreground" />
+            <span>{template.frequency}</span>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <h4 className="font-medium">Description</h4>
+          <p className="text-sm text-muted-foreground">{template.description}</p>
+        </div>
+
+        {template.equipment && (
+          <div className="space-y-2">
+            <h4 className="font-medium flex items-center gap-2">
+              <Box className="w-4 h-4" />
+              Equipment Needed
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {template.equipment.map((item) => (
+                <Badge key={item} variant="secondary">
+                  {item}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {template.targetMuscles && (
+          <div className="space-y-2">
+            <h4 className="font-medium flex items-center gap-2">
+              <Dumbbell className="w-4 h-4" />
+              Target Muscles
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {template.targetMuscles.map((muscle) => (
+                <Badge key={muscle} variant="outline">
+                  {muscle}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {template.benefits && (
+          <div className="space-y-2">
+            <h4 className="font-medium">Benefits</h4>
+            <ul className="text-sm text-muted-foreground list-disc pl-4 space-y-1">
+              {template.benefits.map((benefit) => (
+                <li key={benefit}>{benefit}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {template.tips && (
+          <div className="space-y-2">
+            <h4 className="font-medium">Tips</h4>
+            <ul className="text-sm text-muted-foreground list-disc pl-4 space-y-1">
+              {template.tips.map((tip) => (
+                <li key={tip}>{tip}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
