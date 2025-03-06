@@ -1,3 +1,4 @@
+
 import { WorkoutTemplate } from "./types";
 
 export const workoutTemplates: WorkoutTemplate[] = [
@@ -29,12 +30,14 @@ export const workoutTemplates: WorkoutTemplate[] = [
     exercises: []
   },
   {
+    id: "2",
     title: "Upper Body Focus",
     type: "strength",
     category: "Strength Training",
     duration: "45",
     difficulty: "intermediate",
     calories: "320",
+    target: "Strength",
     intensity: "medium",
     spaceRequired: "minimal",
     equipment: ["Dumbbells", "Resistance Bands"],
@@ -50,15 +53,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Bodyweight exercises",
       "Resistance band only",
       "Machine alternatives"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "3",
     title: "Cycling Session",
     type: "cardio",
     category: "Cardio Training",
     duration: "45",
     difficulty: "intermediate",
     calories: "350",
+    target: "Endurance",
     intensity: "medium",
     spaceRequired: "minimal",
     equipment: ["Bicycle"],
@@ -74,15 +80,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Maintain a steady pace",
       "Adjust the seat height for comfort",
       "Stay hydrated"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "4",
     title: "Swimming Workout",
     type: "cardio",
     category: "Cardio Training",
     duration: "40",
     difficulty: "intermediate",
     calories: "300",
+    target: "Full Body",
     intensity: "medium",
     spaceRequired: "spacious",
     equipment: ["Swimsuit", "Goggles"],
@@ -98,15 +107,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Focus on your breathing technique",
       "Vary your strokes for a full workout",
       "Warm up before swimming"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "5",
     title: "Jump Rope Circuit",
     type: "cardio",
     category: "Cardio Training",
     duration: "20",
     difficulty: "beginner",
     calories: "250",
+    target: "Cardio",
     intensity: "low",
     spaceRequired: "minimal",
     equipment: ["Jump Rope"],
@@ -122,15 +134,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Start with short intervals",
       "Focus on your form",
       "Use a proper jump rope"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "6",
     title: "Stair Climbing",
     type: "cardio",
     category: "Cardio Training",
     duration: "25",
     difficulty: "intermediate",
     calories: "280",
+    target: "Lower Body",
     intensity: "medium",
     spaceRequired: "minimal",
     equipment: ["Stairs"],
@@ -146,15 +161,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Maintain a steady pace",
       "Use handrails if needed",
       "Cool down after your workout"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "7",
     title: "Bodyweight Circuit",
     type: "strength",
     category: "Strength Training",
     duration: "40",
     difficulty: "beginner",
     calories: "280",
+    target: "Full Body",
     intensity: "medium",
     spaceRequired: "minimal",
     equipment: ["None"],
@@ -170,15 +188,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Focus on form over quantity",
       "Incorporate rest periods",
       "Gradually increase intensity"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "8",
     title: "Resistance Band Workout",
     type: "strength",
     category: "Strength Training",
     duration: "35",
     difficulty: "intermediate",
     calories: "250",
+    target: "Toning",
     intensity: "medium",
     spaceRequired: "minimal",
     equipment: ["Resistance Bands"],
@@ -194,15 +215,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Choose the right resistance level",
       "Focus on controlled movements",
       "Incorporate a variety of exercises"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "9",
     title: "Dynamic Stretching",
     type: "flexibility",
     category: "Flexibility Training",
     duration: "25",
     difficulty: "beginner",
     calories: "150",
+    target: "Mobility",
     intensity: "low",
     spaceRequired: "minimal",
     equipment: ["None"],
@@ -218,15 +242,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Incorporate into warm-up routines",
       "Focus on major muscle groups",
       "Avoid bouncing movements"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "10",
     title: "Pilates Flow",
     type: "flexibility",
     category: "Flexibility Training",
     duration: "45",
     difficulty: "intermediate",
     calories: "200",
+    target: "Core",
     intensity: "medium",
     spaceRequired: "spacious",
     equipment: ["Mat"],
@@ -242,15 +269,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Focus on controlled movements",
       "Breathe deeply throughout",
       "Maintain proper alignment"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "11",
     title: "Mobility Work",
     type: "flexibility",
     category: "Flexibility Training",
     duration: "30",
     difficulty: "beginner",
     calories: "180",
+    target: "Joints",
     intensity: "low",
     spaceRequired: "minimal",
     equipment: ["None"],
@@ -266,15 +296,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Incorporate into daily routines",
       "Focus on areas of tightness",
       "Use slow and controlled movements"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "12",
     title: "Recovery Session",
     type: "flexibility",
     category: "Flexibility Training",
     duration: "40",
     difficulty: "beginner",
     calories: "160",
+    target: "Recovery",
     intensity: "low",
     spaceRequired: "minimal",
     equipment: ["None"],
@@ -290,15 +323,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Incorporate deep breathing",
       "Focus on areas of tension",
       "Use gentle stretches"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "13",
     title: "Balance Training",
     type: "flexibility",
     category: "Flexibility Training",
     duration: "35",
     difficulty: "intermediate",
     calories: "190",
+    target: "Balance",
     intensity: "medium",
     spaceRequired: "minimal",
     equipment: ["None"],
@@ -314,15 +350,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Incorporate into daily routines",
       "Use a stable surface for support",
       "Gradually increase difficulty"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "14",
     title: "High-Intensity Cardio",
     type: "cardio",
     category: "High Intensity",
     duration: "35",
     difficulty: "advanced",
     calories: "450",
+    target: "Calorie Burn",
     intensity: "high",
     spaceRequired: "minimal",
     equipment: ["None"],
@@ -338,15 +377,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Incorporate intervals for intensity",
       "Stay hydrated",
       "Cool down after workouts"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "15",
     title: "Endurance Building",
     type: "cardio",
     category: "Endurance Training",
     duration: "60",
     difficulty: "advanced",
     calories: "500",
+    target: "Endurance",
     intensity: "high",
     spaceRequired: "spacious",
     equipment: ["None"],
@@ -362,15 +404,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Maintain a steady pace",
       "Incorporate rest periods",
       "Gradually increase duration"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "16",
     title: "Weight Loss Focus",
     type: "strength",
     category: "Weight Loss",
     duration: "45",
     difficulty: "intermediate",
     calories: "400",
+    target: "Fat Loss",
     intensity: "medium",
     spaceRequired: "minimal",
     equipment: ["Dumbbells"],
@@ -386,15 +431,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Incorporate compound movements",
       "Focus on form",
       "Stay consistent"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "17",
     title: "Muscle Gain",
     type: "strength",
     category: "Strength Training",
     duration: "50",
     difficulty: "advanced",
     calories: "350",
+    target: "Hypertrophy",
     intensity: "high",
     spaceRequired: "minimal",
     equipment: ["Weights"],
@@ -410,15 +458,18 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Focus on progressive overload",
       "Incorporate rest days",
       "Stay hydrated"
-    ]
+    ],
+    exercises: []
   },
   {
+    id: "18",
     title: "Active Recovery",
     type: "flexibility",
     category: "Recovery",
     duration: "30",
     difficulty: "beginner",
     calories: "150",
+    target: "Recovery",
     intensity: "low",
     spaceRequired: "minimal",
     equipment: ["None"],
@@ -434,6 +485,7 @@ export const workoutTemplates: WorkoutTemplate[] = [
       "Incorporate light movements",
       "Focus on breathing",
       "Stay relaxed"
-    ]
+    ],
+    exercises: []
   },
 ];

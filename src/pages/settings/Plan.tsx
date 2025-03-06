@@ -12,10 +12,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 
 interface UsageType {
+  id: string;
+  user_id: string;
   downloads_count: number;
   sync_count: number;
   email_count: number;
   next_reset_date: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface SubscriptionPlan {
@@ -30,14 +34,19 @@ interface SubscriptionPlan {
     email_limit: number;
     priority_support?: boolean;
   };
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface UserSubscription {
   id: string;
-  status: string;
+  user_id: string;
   plan_id: string;
+  status: string;
   current_period_end: string;
   cancel_at_period_end: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export default function PlanSettings() {
@@ -64,7 +73,7 @@ export default function PlanSettings() {
           .single();
 
         if (usageError) throw usageError;
-        setUsage(usageData);
+        setUsage(usageData as UsageType);
 
         // Fetch subscription
         const { data: subscriptionData, error: subscriptionError } = await supabase
@@ -74,7 +83,7 @@ export default function PlanSettings() {
           .single();
 
         if (subscriptionError) throw subscriptionError;
-        setSubscription(subscriptionData);
+        setSubscription(subscriptionData as UserSubscription);
 
         // Fetch all plans
         const { data: plansData, error: plansError } = await supabase
@@ -83,12 +92,12 @@ export default function PlanSettings() {
           .order('price_monthly', { ascending: true });
 
         if (plansError) throw plansError;
-        setAvailablePlans(plansData);
+        setAvailablePlans(plansData as SubscriptionPlan[]);
 
         // Set current plan
         if (subscriptionData && plansData) {
           const plan = plansData.find(p => p.id === subscriptionData.plan_id);
-          if (plan) setCurrentPlan(plan);
+          if (plan) setCurrentPlan(plan as SubscriptionPlan);
         }
       } catch (err) {
         console.error('Error fetching plan data:', err);
@@ -126,7 +135,7 @@ export default function PlanSettings() {
         .single();
         
       if (fetchError) throw fetchError;
-      setSubscription(newSubscription);
+      setSubscription(newSubscription as UserSubscription);
       
       // Update current plan
       const newPlan = availablePlans.find(p => p.id === planId);
@@ -171,7 +180,7 @@ export default function PlanSettings() {
         .single();
         
       if (fetchError) throw fetchError;
-      setSubscription(updatedSubscription);
+      setSubscription(updatedSubscription as UserSubscription);
       
       toast({
         title: 'Subscription cancelled',

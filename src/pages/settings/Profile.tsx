@@ -41,7 +41,7 @@ export default function ProfileSettings() {
       description: profile?.description || '',
       location: profile?.location || '',
       website_url: profile?.website_url || '',
-      hide_avatar: false,
+      hide_avatar: profile?.hide_avatar || false,
     },
   });
 
@@ -60,6 +60,7 @@ export default function ProfileSettings() {
           description: data.description,
           location: data.location,
           website_url: data.website_url,
+          hide_avatar: data.hide_avatar,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);

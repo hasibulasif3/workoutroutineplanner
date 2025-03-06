@@ -52,16 +52,16 @@ export const Header = () => {
         <div className="flex items-center space-x-4">
           {user ? (
             <>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="hidden md:flex"
-                as={Link}
-                to="/"
-              >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Workout
-              </Button>
+              <Link to="/">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="hidden md:flex"
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Workout
+                </Button>
+              </Link>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -82,14 +82,14 @@ export const Header = () => {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/settings/profile">
+                  <DropdownMenuItem>
+                    <Link to="/settings/profile" className="flex items-center w-full">
                       <User className="mr-2 h-4 w-4" />
                       <span>Profile</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/settings/account">
+                  <DropdownMenuItem>
+                    <Link to="/settings/account" className="flex items-center w-full">
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Settings</span>
                     </Link>
