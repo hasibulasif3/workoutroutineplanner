@@ -84,6 +84,7 @@ export function WeeklyBoard() {
           if (result.error) {
             updateTransaction(loadTransactionId, { 
               status: 'error', 
+              // Store the error directly without trying to access message
               error: result.error
             });
           } else {
@@ -119,6 +120,7 @@ export function WeeklyBoard() {
         if (transactionId) {
           updateTransaction(transactionId, { 
             status: 'error', 
+            // Store the error directly
             error: error || 'Unknown error saving workouts'
           });
         }
@@ -132,6 +134,7 @@ export function WeeklyBoard() {
       if (transactionId) {
         updateTransaction(transactionId, { 
           status: 'error', 
+          // Store the error directly
           error: error instanceof Error ? error : String(error)
         });
       }

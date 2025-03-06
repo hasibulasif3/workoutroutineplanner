@@ -82,11 +82,13 @@ export interface TransactionStatus {
   status: 'pending' | 'success' | 'error';
   timestamp: Date;
   data?: any;
+  // Update the error type to match how it's being used - it can be a string or Error object
   error?: Error | string;
 }
 
 export interface StorageResult<T> {
   success: boolean;
   data?: T;
+  // Update the error type here too for consistency
   error?: Error | string;
 }

@@ -34,7 +34,7 @@ export function WeeklyBoard() {
     id: string;
     type: string;
     status: 'pending' | 'success' | 'error';
-    error?: string;
+    error?: string | Error;
   } | null>(null);
   
   const workoutsRef = useRef<WeeklyWorkouts>(initialWorkouts);
@@ -72,7 +72,8 @@ export function WeeklyBoard() {
               id: transactionId,
               type: 'load',
               status: 'error',
-              error: result.error.message
+              // Fix: Check if error is an Error object or a string
+              error: result.error
             });
           } else {
             setTransactionStatus({
@@ -88,7 +89,8 @@ export function WeeklyBoard() {
           id: transactionId,
           type: 'load',
           status: 'error',
-          error: error instanceof Error ? error.message : String(error)
+          // Fix: Store the error directly without trying to access message
+          error: error instanceof Error ? error : String(error)
         });
         
         toast.error("Failed to load your workouts", {
@@ -128,7 +130,8 @@ export function WeeklyBoard() {
           id: transactionId,
           type: 'save',
           status: 'error',
-          error: error?.message || 'Unknown error saving workouts'
+          // Fix: Store the error directly
+          error: error
         });
         return false;
       }
@@ -138,7 +141,8 @@ export function WeeklyBoard() {
         id: transactionId,
         type: 'save',
         status: 'error',
-        error: error instanceof Error ? error.message : String(error)
+        // Fix: Store the error directly
+        error: error instanceof Error ? error : String(error)
       });
       
       toast.error("Failed to save workout changes", {
