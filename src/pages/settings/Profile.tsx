@@ -1,98 +1,168 @@
-
-import { useState } from 'react';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Upload } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Check, AlertCircle, User } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from "sonner";
 
-const profileSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters').max(50, 'Username must be less than 50 characters').optional(),
-  full_name: z.string().max(100, 'Name must be less than 100 characters').optional(),
-  description: z.string().max(500, 'Description must be less than 500 characters').optional(),
-  location: z.string().max(100, 'Location must be less than 100 characters').optional(),
-  website_url: z.string().url('Please enter a valid URL').or(z.string().length(0)).optional(),
-  hide_avatar: z.boolean().default(false),
-});
-
-type ProfileFormValues = z.infer<typeof profileSchema>;
+// Define a proper interface for profile data
+interface ProfileType {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  description: string | null;
+  location: string | null;
+  website_url: string | null;
+  avatar_url: string | null;
+  hide_avatar: boolean;
+}
 
 export default function ProfileSettings() {
-  const { user, profile, refreshProfile } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
-
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      username: profile?.username || '',
-      full_name: profile?.full_name || '',
-      description: profile?.description || '',
-      location: profile?.location || '',
-      website_url: profile?.website_url || '',
-      hide_avatar: profile?.hide_avatar || false,
-    },
-  });
-
-  const onSubmit = async (data: ProfileFormValues) => {
-    if (!user) return;
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<ProfileType | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  
+  useEffect(() => {
+    async function loadProfile() {
+      if (!user) return;
+      
+      try {
+        setIsLoading(true);
+        const userId = user.id;
+        
+        // Then update the fetch call to properly type the response
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        
+        if (error) {
+          throw error;
+        }
+        
+        if (profileData) {
+          setProfile(profileData as ProfileType);
+          if (profileData.avatar_url) {
+            setAvatarPreview(profileData.avatar_url);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        toast.error('Failed to load profile');
+      } finally {
+        setIsLoading(false);
+      }
+    }
     
-    setIsLoading(true);
-    setError(null);
+    loadProfile();
+  }, [user]);
+  
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('Avatar image must be less than 2MB');
+        return;
+      }
+      
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+  
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user || !profile) return;
     
     try {
+      setIsSaving(true);
+      
+      // Upload avatar if changed
+      let avatarUrl = profile.avatar_url;
+      
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        
+        const { error: uploadError, data } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile, { upsert: true });
+        
+        if (uploadError) {
+          throw uploadError;
+        }
+        
+        if (data) {
+          const { data: urlData } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+          
+          avatarUrl = urlData.publicUrl;
+        }
+      }
+      
+      // Update profile
       const { error } = await supabase
         .from('profiles')
         .update({
-          username: data.username,
-          full_name: data.full_name,
-          description: data.description,
-          location: data.location,
-          website_url: data.website_url,
-          hide_avatar: data.hide_avatar,
-          updated_at: new Date().toISOString(),
+          username: profile.username,
+          full_name: profile.full_name,
+          description: profile.description,
+          location: profile.location,
+          website_url: profile.website_url,
+          avatar_url: avatarUrl,
+          hide_avatar: profile.hide_avatar
         })
         .eq('id', user.id);
-
+      
       if (error) {
-        if (error.code === '23505') {
-          setError('This username is already taken. Please choose another one.');
-          return;
-        }
         throw error;
       }
-
-      await refreshProfile();
       
-      toast({
-        title: 'Profile updated',
-        description: 'Your profile has been successfully updated.',
-      });
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      setError('Failed to update profile. Please try again.');
+      toast.success('Profile updated successfully');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
-
-  const getInitials = (name: string) => {
-    return name?.charAt(0)?.toUpperCase() || 'U';
-  };
-
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (!profile) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile</CardTitle>
+          <CardDescription>
+            Profile data could not be loaded. Please try again later.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+  
   return (
-    <div className="space-y-6">
+    <form onSubmit={handleProfileUpdate}>
       <Card>
         <CardHeader>
           <CardTitle>Profile</CardTitle>
@@ -100,154 +170,131 @@ export default function ProfileSettings() {
             Manage your public profile information
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          <div className="flex items-center mb-6">
-            <Avatar className="h-24 w-24 mr-6">
-              <AvatarImage src={profile?.avatar_url} />
-              <AvatarFallback className="text-2xl">
-                {profile?.full_name ? getInitials(profile.full_name) : <User />}
-              </AvatarFallback>
-            </Avatar>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <div>
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={avatarPreview || undefined} />
+                  <AvatarFallback>
+                    {profile.full_name?.charAt(0) || profile.username?.charAt(0) || user?.email?.charAt(0) || '?'}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="avatar" className="block">Profile Picture</Label>
+                <div className="flex items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" className="cursor-pointer" asChild>
+                    <label htmlFor="avatar" className="cursor-pointer">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload
+                      <input
+                        id="avatar"
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={handleAvatarChange}
+                      />
+                    </label>
+                  </Button>
+                  {avatarPreview && (
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setAvatarFile(null);
+                        setAvatarPreview(profile.avatar_url);
+                      }}
+                    >
+                      Reset
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Recommended: Square JPG or PNG, max 2MB
+                </p>
+              </div>
+            </div>
             
-            <div>
-              <h3 className="text-lg font-medium">{profile?.full_name || 'Set your name'}</h3>
-              <p className="text-sm text-muted-foreground">
-                {profile?.username ? `@${profile.username}` : 'Set your username'}
-              </p>
-              
-              <Button variant="outline" size="sm" className="mt-2">
-                Upload Image
-              </Button>
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="hide-avatar" 
+                checked={profile.hide_avatar}
+                onCheckedChange={(checked) => setProfile({...profile, hide_avatar: checked})}
+              />
+              <Label htmlFor="hide-avatar">Hide my profile picture from public</Label>
             </div>
           </div>
           
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input placeholder="username" {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormDescription>
-                      This is your public username that people will see.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input 
+                id="username" 
+                value={profile.username || ''} 
+                onChange={(e) => setProfile({...profile, username: e.target.value})}
+                placeholder="username"
               />
-              
-              <FormField
-                control={form.control}
-                name="full_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Your name" {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input 
+                id="fullName" 
+                value={profile.full_name || ''} 
+                onChange={(e) => setProfile({...profile, full_name: e.target.value})}
+                placeholder="Your full name"
               />
-              
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Tell us a bit about yourself" 
-                        className="resize-y"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea 
+              id="bio" 
+              value={profile.description || ''} 
+              onChange={(e) => setProfile({...profile, description: e.target.value})}
+              placeholder="Tell us about yourself"
+              className="min-h-[100px]"
+            />
+          </div>
+          
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input 
+                id="location" 
+                value={profile.location || ''} 
+                onChange={(e) => setProfile({...profile, location: e.target.value})}
+                placeholder="City, Country"
               />
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Location</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Your location" {...field} value={field.value || ''} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="website_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Website</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://your-website.com" {...field} value={field.value || ''} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="hide_avatar"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Hide profile picture</FormLabel>
-                      <FormDescription>
-                        Don't show your profile picture to other users
-                      </FormDescription>
-                    </div>
-                  </FormItem>
-                )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="website">Website</Label>
+              <Input 
+                id="website" 
+                type="url"
+                value={profile.website_url || ''} 
+                onChange={(e) => setProfile({...profile, website_url: e.target.value})}
+                placeholder="https://yourwebsite.com"
               />
-              
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Check className="mr-2 h-4 w-4" />
-                    Save Changes
-                  </>
-                )}
-              </Button>
-            </form>
-          </Form>
+            </div>
+          </div>
+          
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
-    </div>
+    </form>
   );
 }

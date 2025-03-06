@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,10 +15,17 @@ interface UsageType {
   user_id: string;
   downloads_count: number;
   sync_count: number;
-  email_count: number;
+  email_count: number; 
   next_reset_date: string;
-  created_at?: string;
-  updated_at?: string;
+}
+
+interface UserSubscription {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  status: string;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
 }
 
 interface SubscriptionPlan {
@@ -34,19 +40,6 @@ interface SubscriptionPlan {
     email_limit: number;
     priority_support?: boolean;
   };
-  created_at?: string;
-  updated_at?: string;
-}
-
-interface UserSubscription {
-  id: string;
-  user_id: string;
-  plan_id: string;
-  status: string;
-  current_period_end: string;
-  cancel_at_period_end: boolean;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export default function PlanSettings() {
@@ -65,36 +58,34 @@ export default function PlanSettings() {
 
     async function fetchData() {
       try {
-        // Fetch usage
         const { data: usageData, error: usageError } = await supabase
           .from('user_usage')
           .select('*')
           .eq('user_id', user.id)
           .single();
 
-        if (usageError) throw usageError;
-        setUsage(usageData as UsageType);
+        if (usageData) {
+          setUsage(usageData as UsageType);
+        }
 
-        // Fetch subscription
         const { data: subscriptionData, error: subscriptionError } = await supabase
           .from('user_subscriptions')
           .select('*')
           .eq('user_id', user.id)
           .single();
 
-        if (subscriptionError) throw subscriptionError;
-        setSubscription(subscriptionData as UserSubscription);
+        if (subscriptionData) {
+          setSubscription(subscriptionData as UserSubscription);
+        }
 
-        // Fetch all plans
-        const { data: plansData, error: plansError } = await supabase
+        const { data: plansData } = await supabase
           .from('subscription_plans')
-          .select('*')
-          .order('price_monthly', { ascending: true });
+          .select('*');
 
-        if (plansError) throw plansError;
-        setAvailablePlans(plansData as SubscriptionPlan[]);
+        if (plansData) {
+          setAvailablePlans(plansData as SubscriptionPlan[]);
+        }
 
-        // Set current plan
         if (subscriptionData && plansData) {
           const plan = plansData.find(p => p.id === subscriptionData.plan_id);
           if (plan) setCurrentPlan(plan as SubscriptionPlan);
@@ -113,8 +104,6 @@ export default function PlanSettings() {
     setLoading(true);
     
     try {
-      // In a real app, this would call a Stripe checkout session creation endpoint
-      // For now, we'll simulate upgrading the plan directly
       const { error } = await supabase
         .from('user_subscriptions')
         .update({
@@ -127,7 +116,6 @@ export default function PlanSettings() {
 
       if (error) throw error;
       
-      // Refresh subscription info
       const { data: newSubscription, error: fetchError } = await supabase
         .from('user_subscriptions')
         .select('*')
@@ -137,7 +125,6 @@ export default function PlanSettings() {
       if (fetchError) throw fetchError;
       setSubscription(newSubscription as UserSubscription);
       
-      // Update current plan
       const newPlan = availablePlans.find(p => p.id === planId);
       if (newPlan) setCurrentPlan(newPlan);
       
@@ -166,13 +153,12 @@ export default function PlanSettings() {
       const { error } = await supabase
         .from('user_subscriptions')
         .update({
-          cancel_at_period_end: true,
+          cancel_at_period_end: !subscription.cancel_at_period_end,
         })
         .eq('id', subscription.id);
 
       if (error) throw error;
       
-      // Refresh subscription info
       const { data: updatedSubscription, error: fetchError } = await supabase
         .from('user_subscriptions')
         .select('*')
