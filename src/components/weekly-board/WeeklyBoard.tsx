@@ -1,4 +1,3 @@
-
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -34,7 +33,6 @@ export function WeeklyBoard() {
   const [isCreatingWorkout, setIsCreatingWorkout] = useState(false);
   const [transactions, setTransactions] = useState<TransactionStatus[]>([]);
   
-  // Ref to track if component is mounted (prevents state updates after unmount)
   const workoutsRef = useRef<WeeklyWorkouts>(initialWorkouts);
 
   useEffect(() => {
@@ -280,25 +278,20 @@ export function WeeklyBoard() {
 
       console.log("[WeeklyBoard] Created new workout object:", newWorkout);
       
-      // CRITICAL FIX: Update state with the new workout and make sure we're replacing the entire state
       setWorkouts(prevWorkouts => {
         const updatedWorkouts = {
           ...prevWorkouts,
           Monday: [...prevWorkouts.Monday, newWorkout]
         };
         
-        // Schedule storage save after state update
         saveWorkoutsToStorage(updatedWorkouts, createTransactionId)
           .then(success => {
             if (success) {
-              // Fix for notification issue - ensure the toast is shown on successful creation
-              toast({
-                title: "Workout Added",
+              toast("Workout Added", {
                 description: `"${newWorkout.title}" has been added to Monday.`,
                 duration: 3000
               });
               
-              // Trigger haptic feedback if available
               if (window.navigator.vibrate) {
                 window.navigator.vibrate(100);
               }

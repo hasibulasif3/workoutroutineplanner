@@ -201,9 +201,8 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
     setFormSubmissionError(null);
     setSubmissionStatus('submitting');
     
-    toast({
-      title: "Creating workout...",
-      description: "Please wait while we create your workout.",
+    toast("Creating workout...", {
+      description: "Please wait while we create your workout."
     });
     
     try {
