@@ -261,6 +261,7 @@ export function WeeklyBoard() {
           description: "Please ensure all required fields are filled out."
         });
         
+        setIsCreatingWorkout(false);
         throw new Error(`Missing required fields: ${missingFields}`);
       }
       
@@ -279,7 +280,7 @@ export function WeeklyBoard() {
 
       console.log("[WeeklyBoard] Created new workout object:", newWorkout);
       
-      // The critical fix is here - we need to properly update state immediately
+      // CRITICAL FIX: Update state with the new workout and make sure we're replacing the entire state
       setWorkouts(prevWorkouts => {
         const updatedWorkouts = {
           ...prevWorkouts,
