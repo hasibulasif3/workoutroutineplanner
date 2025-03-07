@@ -94,7 +94,10 @@ export function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.profile?.avatar_url} alt={user.profile?.username || "User"} />
+                    <AvatarImage 
+                      src={user.profile?.avatar_url} 
+                      alt={user.profile?.username || "User"} 
+                    />
                     <AvatarFallback>{user.profile?.username?.charAt(0) || "U"}</AvatarFallback>
                   </Avatar>
                 </Button>

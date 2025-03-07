@@ -180,7 +180,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
     return validationIssues;
   };
 
-  // Key fix: Improve error handling and ensure state updates
+  // The critical fix is in this function - ensuring the workout is actually created
   const onSubmit = async (data: WorkoutFormType) => {
     if (!isMountedRef.current) return;
     
@@ -234,7 +234,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
       
       console.log("[CreateWorkoutDialog] Calling onWorkoutCreate with transformed data:", workoutData);
       
-      // Call the parent's workout creation function and wait for it to complete
+      // Call the parent's workout creation function and await for completion
       await onWorkoutCreate(workoutData);
       
       if (!isMountedRef.current) return;
@@ -247,7 +247,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
       localStorage.removeItem('workout-form-state');
       setPreviewData(null);
       
-      // Critical fix: Close dialog only after all operations are complete
+      // Close dialog only after all operations are complete
       setShowDialog(false);
       
     } catch (error) {

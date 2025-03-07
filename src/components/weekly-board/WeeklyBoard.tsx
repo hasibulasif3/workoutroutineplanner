@@ -274,53 +274,32 @@ export function WeeklyBoard() {
         difficulty: workoutData.difficulty || "beginner",
         calories: workoutData.calories || "0",
         notes: workoutData.notes || "",
-        exercises: Array.isArray(workoutData.exercises) ? [...workoutData.exercises] : []
+        exercises: workoutData.exercises || []
       };
 
       console.log("[WeeklyBoard] Created new workout object:", newWorkout);
       
-      // Critical fix: Immediately update state to show new workout
+      // The critical fix is here - we need to properly update state immediately
       setWorkouts(prevWorkouts => {
-        console.log("[WeeklyBoard] Updating workouts state with new workout");
         const updatedWorkouts = {
           ...prevWorkouts,
           Monday: [...prevWorkouts.Monday, newWorkout]
         };
         
-        // Save to storage after state update
+        // Schedule storage save after state update
         saveWorkoutsToStorage(updatedWorkouts, createTransactionId)
-          .then(successful => {
-            if (successful) {
-              console.log("[WeeklyBoard] Workout saved to storage successfully");
-              
-              // Verify the workout exists in the state
-              const exists = verifyWorkoutExists(newWorkout.id);
-              if (exists) {
-                toast.success("Workout added to Monday", {
-                  description: `"${newWorkout.title}" has been added to your schedule.`
-                });
-              } else {
-                console.error("[WeeklyBoard] Workout failed to appear in state after creation");
-                
-                toast.error("Failed to add workout", {
-                  description: "There was a problem adding your workout. Please try again."
-                });
-              }
-            } else {
-              console.error("[WeeklyBoard] Failed to save workout to storage");
-              
-              toast.error("Failed to save workout", {
-                description: "There was a problem saving your workout. Please try again."
+          .then(success => {
+            if (success) {
+              toast.success("Workout added to Monday", {
+                description: `"${newWorkout.title}" has been added to your schedule.`
               });
             }
-          })
-          .finally(() => {
-            setIsCreatingWorkout(false);
           });
         
         return updatedWorkouts;
       });
-
+      
+      setIsCreatingWorkout(false);
       return Promise.resolve();
     } catch (error) {
       console.error("[WeeklyBoard] Error in handleWorkoutCreate:", error);
