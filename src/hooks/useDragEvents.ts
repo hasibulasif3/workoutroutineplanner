@@ -118,7 +118,7 @@ export function useDragEvents({
       const addEventListenerWithCleanup = (
         target: EventTarget,
         type: string,
-        handler: any,
+        handler: EventListener,
         options?: AddEventListenerOptions
       ) => {
         target.addEventListener(type, handler, options);
@@ -129,20 +129,20 @@ export function useDragEvents({
 
       // Handle both mouse and touch events
       if ('touches' in e) {
-        addEventListenerWithCleanup(document, 'touchmove', handleMove, { 
+        addEventListenerWithCleanup(document, 'touchmove', handleMove as EventListener, { 
           passive: !preventDefault,
           capture: true 
         });
-        addEventListenerWithCleanup(document, 'touchend', cleanup);
-        addEventListenerWithCleanup(document, 'touchcancel', cleanup);
+        addEventListenerWithCleanup(document, 'touchend', cleanup as EventListener);
+        addEventListenerWithCleanup(document, 'touchcancel', cleanup as EventListener);
         
         // Prevent zoom gestures during drag
         if (preventDefault) {
-          const preventZoom = (e: TouchEvent) => {
-            if (isDraggingRef.current && e.touches.length > 1) {
+          const preventZoom = ((e: Event) => {
+            if (isDraggingRef.current && (e as TouchEvent).touches.length > 1) {
               e.preventDefault();
             }
-          };
+          }) as EventListener;
           
           addEventListenerWithCleanup(document, 'touchstart', preventZoom, { 
             passive: false 
@@ -153,10 +153,10 @@ export function useDragEvents({
           document.body.style.touchAction = 'none';
         }
       } else {
-        addEventListenerWithCleanup(document, 'mousemove', handleMove, {
+        addEventListenerWithCleanup(document, 'mousemove', handleMove as EventListener, {
           passive: !preventDefault
         });
-        addEventListenerWithCleanup(document, 'mouseup', cleanup);
+        addEventListenerWithCleanup(document, 'mouseup', cleanup as EventListener);
       }
 
       onDragStart?.(e);
@@ -189,23 +189,23 @@ export function useDragEvents({
         }, longPressThreshold);
         
         // Also add a touch move listener to cancel long press if moved too much
-        const cancelLongPressOnMove = (moveEvent: TouchEvent) => {
+        const cancelLongPressOnMove = ((moveEvent: Event) => {
           if (isLongPressRef.current) return; // Already triggered long press
           
-          const touch = moveEvent.touches[0];
+          const touch = (moveEvent as TouchEvent).touches[0];
           const deltaX = Math.abs(touch.clientX - startPosRef.current.x);
           const deltaY = Math.abs(touch.clientY - startPosRef.current.y);
           
           // Cancel long press if moved too much
           if (deltaX > threshold || deltaY > threshold) {
             window.clearTimeout(longPressTimeoutRef.current);
-            document.removeEventListener('touchmove', cancelLongPressOnMove);
+            document.removeEventListener('touchmove', cancelLongPressOnMove as EventListener);
           }
-        };
+        }) as EventListener;
         
         document.addEventListener('touchmove', cancelLongPressOnMove, { passive: true });
         eventCleanupRef.current.push(() => 
-          document.removeEventListener('touchmove', cancelLongPressOnMove)
+          document.removeEventListener('touchmove', cancelLongPressOnMove as EventListener)
         );
       } else {
         // Start drag immediately for touch events if no long press threshold
