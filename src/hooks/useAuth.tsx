@@ -1,8 +1,7 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/integrations/supabase/types';
 
 interface ProfileType {
   id: string;
@@ -19,8 +18,7 @@ interface ProfileType {
 
 interface AuthContextType {
   session: Session | null;
-  user: User | null;
-  profile: ProfileType | null;
+  user: User & { profile?: ProfileType } | null;
   isLoading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -29,7 +27,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
-  profile: null,
   isLoading: true,
   signOut: async () => {},
   refreshProfile: async () => {},
@@ -37,8 +34,7 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<ProfileType | null>(null);
+  const [user, setUser] = useState<User & { profile?: ProfileType } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -53,10 +49,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       setSession(session);
-      setUser(session?.user || null);
       
       if (session?.user) {
-        await fetchProfile(session.user.id);
+        const userWithProfile = { ...session.user };
+        await fetchProfile(session.user.id, userWithProfile);
+        setUser(userWithProfile);
+      } else {
+        setUser(null);
       }
       
       setIsLoading(false);
@@ -68,12 +67,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
-        setUser(session?.user || null);
         
         if (session?.user) {
-          await fetchProfile(session.user.id);
+          const userWithProfile = { ...session.user };
+          await fetchProfile(session.user.id, userWithProfile);
+          setUser(userWithProfile);
         } else {
-          setProfile(null);
+          setUser(null);
         }
         
         setIsLoading(false);
@@ -85,9 +85,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  async function fetchProfile(userId: string) {
+  async function fetchProfile(userId: string, userObj: User & { profile?: ProfileType }) {
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setProfile(data);
+      userObj.profile = data;
     } catch (error) {
       console.error('Error in fetchProfile:', error);
     }
@@ -106,19 +106,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = async () => {
     if (user) {
-      await fetchProfile(user.id);
+      await fetchProfile(user.id, user);
+      // Force a re-render by creating a new user object
+      setUser({ ...user });
     }
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setProfile(null);
   };
 
   const value = {
     session,
     user,
-    profile,
     isLoading,
     signOut,
     refreshProfile,

@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -93,8 +94,8 @@ export function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar_url || undefined} alt={user.username || "User"} />
-                    <AvatarFallback>{user.username?.charAt(0) || "U"}</AvatarFallback>
+                    <AvatarImage src={user.profile?.avatar_url} alt={user.profile?.username || "User"} />
+                    <AvatarFallback>{user.profile?.username?.charAt(0) || "U"}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>

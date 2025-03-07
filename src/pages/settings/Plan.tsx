@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,18 +29,20 @@ interface UserSubscription {
   cancel_at_period_end: boolean;
 }
 
+interface PlanFeatures {
+  download_limit: number;
+  sync_limit: number;
+  email_limit: number;
+  priority_support?: boolean;
+}
+
 interface SubscriptionPlan {
   id: string;
   name: string;
   description: string;
   price_monthly: number;
   price_yearly: number;
-  features: {
-    download_limit: number;
-    sync_limit: number;
-    email_limit: number;
-    priority_support?: boolean;
-  };
+  features: PlanFeatures;
 }
 
 export default function PlanSettings() {
@@ -83,12 +86,20 @@ export default function PlanSettings() {
           .select('*');
 
         if (plansData) {
-          setAvailablePlans(plansData as SubscriptionPlan[]);
-        }
-
-        if (subscriptionData && plansData) {
-          const plan = plansData.find(p => p.id === subscriptionData.plan_id);
-          if (plan) setCurrentPlan(plan as SubscriptionPlan);
+          // Parse the features from JSON to objects
+          const parsedPlans = plansData.map(plan => ({
+            ...plan,
+            features: typeof plan.features === 'string' 
+              ? JSON.parse(plan.features) 
+              : plan.features
+          })) as SubscriptionPlan[];
+          
+          setAvailablePlans(parsedPlans);
+          
+          if (subscriptionData && parsedPlans) {
+            const plan = parsedPlans.find(p => p.id === subscriptionData.plan_id);
+            if (plan) setCurrentPlan(plan);
+          }
         }
       } catch (err) {
         console.error('Error fetching plan data:', err);
