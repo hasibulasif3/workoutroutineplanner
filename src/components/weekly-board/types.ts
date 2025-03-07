@@ -74,6 +74,7 @@ export interface DragContextType {
   touchStartHandler: (e: TouchEvent) => void;
   touchMoveHandler: (e: TouchEvent) => void;
   cleanup: () => void;
+  handleDragError: (error: Error) => void;
 }
 
 export interface TransactionStatus {

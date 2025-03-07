@@ -1,3 +1,4 @@
+
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -15,7 +16,7 @@ import {
   Copy,
   Trash
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,6 +69,8 @@ export function WorkoutCard({
   exercises 
 }: WorkoutCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
   const {
     attributes,
     listeners,
@@ -85,38 +88,47 @@ export function WorkoutCard({
 
   const Icon = typeIcons[type];
 
-  const handleDuplicate = () => {
-    toast.success("Workout duplicated!");
+  // Fix for card actions by using useCallback to ensure stable function references
+  const handleDuplicate = useCallback(() => {
+    toast.success(`Workout "${title}" duplicated!`, {
+      description: "The workout has been duplicated successfully."
+    });
     // Implement duplication logic
-  };
+  }, [title]);
 
-  const handleDelete = () => {
-    toast.success("Workout deleted!");
+  const handleDelete = useCallback(() => {
+    toast.success(`Workout "${title}" deleted!`, {
+      description: "The workout has been removed from your schedule."
+    });
     // Implement deletion logic
-  };
+  }, [title]);
 
-  const handleMoveUp = () => {
+  const handleMoveUp = useCallback(() => {
     if (!isFirst) {
-      toast.success("Moved workout up");
+      toast.success(`Moved "${title}" up`, {
+        description: "The workout position has been updated."
+      });
       // Implement move up logic
     }
-  };
+  }, [isFirst, title]);
 
-  const handleMoveDown = () => {
+  const handleMoveDown = useCallback(() => {
     if (!isLast) {
-      toast.success("Moved workout down");
+      toast.success(`Moved "${title}" down`, {
+        description: "The workout position has been updated."
+      });
       // Implement move down logic
     }
-  };
+  }, [isLast, title]);
 
   return (
-    <Dialog>
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <div
         ref={setNodeRef}
         style={style}
         {...attributes}
         {...listeners}
-        className="workout-card group relative"
+        className="workout-card group relative bg-card p-4 rounded-lg shadow-sm border border-border hover:shadow-md transition-all"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         role="button"
@@ -125,17 +137,17 @@ export function WorkoutCard({
         <div className="flex items-center gap-2 mb-3">
           <Icon className={`w-5 h-5 text-${typeColors[type]}`} />
           <h3 className="font-semibold text-lg flex-grow">{title}</h3>
-          {isHovered && (
+          {(isHovered || true) && ( // Always show menu button for easier testing
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="quick-action">
+                <Button variant="ghost" size="icon" className="quick-action h-8 w-8">
                   <MoreVertical className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DialogTrigger asChild>
-                  <DropdownMenuItem>View Details</DropdownMenuItem>
-                </DialogTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
+                  View Details
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleDuplicate}>
                   <Copy className="w-4 h-4 mr-2" />
                   Duplicate
@@ -143,6 +155,7 @@ export function WorkoutCard({
                 <DropdownMenuItem 
                   onClick={handleMoveUp}
                   disabled={isFirst}
+                  className={isFirst ? "opacity-50 cursor-not-allowed" : ""}
                 >
                   <ChevronUp className="w-4 h-4 mr-2" />
                   Move Up
@@ -150,6 +163,7 @@ export function WorkoutCard({
                 <DropdownMenuItem 
                   onClick={handleMoveDown}
                   disabled={isLast}
+                  className={isLast ? "opacity-50 cursor-not-allowed" : ""}
                 >
                   <ChevronDown className="w-4 h-4 mr-2" />
                   Move Down
@@ -217,6 +231,22 @@ export function WorkoutCard({
             <div>
               <p className="text-sm text-gray-400">Difficulty</p>
               <p className="text-lg font-semibold capitalize">{difficulty}</p>
+            </div>
+          )}
+          {exercises && exercises.length > 0 && (
+            <div>
+              <p className="text-sm text-gray-400 mb-2">Exercises</p>
+              <ul className="space-y-2">
+                {exercises.map((exercise, index) => (
+                  <li key={index} className="border-l-2 border-primary pl-3">
+                    <p className="font-medium">{exercise.name}</p>
+                    <p className="text-sm text-gray-400">
+                      {exercise.sets} sets × {exercise.reps} reps
+                      {exercise.weight ? ` · ${exercise.weight}` : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>

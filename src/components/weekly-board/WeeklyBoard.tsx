@@ -291,13 +291,26 @@ export function WeeklyBoard() {
         saveWorkoutsToStorage(updatedWorkouts, createTransactionId)
           .then(success => {
             if (success) {
-              toast.success("Workout added to Monday", {
-                description: `"${newWorkout.title}" has been added to your schedule.`
+              // Fix for notification issue - ensure the toast is shown on successful creation
+              toast({
+                title: "Workout Added",
+                description: `"${newWorkout.title}" has been added to Monday.`,
+                duration: 3000
               });
+              
+              // Trigger haptic feedback if available
+              if (window.navigator.vibrate) {
+                window.navigator.vibrate(100);
+              }
             }
           });
         
         return updatedWorkouts;
+      });
+      
+      updateTransaction(createTransactionId, {
+        status: 'success',
+        data: { workout: newWorkout }
       });
       
       setIsCreatingWorkout(false);

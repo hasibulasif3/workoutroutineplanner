@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,7 +31,6 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
   const [formSubmissionError, setFormSubmissionError] = useState<string | null>(null);
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   
-  // Ref to track if component is mounted (prevents state updates after unmount)
   const isMountedRef = useRef(true);
 
   const form = useForm<WorkoutFormType>({
@@ -51,7 +49,6 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
     },
   });
 
-  // Clean up mounted ref on unmount
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
@@ -88,7 +85,6 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
     setFormProgress(progress);
   }, [form.watch()]);
 
-  // Load saved form state
   useEffect(() => {
     if (!isMountedRef.current) return;
     
@@ -110,7 +106,6 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
     }
   }, []);
 
-  // Autosave form state
   useEffect(() => {
     if (!isMountedRef.current) return;
     
@@ -180,13 +175,11 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
     return validationIssues;
   };
 
-  // CRITICAL FIX: Make sure the workout submission works properly
   const onSubmit = async (data: WorkoutFormType) => {
     if (!isMountedRef.current) return;
     
     console.log("[CreateWorkoutDialog] Form onSubmit called with data:", data);
     
-    // Pre-submission validation
     const validationIssues = validateFormData(data);
     
     if (validationIssues.length > 0) {
@@ -208,10 +201,14 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
     setFormSubmissionError(null);
     setSubmissionStatus('submitting');
     
+    toast({
+      title: "Creating workout...",
+      description: "Please wait while we create your workout.",
+    });
+    
     try {
       console.log("[CreateWorkoutDialog] Preparing workout data for submission:", data);
       
-      // Create a properly typed WorkoutInput object
       const workoutData: WorkoutInput = {
         title: data.title.trim(),
         type: data.type,
@@ -234,7 +231,6 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
       
       console.log("[CreateWorkoutDialog] Calling onWorkoutCreate with transformed data:", workoutData);
       
-      // CRITICAL FIX: Properly await workout creation and handle errors
       try {
         await onWorkoutCreate(workoutData);
         
@@ -243,15 +239,13 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
         console.log("[CreateWorkoutDialog] Workout creation completed successfully");
         setSubmissionStatus('success');
         
-        // Reset form and clear storage on success
         form.reset();
         localStorage.removeItem('workout-form-state');
         setPreviewData(null);
         
-        // Close dialog only after all operations are complete
         setShowDialog(false);
       } catch (error) {
-        throw error; // Re-throw to be caught by outer catch block
+        throw error;
       }
       
     } catch (error) {
@@ -289,19 +283,16 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
   };
 
   const handleClose = () => {
-    // If submitting, don't allow close
     if (submissionStatus === 'submitting' || isCreatingWorkout) {
       console.log("[CreateWorkoutDialog] Cannot close dialog while submitting or creating workout");
       return;
     }
     
-    // If form has been successfully submitted, allow immediate close
     if (submissionStatus === 'success') {
       setShowDialog(false);
       return;
     }
     
-    // Check if form has unsaved changes
     const formValues = form.getValues();
     const hasValues = Object.values(formValues).some(value => {
       if (Array.isArray(value)) return value.length > 0;

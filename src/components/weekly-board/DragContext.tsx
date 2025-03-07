@@ -1,12 +1,13 @@
+
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
 import { DragState, ColumnPreferences, DragContextType } from "./types";
 import { debounce } from "lodash";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { toast } from "sonner";
 
-const DRAG_THRESHOLD = 8;
-const TOUCH_TIMEOUT = 150;
+const DRAG_THRESHOLD = 5; // Reduced for more responsive drag
 const ANIMATION_DURATION = 200;
-const LONG_PRESS_DURATION = 500;
+const LONG_PRESS_DURATION = 400; // Reduced for more immediate response
 
 const DragContext = createContext<DragContextType | undefined>(undefined);
 
@@ -41,6 +42,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
   const longPressTimeoutRef = useRef<number>();
   const eventCleanupRef = useRef<(() => void)[]>([]);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const dragInProgressRef = useRef(false);
 
   const cleanup = useCallback(() => {
     window.clearTimeout(touchTimeoutRef.current);
@@ -49,6 +51,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     eventCleanupRef.current = [];
     
     document.body.style.overflow = '';
+    dragInProgressRef.current = false;
     
     setDragState(prev => ({
       ...prev,
@@ -105,6 +108,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     });
   }, [setColumnPreferences]);
 
+  // Handle visibility changes to abort drag operations when the app loses focus
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && dragState.isDragging) {
@@ -113,14 +117,25 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Handle touch cancel events that might occur during drag
+    const handleTouchCancel = () => {
+      if (dragState.isDragging) {
+        cleanup();
+      }
+    };
+    
+    document.addEventListener('touchcancel', handleTouchCancel);
+    
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('touchcancel', handleTouchCancel);
       cleanup();
     };
   }, [dragState.isDragging, cleanup]);
 
   const touchStartHandler = useCallback((e: TouchEvent) => {
-    if (e.touches.length !== 1) return;
+    if (e.touches.length !== 1 || dragInProgressRef.current) return;
     
     const touch = e.touches[0];
     lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
@@ -131,12 +146,15 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     longPressTimeoutRef.current = window.setTimeout(() => {
       if (dragStartPositionRef.current) {
         document.body.style.overflow = 'hidden';
+        dragInProgressRef.current = true;
+        
         setDragState(prev => ({ 
           ...prev, 
           isDragging: true,
           lastDragTime: Date.now()
         }));
         
+        // Provide haptic feedback
         if (window.navigator.vibrate) {
           window.navigator.vibrate([50]);
         }
@@ -156,6 +174,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
   }, [cleanup, dragState.isDragging]);
 
   const touchMoveHandler = useCallback((e: TouchEvent) => {
+    // Only process touch moves if dragging or we're in the initial drag detection phase
     if (!lastTouchRef.current || !dragStartPositionRef.current) return;
 
     const touch = e.touches[0];
@@ -166,7 +185,13 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     const speed = distance / deltaTime;
 
+    // Cancel long press if user moved more than the threshold
+    if (!dragState.isDragging && distance > DRAG_THRESHOLD) {
+      window.clearTimeout(longPressTimeoutRef.current);
+    }
+
     if (dragState.isDragging) {
+      // Prevent default to stop scrolling during drag
       e.preventDefault();
       requestAnimationFrame(() => {
         setDragState(prevState => ({
@@ -179,6 +204,38 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
       });
     }
   }, [dragState.isDragging, dragState.lastDragTime]);
+
+  const touchEndHandler = useCallback(() => {
+    // Clear long press timeout if touch ends before long press timer fires
+    window.clearTimeout(longPressTimeoutRef.current);
+    
+    // Only handle touch end if we were dragging
+    if (dragState.isDragging) {
+      cleanup();
+    }
+    
+    // Reset refs
+    lastTouchRef.current = null;
+    dragStartPositionRef.current = null;
+  }, [cleanup, dragState.isDragging]);
+
+  useEffect(() => {
+    // Set up global touch end handler
+    document.addEventListener('touchend', touchEndHandler);
+    
+    return () => {
+      document.removeEventListener('touchend', touchEndHandler);
+    };
+  }, [touchEndHandler]);
+
+  // Added error recovery to provide a better UX
+  const handleDragError = useCallback((error: Error) => {
+    console.error("Drag operation failed:", error);
+    toast.error("Drag operation failed", {
+      description: "Please try again. If the issue persists, reload the page."
+    });
+    cleanup();
+  }, [cleanup]);
 
   return (
     <DragContext.Provider
@@ -194,6 +251,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
         touchStartHandler,
         touchMoveHandler,
         cleanup,
+        handleDragError,
       }}
     >
       {children}

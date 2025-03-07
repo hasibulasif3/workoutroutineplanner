@@ -1,3 +1,4 @@
+
 import { useDroppable } from "@dnd-kit/core";
 import { WorkoutCard } from "./WorkoutCard";
 import { Calendar, ChevronDown, ChevronRight } from "lucide-react";
@@ -6,7 +7,7 @@ import { useDragContext } from "./weekly-board/DragContext";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { useDragEvents } from "@/hooks/useDragEvents";
-import { MouseEvent, TouchEvent, useRef, useEffect } from "react";
+import { MouseEvent, TouchEvent, useRef, useEffect, memo } from "react";
 
 interface DayColumnProps {
   day: string;
@@ -20,7 +21,8 @@ interface DayColumnProps {
   }>;
 }
 
-export function DayColumn({ day, workouts }: DayColumnProps) {
+// Using memo to prevent unnecessary re-renders
+export const DayColumn = memo(function DayColumn({ day, workouts }: DayColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: day,
   });
@@ -33,15 +35,21 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
     isColumnCollapsed, 
     toggleColumnCollapse,
     adjustColumnWidth,
-    setColumnHeight
+    setColumnHeight,
+    handleDragError
   } = useDragContext();
 
   const { handleStart: handleResizeStart } = useDragEvents({
     onDragMove: (e) => {
-      const pos = 'touches' in e ? e.touches[0] : e;
-      requestAnimationFrame(() => {
-        adjustColumnWidth(day, pos.clientX);
-      });
+      try {
+        const pos = 'touches' in e ? e.touches[0] : e;
+        requestAnimationFrame(() => {
+          adjustColumnWidth(day, pos.clientX);
+        });
+      } catch (error) {
+        console.error("[DayColumn] Error in resize handler:", error);
+        handleDragError(error);
+      }
     },
     threshold: 2,
     debounceMs: 8
@@ -50,16 +58,20 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
   // Update column height with ResizeObserver
   useEffect(() => {
     if (columnRef.current) {
-      const observer = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          requestAnimationFrame(() => {
-            setColumnHeight(day, entry.contentRect.height);
-          });
-        }
-      });
-      
-      observer.observe(columnRef.current);
-      return () => observer.disconnect();
+      try {
+        const observer = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            requestAnimationFrame(() => {
+              setColumnHeight(day, entry.contentRect.height);
+            });
+          }
+        });
+        
+        observer.observe(columnRef.current);
+        return () => observer.disconnect();
+      } catch (error) {
+        console.error("[DayColumn] Error setting up ResizeObserver:", error);
+      }
     }
   }, [day, setColumnHeight]);
 
@@ -129,7 +141,7 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
               className={cn(
                 "day-column space-y-4 relative min-h-[200px] p-4 rounded-lg transition-colors",
                 isEmpty && "empty bg-accent/5",
-                isOver && isValidDropZone && "dragging-over bg-accent/10",
+                isOver && isValidDropZone && "dragging-over bg-accent/10 border-2 border-dashed border-primary",
                 "touch-none"
               )}
               initial={{ height: 0, opacity: 0 }}
@@ -187,4 +199,4 @@ export function DayColumn({ day, workouts }: DayColumnProps) {
       </motion.div>
     </LayoutGroup>
   );
-}
+});
