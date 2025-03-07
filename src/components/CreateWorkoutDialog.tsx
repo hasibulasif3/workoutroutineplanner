@@ -238,6 +238,10 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
         console.log("[CreateWorkoutDialog] Workout creation completed successfully");
         setSubmissionStatus('success');
         
+        toast.success("Workout Created", {
+          description: `"${workoutData.title}" has been created successfully.`
+        });
+        
         form.reset();
         localStorage.removeItem('workout-form-state');
         setPreviewData(null);
@@ -254,7 +258,7 @@ export function CreateWorkoutDialog({ onWorkoutCreate, isCreatingWorkout = false
       setFormSubmissionError(error instanceof Error ? error.message : String(error));
       setSubmissionStatus('error');
       toast.error("Failed to create workout", {
-        description: "There was a problem saving your workout. Please try again.",
+        description: "There was a problem saving your workout. Please try again."
       });
     } finally {
       if (isMountedRef.current) {

@@ -43,14 +43,18 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
   const eventCleanupRef = useRef<(() => void)[]>([]);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const dragInProgressRef = useRef(false);
+  const errorRecoveryTimeoutRef = useRef<number>();
 
   const cleanup = useCallback(() => {
     window.clearTimeout(touchTimeoutRef.current);
     window.clearTimeout(longPressTimeoutRef.current);
+    window.clearTimeout(errorRecoveryTimeoutRef.current);
+    
     eventCleanupRef.current.forEach(cleanup => cleanup());
     eventCleanupRef.current = [];
     
     document.body.style.overflow = '';
+    document.body.style.touchAction = '';
     dragInProgressRef.current = false;
     
     setDragState(prev => ({
@@ -63,6 +67,20 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
       resizeObserverRef.current.disconnect();
     }
   }, []);
+
+  // Handle automatic cleanup if the component gets stuck in drag state
+  useEffect(() => {
+    if (dragState.isDragging) {
+      const autoCleanupTimeout = window.setTimeout(() => {
+        console.warn("Automatically cleaning up drag state after timeout");
+        cleanup();
+      }, 30000); // 30 seconds max drag time
+      
+      return () => {
+        window.clearTimeout(autoCleanupTimeout);
+      };
+    }
+  }, [dragState.isDragging, cleanup]);
 
   const isColumnCollapsed = useCallback(
     (day: string) => !!columnPreferences.collapsed[day],
@@ -146,6 +164,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     longPressTimeoutRef.current = window.setTimeout(() => {
       if (dragStartPositionRef.current) {
         document.body.style.overflow = 'hidden';
+        document.body.style.touchAction = 'none';
         dragInProgressRef.current = true;
         
         setDragState(prev => ({ 
@@ -180,10 +199,16 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     const touch = e.touches[0];
     const now = Date.now();
     const deltaTime = now - (dragState.lastDragTime || now);
+    
+    if (deltaTime < 16) {
+      // Skip processing if we're updating too frequently (more than 60fps)
+      return;
+    }
+    
     const deltaX = touch.clientX - dragStartPositionRef.current.x;
     const deltaY = touch.clientY - dragStartPositionRef.current.y;
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    const speed = distance / deltaTime;
+    const speed = deltaTime > 0 ? distance / deltaTime : 0;
 
     // Cancel long press if user moved more than the threshold
     if (!dragState.isDragging && distance > DRAG_THRESHOLD) {
@@ -193,17 +218,26 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
     if (dragState.isDragging) {
       // Prevent default to stop scrolling during drag
       e.preventDefault();
-      requestAnimationFrame(() => {
-        setDragState(prevState => ({
-          ...prevState,
-          dragDistance: distance,
-          touchPoint: { x: touch.clientX, y: touch.clientY },
-          lastDragTime: now,
-          dragSpeed: speed
-        }));
-      });
+      
+      try {
+        requestAnimationFrame(() => {
+          setDragState(prevState => ({
+            ...prevState,
+            dragDistance: distance,
+            touchPoint: { x: touch.clientX, y: touch.clientY },
+            lastDragTime: now,
+            dragSpeed: speed
+          }));
+        });
+      } catch (error) {
+        console.error("Error updating drag state:", error);
+        // Attempt recovery rather than immediate cleanup
+        errorRecoveryTimeoutRef.current = window.setTimeout(() => {
+          cleanup();
+        }, 300);
+      }
     }
-  }, [dragState.isDragging, dragState.lastDragTime]);
+  }, [dragState.isDragging, dragState.lastDragTime, cleanup]);
 
   const touchEndHandler = useCallback(() => {
     // Clear long press timeout if touch ends before long press timer fires

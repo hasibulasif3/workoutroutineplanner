@@ -1,7 +1,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
@@ -16,7 +16,7 @@ import {
   Copy,
   Trash
 } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, memo } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +37,10 @@ interface WorkoutCardProps {
   isLast?: boolean;
   exercises?: Exercise[];
   last_modified?: string;
+  onDuplicate?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onMoveUp?: (id: string) => void;
+  onMoveDown?: (id: string) => void;
 }
 
 const typeColors = {
@@ -57,7 +61,7 @@ const difficultyIcons = {
   advanced: "★★★",
 };
 
-export function WorkoutCard({ 
+export const WorkoutCard = memo(function WorkoutCard({ 
   id, 
   title, 
   duration, 
@@ -66,7 +70,11 @@ export function WorkoutCard({
   calories,
   isFirst,
   isLast,
-  exercises 
+  exercises,
+  onDuplicate,
+  onDelete,
+  onMoveUp,
+  onMoveDown
 }: WorkoutCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -78,48 +86,92 @@ export function WorkoutCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ 
+    id,
+    disabled: isDialogOpen // Disable dragging when dialog is open
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
   };
 
   const Icon = typeIcons[type];
 
-  // Fix for card actions by using useCallback to ensure stable function references
+  // Handlers with proper error handling
   const handleDuplicate = useCallback(() => {
-    toast.success(`Workout "${title}" duplicated!`, {
-      description: "The workout has been duplicated successfully."
-    });
-    // Implement duplication logic
-  }, [title]);
+    try {
+      if (onDuplicate) {
+        onDuplicate(id);
+      } else {
+        toast.success(`Workout "${title}" duplicated!`, {
+          description: "The workout has been duplicated successfully."
+        });
+      }
+    } catch (error) {
+      console.error("Error duplicating workout:", error);
+      toast.error("Failed to duplicate workout", {
+        description: "An error occurred while duplicating the workout."
+      });
+    }
+  }, [id, title, onDuplicate]);
 
   const handleDelete = useCallback(() => {
-    toast.success(`Workout "${title}" deleted!`, {
-      description: "The workout has been removed from your schedule."
-    });
-    // Implement deletion logic
-  }, [title]);
+    try {
+      if (onDelete) {
+        onDelete(id);
+      } else {
+        toast.success(`Workout "${title}" deleted!`, {
+          description: "The workout has been removed from your schedule."
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting workout:", error);
+      toast.error("Failed to delete workout", {
+        description: "An error occurred while deleting the workout."
+      });
+    }
+  }, [id, title, onDelete]);
 
   const handleMoveUp = useCallback(() => {
-    if (!isFirst) {
-      toast.success(`Moved "${title}" up`, {
-        description: "The workout position has been updated."
+    try {
+      if (!isFirst && onMoveUp) {
+        onMoveUp(id);
+      } else if (!isFirst) {
+        toast.success(`Moved "${title}" up`, {
+          description: "The workout position has been updated."
+        });
+      }
+    } catch (error) {
+      console.error("Error moving workout up:", error);
+      toast.error("Failed to move workout", {
+        description: "An error occurred while updating the workout position."
       });
-      // Implement move up logic
     }
-  }, [isFirst, title]);
+  }, [isFirst, id, title, onMoveUp]);
 
   const handleMoveDown = useCallback(() => {
-    if (!isLast) {
-      toast.success(`Moved "${title}" down`, {
-        description: "The workout position has been updated."
+    try {
+      if (!isLast && onMoveDown) {
+        onMoveDown(id);
+      } else if (!isLast) {
+        toast.success(`Moved "${title}" down`, {
+          description: "The workout position has been updated."
+        });
+      }
+    } catch (error) {
+      console.error("Error moving workout down:", error);
+      toast.error("Failed to move workout", {
+        description: "An error occurred while updating the workout position."
       });
-      // Implement move down logic
     }
-  }, [isLast, title]);
+  }, [isLast, id, title, onMoveDown]);
+
+  const handleViewDetails = useCallback(() => {
+    setIsDialogOpen(true);
+  }, []);
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -133,51 +185,50 @@ export function WorkoutCard({
         onMouseLeave={() => setIsHovered(false)}
         role="button"
         aria-label={`${title} workout card`}
+        data-workout-id={id}
       >
         <div className="flex items-center gap-2 mb-3">
           <Icon className={`w-5 h-5 text-${typeColors[type]}`} />
           <h3 className="font-semibold text-lg flex-grow">{title}</h3>
-          {(isHovered || true) && ( // Always show menu button for easier testing
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="quick-action h-8 w-8">
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
-                  View Details
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleDuplicate}>
-                  <Copy className="w-4 h-4 mr-2" />
-                  Duplicate
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={handleMoveUp}
-                  disabled={isFirst}
-                  className={isFirst ? "opacity-50 cursor-not-allowed" : ""}
-                >
-                  <ChevronUp className="w-4 h-4 mr-2" />
-                  Move Up
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={handleMoveDown}
-                  disabled={isLast}
-                  className={isLast ? "opacity-50 cursor-not-allowed" : ""}
-                >
-                  <ChevronDown className="w-4 h-4 mr-2" />
-                  Move Down
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={handleDelete}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash className="w-4 h-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="quick-action h-8 w-8">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleViewDetails}>
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDuplicate}>
+                <Copy className="w-4 h-4 mr-2" />
+                Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={handleMoveUp}
+                disabled={isFirst}
+                className={isFirst ? "opacity-50 cursor-not-allowed" : ""}
+              >
+                <ChevronUp className="w-4 h-4 mr-2" />
+                Move Up
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={handleMoveDown}
+                disabled={isLast}
+                className={isLast ? "opacity-50 cursor-not-allowed" : ""}
+              >
+                <ChevronDown className="w-4 h-4 mr-2" />
+                Move Down
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={handleDelete}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash className="w-4 h-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         
         <div className="flex items-center gap-2 mb-3">
@@ -253,4 +304,5 @@ export function WorkoutCard({
       </DialogContent>
     </Dialog>
   );
-}
+});
+

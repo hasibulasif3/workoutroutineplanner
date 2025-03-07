@@ -1,3 +1,4 @@
+
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -16,13 +17,90 @@ import { Layout } from "../layout/Layout";
 import { TransactionStatus } from "./types";
 
 const initialWorkouts: WeeklyWorkouts = {
-  Monday: [],
-  Tuesday: [],
-  Wednesday: [],
-  Thursday: [],
-  Friday: [],
-  Saturday: [],
-  Sunday: []
+  Monday: [
+    {
+      id: "1",
+      title: "Push-ups",
+      duration: "15",
+      type: "strength",
+      difficulty: "intermediate",
+      calories: "150",
+      last_modified: new Date().toISOString(),
+      exercises: [],
+    }
+  ],
+  Tuesday: [
+    {
+      id: "3",
+      title: "Yoga",
+      duration: "45",
+      type: "flexibility",
+      difficulty: "beginner",
+      calories: "200",
+      last_modified: new Date().toISOString(),
+      exercises: [],
+    }
+  ],
+  Wednesday: [
+    {
+      id: "2",
+      title: "HIIT",
+      duration: "25",
+      type: "cardio",
+      difficulty: "advanced",
+      calories: "400",
+      last_modified: new Date().toISOString(),
+      exercises: [],
+    }
+  ],
+  Thursday: [
+    {
+      id: "4",
+      title: "Swimming",
+      duration: "40",
+      type: "cardio",
+      difficulty: "advanced",
+      calories: "450",
+      last_modified: new Date().toISOString(),
+      exercises: [],
+    }
+  ],
+  Friday: [
+    {
+      id: "5",
+      title: "Weight Training",
+      duration: "50",
+      type: "strength",
+      difficulty: "advanced",
+      calories: "500",
+      last_modified: new Date().toISOString(),
+      exercises: [],
+    }
+  ],
+  Saturday: [
+    {
+      id: "6",
+      title: "Morning Run",
+      duration: "30",
+      type: "cardio",
+      difficulty: "beginner",
+      calories: "300",
+      last_modified: new Date().toISOString(),
+      exercises: [],
+    }
+  ],
+  Sunday: [
+    {
+      id: "7",
+      title: "Dynamic Stretching",
+      duration: "25",
+      type: "flexibility",
+      difficulty: "beginner",
+      calories: "150",
+      last_modified: new Date().toISOString(),
+      exercises: [],
+    }
+  ]
 };
 
 export function WeeklyBoard() {
@@ -72,13 +150,26 @@ export function WeeklyBoard() {
         
         if (result.success && result.data) {
           console.log("[WeeklyBoard] Loaded workouts from storage:", result.data);
-          setWorkouts(result.data);
+          
+          // Check if the loaded data has any workouts at all
+          const hasWorkouts = Object.values(result.data).some(dayWorkouts => dayWorkouts.length > 0);
+          
+          if (hasWorkouts) {
+            setWorkouts(result.data);
+          } else {
+            console.log("[WeeklyBoard] No workouts found in storage, using initial data");
+            setWorkouts(initialWorkouts);
+          }
+          
           updateTransaction(loadTransactionId, { 
             status: 'success', 
             data: { workoutCount: Object.values(result.data).flat().length }
           });
         } else {
           console.log("[WeeklyBoard] No saved workouts found, using initial data");
+          // Always fallback to initial workouts to ensure the board is never empty
+          setWorkouts(initialWorkouts);
+          
           if (result.error) {
             updateTransaction(loadTransactionId, { 
               status: 'error', 
@@ -90,6 +181,9 @@ export function WeeklyBoard() {
         }
       } catch (error) {
         console.error("[WeeklyBoard] Error loading workouts:", error);
+        // Fallback to initial workouts when there's an error
+        setWorkouts(initialWorkouts);
+        
         toast.error("Failed to load your workouts", {
           description: "There was a problem loading your workout data."
         });
@@ -287,7 +381,8 @@ export function WeeklyBoard() {
         saveWorkoutsToStorage(updatedWorkouts, createTransactionId)
           .then(success => {
             if (success) {
-              toast("Workout Added", {
+              // Show success toast notification with the correct format
+              toast.success("Workout Added", {
                 description: `"${newWorkout.title}" has been added to Monday.`,
                 duration: 3000
               });
@@ -309,15 +404,17 @@ export function WeeklyBoard() {
       setIsCreatingWorkout(false);
       return Promise.resolve();
     } catch (error) {
-      console.error("[WeeklyBoard] Error in handleWorkoutCreate:", error);
-      updateTransaction(createTransactionId, {
-        status: 'error',
-        error: error
-      });
-      setIsCreatingWorkout(false);
-      toast.error("Failed to create workout", {
-        description: "An unexpected error occurred. Please try again."
-      });
+      if (error instanceof Error) {
+        console.error("[WeeklyBoard] Workout creation error:", error);
+        updateTransaction(createTransactionId, {
+          status: 'error',
+          error: error
+        });
+        setIsCreatingWorkout(false);
+        toast.error("Failed to create workout", {
+          description: "There was a problem saving your workout. Please try again."
+        });
+      }
       
       return Promise.reject(error);
     }
